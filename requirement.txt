@@ -1,0 +1,489 @@
+“UPSC Hindi Peer Network”
+
+1. Product Vision
+
+A peer-to-peer UPSC Hindi learning ecosystem where aspirants:
+
+Discuss doubts
+
+Write answers
+
+Join silent study rooms
+
+Earn reputation & money
+
+Compete in quizzes
+
+Grow into mentors
+
+Designed to scale into:
+
+1v1 quiz battles
+
+Advanced leaderboards
+
+AI evaluation
+
+Marketplace of mentors
+
+2. Core Modules (Phase-1 MVP)
+2.1 User Management
+
+Features
+
+Phone OTP login
+
+Profile:
+
+Name
+
+Exam Stage (Prelims / Mains / Beginner)
+
+Optional Subject
+
+Bio
+
+Reputation Score
+
+Earnings Wallet
+
+Roles:
+
+User
+
+Contributor
+
+Mentor
+
+Admin
+
+Moderator
+
+2.2 Peer Q&A Module
+
+Purpose: Structured doubt solving (StackOverflow style)
+
+Features
+
+Post Question
+
+Tagging (Polity, History, Economy…)
+
+Answers
+
+Upvote / Downvote
+
+Mark as Solved
+
+Report Abuse
+
+Anonymous Mode
+
+Data Model
+
+Question
+
+Answer
+
+Vote
+
+Tag
+
+Report
+
+2.3 Daily Answer Writing Room
+
+Flow
+
+Admin posts daily question
+
+Users submit answers
+
+Peers comment/upvote
+
+Best Answer pinned
+
+Optional model answer
+
+Leaderboard Integration
+
++Points for:
+
+Submission
+
+Upvotes
+
+Best answer
+
+2.4 Silent Library (Critical Differentiator)
+Concept
+
+Virtual co-study room where users:
+
+Join
+
+Start timer
+
+Stay silent
+
+Earn consistency points
+
+Features
+
+Timer (Pomodoro / Custom)
+
+Presence Indicator
+
+No Chat
+
+Exit logs
+
+Streak Tracking
+
+Silent Library Leaderboard
+
+Metrics:
+
+Total Study Hours
+
+Weekly Hours
+
+Streak Days
+
+Types:
+
+Daily
+
+Weekly
+
+All-Time
+
+2.5 Reputation & Points Engine
+Point Sources
+
+Answer Upvotes
+
+Doubt Solved
+
+Silent Library Hours
+
+Quiz Wins (future)
+
+Mentor Feedback
+
+Levels
+
+Beginner
+
+Learner
+
+Contributor
+
+Scholar
+
+Mentor
+
+2.6 Earnings / Mentor Economy (Phase 1.5)
+
+Answer Review Requests
+
+Paid Doubt Sessions
+
+Live Audio Classes
+
+Revenue Split Logic
+
+Wallet:
+
+Credits
+
+Withdrawal Threshold
+
+Transaction Logs
+
+3. Phase-2 Modules (Future Scalable Specs)
+3.1 1v1 Quiz Battles
+
+Game Modes
+
+Live Duel
+
+Async Duel
+
+Topic-based
+
+Flow
+User → Invite / Match → 10 Questions → Score → Rewards
+
+Metrics
+
+Win Rate
+
+Speed
+
+Accuracy
+
+3.2 Global Leaderboard Engine
+
+Types:
+
+Silent Study Leaderboard
+
+Quiz Leaderboard
+
+Answer Writing Leaderboard
+
+Mentor Leaderboard
+
+Filtering:
+
+Weekly / Monthly / All-Time
+
+Subject Wise
+
+Exam Stage Wise
+
+3.3 Study Circles
+
+5–10 people
+
+Private rooms
+
+Weekly goals
+
+Voice discussions
+
+3.4 AI Evaluation (Later)
+
+Hindi NLP scoring
+
+Structure analysis
+
+Keyword detection
+
+4. Architecture Design
+4.1 High Level Architecture
+
+Client Layer
+
+React Native App
+
+Web (React)
+
+API Layer
+
+FastAPI / Node.js (Microservice ready)
+
+Services
+
+User Service
+
+Q&A Service
+
+Quiz Service
+
+Reputation Service
+
+Wallet Service
+
+Notification Service
+
+Leaderboard Service
+
+Data Layer
+
+PostgreSQL (Relational)
+
+Redis (Caching, Leaderboards)
+
+ElasticSearch (Search Q&A)
+
+Infra
+
+AWS / GCP
+
+Docker
+
+Kubernetes (later)
+
+CDN for media
+
+5. Scalability Strategy
+Horizontal Scaling
+
+Stateless APIs
+
+Load Balancer
+
+Service separation
+
+Leaderboards
+
+Redis Sorted Sets
+
+Periodic snapshot to DB
+
+Real-Time Features
+
+WebSockets / Socket.IO
+
+Pub-Sub (Redis / Kafka later)
+
+6. Database Design (Core Tables)
+
+Users
+
+id
+
+phone
+
+role
+
+reputation
+
+wallet_balance
+
+Questions
+
+id
+
+title
+
+content
+
+tags
+
+user_id
+
+is_anonymous
+
+Answers
+
+id
+
+question_id
+
+user_id
+
+upvotes
+
+SilentSessions
+
+id
+
+user_id
+
+start_time
+
+end_time
+
+duration
+
+Leaderboards
+
+user_id
+
+metric_type
+
+score
+
+WalletTransactions
+
+id
+
+user_id
+
+type
+
+amount
+
+status
+
+7. Leaderboard Logic
+
+Use Redis Sorted Sets:
+
+Key Examples:
+
+silent_daily
+
+silent_weekly
+
+quiz_alltime
+
+answers_weekly
+
+Score:
+
+Silent Hours → minutes
+
+Quiz → points
+
+Answers → upvotes × weight
+
+8. Security & Moderation
+
+Rate Limiting
+
+Spam Detection
+
+Content Moderation Queue
+
+Role-based Access
+
+Abuse Reports
+
+OTP Auth
+
+9. Analytics
+
+Track:
+
+Daily Active Users
+
+Study Hours
+
+Question Engagement
+
+Mentor Earnings
+
+Retention Rate
+
+Quiz Completion Rate
+
+10. Launch Phases
+Phase 1
+
+Q&A
+
+Silent Library
+
+Reputation
+
+Basic Leaderboard
+
+Phase 2
+
+Mentor Economy
+
+Study Circles
+
+Phase 3
+
+1v1 Quiz
+
+AI Evaluation
+
+Advanced Leaderboards
+
+11. Key Differentiators
+
+Hindi-first ecosystem
+
+Silent Library + Leaderboard
+
+Peer Mentor Earnings
+
+Structured P2P (not chat chaos)
+
+Gamified learning
