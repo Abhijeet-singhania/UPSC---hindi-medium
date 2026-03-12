@@ -7,26 +7,28 @@ import {
     ScrollView,
     KeyboardAvoidingView,
     Platform,
-    Alert,
-    SafeAreaView
+    Alert
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useUser } from '../context/UserContext';
 import api from '../services/api';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../theme/theme';
 import DuolingoButton from '../components/DuolingoButton';
 
-// Mock Badges for visual layout
-const BADGES = [
-    { title: 'परफेक्ट वीक', icon: '🔥', locked: false },
-    { title: 'अर्ली बर्ड', icon: '🌅', locked: false },
-    { title: 'विद्वान', icon: '📖', locked: true },
-    { title: 'लगातार 30 दिन', icon: '🗓️', locked: true },
-];
-
 const ProfileScreen = ({ navigation }: any) => {
+    const { t, i18n } = useTranslation();
     const { user, setUser } = useUser();
     const [name, setName] = useState(user?.name || '');
     const [saving, setSaving] = useState(false);
+
+    // Mock Badges for visual layout using translations
+    const BADGES = [
+        { title: t('profile.badges.perfectWeek'), icon: '🔥', locked: false },
+        { title: t('profile.badges.earlyBird'), icon: '🌅', locked: false },
+        { title: t('profile.badges.scholar'), icon: '📖', locked: true },
+        { title: t('profile.badges.streak30'), icon: '🗓️', locked: true },
+    ];
 
     const handleSave = async () => {
         setSaving(true);
@@ -34,10 +36,10 @@ const ProfileScreen = ({ navigation }: any) => {
             if (user) {
                 const updated = await api.updateUser(user.id, { name });
                 setUser(updated as any);
-                Alert.alert('सफलता', 'प्रोफ़ाइल अपडेट की गई!');
+                Alert.alert(t('profile.success'), t('profile.profileUpdated'));
             }
         } catch (error) {
-            Alert.alert('त्रुटि', 'प्रोफ़ाइल अपडेट करने में विफल।');
+            Alert.alert(t('profile.error'), t('profile.updateFailed'));
         } finally {
             setSaving(false);
         }
@@ -47,6 +49,12 @@ const ProfileScreen = ({ navigation }: any) => {
         setUser(null);
     };
 
+    const toggleLanguage = () => {
+        const currentLang = i18n.language;
+        const newLang = currentLang === 'hi' ? 'en' : 'hi';
+        i18n.changeLanguage(newLang);
+    };
+
     return (
         <SafeAreaView style={styles.safeArea}>
             <KeyboardAvoidingView
@@ -54,7 +62,7 @@ const ProfileScreen = ({ navigation }: any) => {
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
                 <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                    
+
                     {/* Header: Avatar and Status */}
                     <View style={styles.profileHeader}>
                         <View style={styles.avatarContainer}>
@@ -64,17 +72,17 @@ const ProfileScreen = ({ navigation }: any) => {
                             </View>
                         </View>
                         <Text style={styles.nameHeader}>{user?.name || 'User'}</Text>
-                        <Text style={styles.joinedText}>जुड़े: Oct 2023</Text>
-                        
+                        <Text style={styles.joinedText}>{t('profile.joined')}</Text>
+
                         {/* High level stats pills */}
                         <View style={styles.statsRow}>
                             <View style={styles.statPill}>
                                 <Text style={styles.statIcon}>🔥</Text>
-                                <Text style={styles.statText}>12 दिन</Text>
+                                <Text style={styles.statText}>{t('profile.daysStreak', { count: 12 })}</Text>
                             </View>
                             <View style={styles.statPill}>
                                 <Text style={styles.statIcon}>⚡</Text>
-                                <Text style={styles.statText}>{user?.reputation} XP</Text>
+                                <Text style={styles.statText}>{user?.reputation} {t('leaderboard.xp')}</Text>
                             </View>
                         </View>
                         <View style={styles.divider} />
@@ -82,9 +90,9 @@ const ProfileScreen = ({ navigation }: any) => {
 
                     {/* Stats Box */}
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>आँकड़े</Text>
+                        <Text style={styles.sectionTitle}>{t('profile.stats')}</Text>
                         <View style={styles.statsGrid}>
-                            {['कुल उत्तर', 'सर्वश्रेष्ठ स्ट्रीक', 'रैंक'].map((label, idx) => (
+                            {[t('profile.totalAnswers'), t('profile.bestStreak'), t('profile.rank')].map((label, idx) => (
                                 <View key={idx} style={styles.statBox}>
                                     <View style={styles.statBoxIconRow}>
                                         <Text style={styles.statBoxIcon}>{idx === 0 ? '📝' : idx === 1 ? '🔥' : '🛡️'}</Text>
@@ -99,7 +107,7 @@ const ProfileScreen = ({ navigation }: any) => {
 
                     {/* Achievements */}
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>उपलब्धियाँ</Text>
+                        <Text style={styles.sectionTitle}>{t('profile.achievements')}</Text>
                         <View style={styles.badgesWrapper}>
                             {BADGES.map((badge, idx) => (
                                 <View key={idx} style={[styles.badgeItem, badge.locked && styles.badgeLocked]}>
@@ -115,10 +123,10 @@ const ProfileScreen = ({ navigation }: any) => {
 
                     {/* Settings Form */}
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>खाता सेटिंग</Text>
-                        
+                        <Text style={styles.sectionTitle}>{t('profile.accountSettings')}</Text>
+
                         <View style={styles.inputWrap}>
-                            <Text style={styles.inputLabel}>नाम</Text>
+                            <Text style={styles.inputLabel}>{t('profile.name')}</Text>
                             <TextInput
                                 style={styles.input}
                                 value={name}
@@ -127,15 +135,23 @@ const ProfileScreen = ({ navigation }: any) => {
                         </View>
 
                         <DuolingoButton
-                            title={saving ? "सेव हो रहा है..." : "सेव करें"}
+                            title={saving ? t('profile.saving') : t('profile.save')}
                             color="primary"
                             onPress={handleSave}
                             disabled={saving}
                             style={{ marginTop: Spacing.xl, marginBottom: Spacing.xl }}
                         />
 
+                        {/* Language Toggle */}
                         <DuolingoButton
-                            title="लॉगआउट"
+                            title={i18n.language === 'hi' ? "Switch to English" : "हिंदी में स्विच करें"}
+                            color="secondary"
+                            onPress={toggleLanguage}
+                            style={{ marginBottom: Spacing.xl }}
+                        />
+
+                        <DuolingoButton
+                            title={t('profile.logout')}
                             color="gray"
                             onPress={handleLogout}
                         />
@@ -165,7 +181,7 @@ const styles = StyleSheet.create({
         marginVertical: Spacing.xxl,
         marginHorizontal: Spacing.xl,
     },
-    
+
     // Header
     profileHeader: {
         alignItems: 'center',

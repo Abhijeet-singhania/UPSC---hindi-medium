@@ -4,12 +4,12 @@ import {
     Text,
     StyleSheet,
     TouchableOpacity,
-    SafeAreaView,
     TextInput,
     KeyboardAvoidingView,
     Platform,
     Alert
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -27,10 +27,10 @@ const DailyAnswerScreen = ({ navigation }: any) => {
     const { user } = useUser();
     const [answer, setAnswer] = useState('');
     const [submitting, setSubmitting] = useState(false);
-    
+
     // UI states: 'writing' -> 'submitted_feedback' -> 'peer_review'
     const [lessonState, setLessonState] = useState<'writing' | 'submitted_feedback' | 'peer_review'>('writing');
-    
+
     // Peer Review States
     const [peerRating, setPeerRating] = useState<number | null>(null);
     const [isHighlighted, setIsHighlighted] = useState(false);
@@ -45,7 +45,7 @@ const DailyAnswerScreen = ({ navigation }: any) => {
         // Simulate network / AI grading delay
         setTimeout(() => {
             setSubmitting(false);
-            
+
             // Simple validation
             const passed = answer.trim().length > 20;
             if (passed) {
@@ -94,10 +94,10 @@ const DailyAnswerScreen = ({ navigation }: any) => {
                     <Text style={styles.closeBtnText}>✖</Text>
                 </TouchableOpacity>
                 <View style={styles.progressWrap}>
-                    <XPProgressBar 
-                        progress={lessonState === 'writing' ? 0.33 : lessonState === 'submitted_feedback' ? 0.66 : 1.0} 
-                        color={lessonState === 'peer_review' ? Colors.gold : Colors.primary} 
-                        height={16} 
+                    <XPProgressBar
+                        progress={lessonState === 'writing' ? 0.33 : lessonState === 'submitted_feedback' ? 0.66 : 1.0}
+                        color={lessonState === 'peer_review' ? Colors.gold : Colors.primary}
+                        height={16}
                     />
                 </View>
                 <View style={styles.heartsWrap}>
@@ -106,8 +106,8 @@ const DailyAnswerScreen = ({ navigation }: any) => {
                 </View>
             </View>
 
-            <KeyboardAvoidingView 
-                style={styles.flex} 
+            <KeyboardAvoidingView
+                style={styles.flex}
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
                 {/* Lesson Content Area */}
@@ -135,10 +135,10 @@ const DailyAnswerScreen = ({ navigation }: any) => {
                     {lessonState === 'peer_review' ? (
                         <Animated.View entering={FadeInUp.delay(300)} style={{ flex: 1 }}>
                             <Text style={styles.reviewInstruct}>अन्य छात्र का उत्तर पढ़ें और समीक्षा करें:</Text>
-                            
+
                             {/* Interactive Mock Canvas Box */}
-                            <TouchableOpacity 
-                                activeOpacity={0.9} 
+                            <TouchableOpacity
+                                activeOpacity={0.9}
                                 onPress={() => setIsHighlighted(!isHighlighted)}
                                 style={[styles.peerAnswerBox, isHighlighted && styles.peerAnswerBoxHighlighted]}
                             >
@@ -157,12 +157,12 @@ const DailyAnswerScreen = ({ navigation }: any) => {
                                 <Text style={styles.ratingTitle}>इस उत्तर को रेट करें</Text>
                                 <View style={styles.ratingRow}>
                                     {[1, 2, 3, 4, 5].map((star) => (
-                                        <TouchableOpacity 
-                                            key={star} 
+                                        <TouchableOpacity
+                                            key={star}
                                             activeOpacity={0.7}
                                             onPress={() => setPeerRating(star)}
                                             style={[
-                                                styles.starBtn, 
+                                                styles.starBtn,
                                                 peerRating === star ? styles.starBtnActive : null,
                                                 peerRating && peerRating > star ? styles.starBtnPast : null
                                             ]}
@@ -212,9 +212,9 @@ const DailyAnswerScreen = ({ navigation }: any) => {
                     </View>
 
                     {/* Feedback Popup (Overlaying bottom area) */}
-                    <Animated.View 
+                    <Animated.View
                         style={[
-                            styles.feedbackModal, 
+                            styles.feedbackModal,
                             styles.correctModal,
                             feedbackStyle
                         ]}
@@ -227,7 +227,7 @@ const DailyAnswerScreen = ({ navigation }: any) => {
                                 लाजवाब! शानदार उत्तर।
                             </Text>
                         </View>
-                        
+
                         <DuolingoButton
                             title="पीयर रिव्यू करें"
                             color="primary"
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
     flex: {
         flex: 1,
     },
-    
+
     // Header
     header: {
         flexDirection: 'row',

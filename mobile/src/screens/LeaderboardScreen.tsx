@@ -5,9 +5,9 @@ import {
     StyleSheet,
     FlatList,
     ActivityIndicator,
-    Image,
-    SafeAreaView
+    Image
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -16,6 +16,7 @@ import Animated, {
     withTiming,
     FadeInUp,
 } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 import { useUser } from '../context/UserContext';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../theme/theme';
@@ -23,12 +24,13 @@ import AnimatedCard from '../components/AnimatedCard';
 
 // Dummy data for visual layout testing
 const MOCK_LEAGUES = [
-    { id: 'bronze', name: 'कांस्य लीग', color: '#CD7F32' },
-    { id: 'silver', name: 'रजत लीग', color: '#C0C0C0' },
-    { id: 'gold', name: 'स्वर्ण लीग', color: Colors.gold },
+    { id: 'bronze', name: 'Bronze', color: '#CD7F32' },
+    { id: 'silver', name: 'Silver', color: '#C0C0C0' },
+    { id: 'gold', name: 'Gold', color: Colors.gold },
 ];
 
 const LeaderboardScreen = () => {
+    const { t } = useTranslation();
     const { user } = useUser();
     const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -71,8 +73,8 @@ const LeaderboardScreen = () => {
                 <View style={[styles.shield, { borderColor: Colors.goldShadow, backgroundColor: Colors.gold }]}>
                     <Text style={styles.shieldEmoji}>🛡️</Text>
                 </View>
-                <Text style={styles.leagueTitle}>स्वर्ण लीग</Text>
-                <Text style={styles.leagueSubtitle}>शीर्ष 10 अगले लीग में जाएंगे!</Text>
+                <Text style={styles.leagueTitle}>{t('leaderboard.goldLeague')}</Text>
+                <Text style={styles.leagueSubtitle}>{t('leaderboard.promotionText')}</Text>
             </View>
             <View style={styles.divider} />
         </View>
@@ -81,7 +83,7 @@ const LeaderboardScreen = () => {
     const renderItem = ({ item, index }: any) => {
         const isCurrentUser = item.id === user?.id;
         const isTop3 = index < 3;
-        
+
         let rankColor = Colors.textMuted;
         if (index === 0) rankColor = Colors.gold;
         if (index === 1) rankColor = '#C0C0C0';
@@ -109,10 +111,10 @@ const LeaderboardScreen = () => {
 
                     <View style={styles.xpContainer}>
                         <Text style={styles.xpText}>{item.reputation}</Text>
-                        <Text style={styles.xpLabel}>XP</Text>
+                        <Text style={styles.xpLabel}>{t('leaderboard.xp')}</Text>
                     </View>
                 </View>
-                
+
                 {/* Thin internal separator */}
                 {index < leaderboardData.length - 1 && <View style={styles.separator} />}
             </Animated.View>

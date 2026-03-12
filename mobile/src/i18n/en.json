@@ -1,0 +1,39 @@
+{
+    "tabs": {
+        "Home": "Home",
+        "QA": "Q&A",
+        "Leaderboard": "Leaderboard",
+        "Profile": "Profile",
+        "Features": "Features"
+    },
+    "leaderboard": {
+        "title": "Leaderboard",
+        "goldLeague": "Gold League",
+        "promotionText": "Top 10 advance to the next league!",
+        "xp": "XP"
+    },
+    "profile": {
+        "joined": "Joined: Oct 2023",
+        "daysStreak": "{{count}} Days",
+        "stats": "Stats",
+        "totalAnswers": "Total Answers",
+        "bestStreak": "Best Streak",
+        "rank": "Rank",
+        "achievements": "Achievements",
+        "badges": {
+            "perfectWeek": "Perfect Week",
+            "earlyBird": "Early Bird",
+            "scholar": "Scholar",
+            "streak30": "30 Day Streak"
+        },
+        "accountSettings": "Account Settings",
+        "name": "Name",
+        "saving": "Saving...",
+        "save": "Save",
+        "logout": "Logout",
+        "success": "Success",
+        "profileUpdated": "Profile updated!",
+        "error": "Error",
+        "updateFailed": "Failed to update profile."
+    }
+}

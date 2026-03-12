@@ -5,9 +5,9 @@ import {
     StyleSheet,
     ScrollView,
     StatusBar,
-    Image,
-    SafeAreaView
+    Image
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -67,7 +67,7 @@ const HomeScreen = ({ navigation }: any) => {
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-            
+
             {/* Top Stats Bar */}
             <View style={styles.topBar}>
                 {/* Course Indicator */}
@@ -136,9 +136,9 @@ const HomeScreen = ({ navigation }: any) => {
                                 {!isLast && (
                                     <View style={[
                                         styles.pathLine,
-                                        { 
+                                        {
                                             left: '50%',
-                                            transform: [{ translateX: -4 + node.offset / 2 }], 
+                                            transform: [{ translateX: -4 + node.offset / 2 }],
                                             backgroundColor: (node.status as any) === 'completed' ? '#FFC800' : Colors.borderLight
                                         }
                                     ]} />
@@ -185,9 +185,9 @@ const HomeScreen = ({ navigation }: any) => {
                                 {!isLast && (
                                     <View style={[
                                         styles.pathLine,
-                                        { 
+                                        {
                                             left: '50%',
-                                            transform: [{ translateX: -4 + node.offset / 2 }], 
+                                            transform: [{ translateX: -4 + node.offset / 2 }],
                                             backgroundColor: node.status === 'completed' ? '#FFC800' : Colors.borderLight
                                         }
                                     ]} />
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontVariant: ['tabular-nums'],
     },
-    
+
     // Content
     scrollContent: {
         paddingTop: Spacing.xl,

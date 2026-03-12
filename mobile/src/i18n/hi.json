@@ -1,0 +1,39 @@
+{
+    "tabs": {
+        "Home": "होम",
+        "QA": "क्यू एंड ए",
+        "Leaderboard": "लीडरबोर्ड",
+        "Profile": "प्रोफ़ाइल",
+        "Features": "फीचर्स"
+    },
+    "leaderboard": {
+        "title": "लीडरबोर्ड",
+        "goldLeague": "स्वर्ण लीग",
+        "promotionText": "शीर्ष 10 अगले लीग में जाएंगे!",
+        "xp": "XP"
+    },
+    "profile": {
+        "joined": "जुड़े: Oct 2023",
+        "daysStreak": "{{count}} दिन",
+        "stats": "आँकड़े",
+        "totalAnswers": "कुल उत्तर",
+        "bestStreak": "सर्वश्रेष्ठ स्ट्रीक",
+        "rank": "रैंक",
+        "achievements": "उपलब्धियाँ",
+        "badges": {
+            "perfectWeek": "परफेक्ट वीक",
+            "earlyBird": "अर्ली बर्ड",
+            "scholar": "विद्वान",
+            "streak30": "लगातार 30 दिन"
+        },
+        "accountSettings": "खाता सेटिंग",
+        "name": "नाम",
+        "saving": "सेव हो रहा है...",
+        "save": "सेव करें",
+        "logout": "लॉगआउट",
+        "success": "सफलता",
+        "profileUpdated": "प्रोफ़ाइल अपडेट की गई!",
+        "error": "त्रुटि",
+        "updateFailed": "प्रोफ़ाइल अपडेट करने में विफल।"
+    }
+}
