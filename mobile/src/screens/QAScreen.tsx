@@ -1,141 +1,165 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
     View,
     Text,
     FlatList,
     StyleSheet,
-    RefreshControl,
-    ActivityIndicator,
+    TouchableOpacity,
+    ScrollView,
 } from 'react-native';
-import Animated, { FadeInRight } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import api from '../services/api';
-import { Question } from '../types';
-import {
-    Colors,
-    Typography,
-    Spacing,
-    BorderRadius,
-} from '../theme/theme';
-import AnimatedCard from '../components/AnimatedCard';
-import DuolingoButton from '../components/DuolingoButton';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../theme/theme';
+
+const BLUE_HEADER = '#1DA1F2'; // Vivid blue header
+
+const TABS = ['सभी', 'GS-1', 'GS-2', 'GS-3', 'GS-4', 'CSAT'];
+
+const MOCK_QUESTIONS = [
+    {
+        id: '1',
+        initials: 'RK',
+        name: 'Ramesh Kumar',
+        time: '2 घंटे पहले • पटना',
+        tag: 'राजव्यवस्था',
+        tagColor: '#E1F5FE',
+        tagTextColor: '#0288D1',
+        avatarColor: '#FF9800',
+        title: 'संसदीय विशेषाधिकार क्या है? इसे सामान्य नागरिकों के मौलिक अधिकारों से किस प्रकार अलग किया जाता है?',
+        upvotes: 32,
+        answers: 14,
+    },
+    {
+        id: '2',
+        initials: 'PS',
+        name: 'Priya Singh',
+        time: '5 घंटे पहले • लखनऊ',
+        tag: 'इतिहास',
+        tagColor: '#FFF3E0',
+        tagTextColor: '#E65100',
+        avatarColor: '#03A9F4',
+        title: '1857 के विद्रोह के आर्थिक कारणों पर संक्षिप्त चर्चा करें। ब्रिटिश नीतियों ने इसे किस प्रकार प्रभावित किया?',
+        upvotes: 58,
+        answers: 27,
+    },
+    {
+        id: '3',
+        initials: 'AV',
+        name: 'Ankit Verma',
+        time: '1 दिन पहले • जयपुर',
+        tag: 'भूगोल',
+        tagColor: '#E8F5E9',
+        tagTextColor: '#2E7D32',
+        avatarColor: '#4CAF50',
+        title: 'मानसून की उत्पत्ति और उसके भारतीय कृषि पर प्रभाव को विस्तारपूर्वक समझाइए।',
+        upvotes: 91,
+        answers: 43,
+    },
+];
 
 const QAScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
-    const [questions, setQuestions] = useState<Question[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
+    const [selectedTab, setSelectedTab] = useState('सभी');
 
-    const fetchQuestions = useCallback(async () => {
-        try {
-            const data = await api.getQuestions() as Question[];
-            setQuestions(data);
-        } catch (error) {
-            console.error('Failed to fetch questions:', error);
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        fetchQuestions();
-    }, [fetchQuestions]);
-
-    const onRefresh = () => {
-        setRefreshing(true);
-        fetchQuestions();
-    };
-
-    const renderQuestion = ({ item, index }: { item: Question; index: number }) => (
-        <Animated.View entering={FadeInRight.delay(index * 60).springify().damping(15)}>
-            <AnimatedCard
-                style={styles.cardSpacing}
-                onPress={() => navigation.navigate('QuestionDetail', { questionId: item.id })}
-                // Add a thicker left border logic for "Solved"
-                colorScheme={
-                    item.is_solved
-                        ? { border: Colors.primary, borderBottom: '#58A700', bg: '#F2FCE7' }
-                        : { border: Colors.borderLight, borderBottom: Colors.borderMuted, bg: Colors.white }
-                }
-            >
-                <View style={styles.questionHeader}>
-                    <Text style={[styles.questionTitle, item.is_solved && { color: Colors.primary }]} numberOfLines={2}>
-                        {item.title}
-                    </Text>
-                    {item.is_solved && (
-                        <View style={styles.solvedBadge}>
-                            <Text style={styles.solvedText}>✓</Text>
-                        </View>
-                    )}
-                </View>
-
-                <Text style={styles.questionContent} numberOfLines={2}>
-                    {item.content}
-                </Text>
-
-                <View style={styles.questionMeta}>
-                    <View style={styles.tags}>
-                        {item.tags.slice(0, 2).map(tag => (
-                            <View key={tag} style={styles.tag}>
-                                <Text style={styles.tagText}>{tag}</Text>
-                            </View>
-                        ))}
+    const renderQuestion = ({ item }: { item: typeof MOCK_QUESTIONS[0] }) => (
+        <View style={styles.card}>
+            {/* Card Header (User Info + Tag) */}
+            <View style={styles.cardHeader}>
+                <View style={styles.userInfoRow}>
+                    <View style={[styles.avatar, { backgroundColor: item.avatarColor }]}>
+                        <Text style={styles.avatarInitials}>{item.initials}</Text>
                     </View>
-                    <View style={styles.stats}>
-                        <View style={styles.statItem}>
-                            <Text style={styles.statIcon}>👍</Text>
-                            <Text style={styles.statText}>{item.upvotes}</Text>
-                        </View>
-                        <View style={styles.statItem}>
-                            <Text style={styles.statIcon}>💬</Text>
-                            <Text style={styles.statText}>{item.answer_count}</Text>
-                        </View>
+                    <View>
+                        <Text style={styles.userName}>{item.name}</Text>
+                        <Text style={styles.userTime}>{item.time}</Text>
                     </View>
                 </View>
-            </AnimatedCard>
-        </Animated.View>
-    );
-
-    if (loading) {
-        return (
-            <View style={styles.centered}>
-                <ActivityIndicator size="large" color={Colors.secondary} />
+                <View style={[styles.tagPill, { backgroundColor: item.tagColor }]}>
+                    <Text style={[styles.tagText, { color: item.tagTextColor }]}>{item.tag}</Text>
+                </View>
             </View>
-        );
-    }
+
+            {/* Question Title */}
+            <Text style={styles.questionTitle}>
+                {item.title}
+            </Text>
+
+            {/* Action Buttons */}
+            <View style={styles.actionsRow}>
+                <TouchableOpacity style={styles.actionButton}>
+                    <Text style={styles.actionIcon}>👍</Text>
+                    <Text style={[styles.actionText, { color: '#2E7D32' }]}>{item.upvotes}</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.actionButton}>
+                    <Text style={styles.actionIcon}>💬</Text>
+                    <Text style={[styles.actionText, { color: '#0288D1' }]}>{item.answers} उत्तर</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.actionButton}>
+                    <Text style={styles.actionIcon}>🔖</Text>
+                    <Text style={[styles.actionText, { color: '#E65100' }]}>सहेजें</Text>
+                </TouchableOpacity>
+            </View>
+        </View>
+    );
 
     return (
         <View style={styles.container}>
-            {/* Header */}
-            <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-                <Text style={styles.headerTitle}>चर्चा मंच</Text>
+            {/* Header Area */}
+            <View style={[styles.headerContainer, { paddingTop: insets.top + 20 }]}>
+                <View style={styles.headerTextRow}>
+                    <Text style={styles.headerTitle}>Q&A फ़ीड</Text>
+                    <Text style={styles.headerTitleEmoji}> 💬</Text>
+                </View>
+                <Text style={styles.headerSubtitle}>समुदाय के प्रश्न और उत्तर</Text>
+
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.tabsScrollContent}
+                    style={styles.tabsScrollView}
+                >
+                    {TABS.map(tab => {
+                        const isSelected = selectedTab === tab;
+                        return (
+                            <TouchableOpacity
+                                key={tab}
+                                style={[styles.tabButton, isSelected && styles.tabButtonActive]}
+                                onPress={() => setSelectedTab(tab)}
+                            >
+                                <Text style={[styles.tabText, isSelected && styles.tabTextActive]}>
+                                    {tab}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </ScrollView>
             </View>
 
+            {/* Main Content Area */}
             <FlatList
-                data={questions}
+                data={MOCK_QUESTIONS}
                 renderItem={renderQuestion}
-                keyExtractor={item => item.id.toString()}
-                contentContainerStyle={styles.list}
+                keyExtractor={item => item.id}
+                contentContainerStyle={styles.listContent}
                 showsVerticalScrollIndicator={false}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={refreshing}
-                        onRefresh={onRefresh}
-                        tintColor={Colors.secondary}
-                    />
-                }
+                ListHeaderComponent={() => (
+                    <TouchableOpacity
+                        style={styles.askButtonContainer}
+                        activeOpacity={0.9}
+                        onPress={() => navigation.navigate('AskQuestion')}
+                    >
+                        <View style={styles.askButtonRow}>
+                            <Text style={styles.askIcon}>✏️</Text>
+                            <View style={styles.askTexts}>
+                                <Text style={styles.askTitle}>नया प्रश्न पूछें</Text>
+                                <Text style={styles.askSubtitle}>समुदाय से जुड़ें • +10 XP मिलेगा</Text>
+                            </View>
+                            <Text style={styles.askArrow}>→</Text>
+                        </View>
+                    </TouchableOpacity>
+                )}
             />
-
-            {/* Sticky Ask Button at the bottom */}
-            <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 10 }]}>
-                <DuolingoButton
-                    title="नया प्रश्न पूछें"
-                    color="secondary"
-                    icon={<Text style={{ fontSize: 18 }}>💬</Text>}
-                    onPress={() => navigation.navigate('AskQuestion')}
-                />
-            </View>
         </View>
     );
 };
@@ -143,114 +167,187 @@ const QAScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.backgroundOffset, // Light gray so white cards pop
+        backgroundColor: '#F5F7FA',
     },
-    centered: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: Colors.backgroundOffset,
-    },
-    header: {
+
+    // Header Styles
+    headerContainer: {
+        backgroundColor: BLUE_HEADER,
         paddingHorizontal: Spacing.xl,
-        paddingBottom: Spacing.lg,
-        backgroundColor: Colors.white,
-        borderBottomWidth: 2,
-        borderBottomColor: Colors.borderLight,
-        zIndex: 10,
+        paddingBottom: Spacing.md,
+    },
+    headerTextRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     headerTitle: {
-        ...Typography.h1,
-        color: Colors.textMain,
+        ...Typography.hero,
+        color: Colors.white,
+        marginBottom: 2,
     },
-    list: {
+    headerTitleEmoji: {
+        fontSize: 28,
+        marginLeft: 4,
+    },
+    headerSubtitle: {
+        ...Typography.body,
+        color: 'rgba(255,255,255,0.85)',
+        marginBottom: Spacing.xl,
+    },
+
+    // Horizontal Tabs
+    tabsScrollView: {
+        marginHorizontal: -Spacing.xl, // Allow ScrollView to go edge to edge but maintain padding
+    },
+    tabsScrollContent: {
+        paddingHorizontal: Spacing.xl,
+        gap: 8,
+        paddingBottom: 4,
+    },
+    tabButton: {
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: BorderRadius.round,
+    },
+    tabButtonActive: {
+        backgroundColor: Colors.white,
+    },
+    tabText: {
+        ...Typography.bodyBold,
+        color: Colors.white,
+    },
+    tabTextActive: {
+        color: BLUE_HEADER,
+    },
+
+    // List Styles
+    listContent: {
+        padding: Spacing.xl,
+        paddingBottom: 100, // Space for the bottom tab bar
+    },
+
+    // Ask Button Banner
+    askButtonContainer: {
+        backgroundColor: BLUE_HEADER,
+        borderRadius: BorderRadius.xl,
         padding: Spacing.lg,
-        paddingBottom: 100, // Space for sticky bottom bar
+        marginBottom: Spacing.xl,
+        ...Shadows.card3D,
+        borderColor: '#1988cc',
+        borderBottomWidth: 4,
+        elevation: 4,
     },
-    cardSpacing: {
-        marginBottom: 16,
+    askButtonRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
-    questionHeader: {
+    askIcon: {
+        fontSize: 32,
+        marginRight: 12,
+        transform: [{ rotate: '-45deg' }], // Match the tipped pencil look
+    },
+    askTexts: {
+        flex: 1,
+    },
+    askTitle: {
+        ...Typography.h3,
+        color: Colors.white,
+        marginBottom: 2,
+    },
+    askSubtitle: {
+        ...Typography.small,
+        color: 'rgba(255,255,255,0.85)',
+        fontWeight: 'bold',
+    },
+    askArrow: {
+        color: Colors.white,
+        fontSize: 24,
+    },
+
+    // Cards
+    card: {
+        backgroundColor: Colors.white,
+        borderRadius: BorderRadius.xl,
+        padding: Spacing.lg,
+        marginBottom: Spacing.lg,
+        ...Shadows.card3D,
+        borderColor: '#F0F0F0',
+        borderBottomWidth: 3,
+        elevation: 2,
+    },
+    cardHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: 8,
+        alignItems: 'center',
+        marginBottom: Spacing.md,
     },
-    questionTitle: {
+    userInfoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
         flex: 1,
-        ...Typography.bodyBold,
-        marginRight: 8,
-        lineHeight: 22,
     },
-    solvedBadge: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        backgroundColor: Colors.primary,
+    avatar: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
         justifyContent: 'center',
         alignItems: 'center',
+        marginRight: 10,
     },
-    solvedText: {
-        color: '#FFFFFF',
-        fontWeight: '900',
-        fontSize: 14,
+    avatarInitials: {
+        color: Colors.white,
+        fontWeight: 'bold',
+        fontSize: 16,
     },
-    questionContent: {
-        ...Typography.body,
-        color: Colors.textMuted,
-        lineHeight: 20,
-        marginBottom: 12,
+    userName: {
+        ...Typography.bodyBold,
+        color: '#212121',
+        fontSize: 15,
     },
-    questionMeta: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+    userTime: {
+        ...Typography.small,
+        color: '#8E9AAB',
+        fontSize: 11,
     },
-    tags: {
-        flexDirection: 'row',
-        gap: 6,
-        flex: 1,
-        flexWrap: 'wrap',
-    },
-    tag: {
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: BorderRadius.sm,
-        backgroundColor: '#E5F6FF', // light blue
-        borderWidth: 1,
-        borderColor: '#B0E0FF',
+    tagPill: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: BorderRadius.round,
+        marginLeft: 8,
     },
     tagText: {
         ...Typography.small,
-        color: Colors.secondary,
-        fontWeight: '700',
+        fontWeight: 'bold',
+        fontSize: 11,
     },
-    stats: {
+    questionTitle: {
+        ...Typography.bodyBold,
+        color: '#212121',
+        fontSize: 15,
+        lineHeight: 22,
+        marginBottom: Spacing.lg,
+    },
+    actionsRow: {
         flexDirection: 'row',
-        gap: 14,
+        gap: 12,
     },
-    statItem: {
+    actionButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
+        backgroundColor: '#F5F7FA',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: BorderRadius.round,
+        gap: 6,
     },
-    statIcon: {
+    actionIcon: {
         fontSize: 16,
     },
-    statText: {
+    actionText: {
         ...Typography.bodyBold,
-        color: Colors.textMuted,
+        fontSize: 13,
     },
-    bottomBar: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        padding: Spacing.lg,
-        backgroundColor: Colors.white,
-        borderTopWidth: 2,
-        borderTopColor: Colors.borderLight,
-    }
 });
 
 export default QAScreen;

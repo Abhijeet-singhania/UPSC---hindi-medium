@@ -1,256 +1,412 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     FlatList,
-    ActivityIndicator,
-    Image
+    TouchableOpacity,
+    Dimensions
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Animated, {
-    useSharedValue,
-    useAnimatedStyle,
-    withRepeat,
-    withSequence,
-    withTiming,
-    FadeInUp,
-} from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
-import api from '../services/api';
-import { useUser } from '../context/UserContext';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../theme/theme';
-import AnimatedCard from '../components/AnimatedCard';
 
-// Dummy data for visual layout testing
-const MOCK_LEAGUES = [
-    { id: 'bronze', name: 'Bronze', color: '#CD7F32' },
-    { id: 'silver', name: 'Silver', color: '#C0C0C0' },
-    { id: 'gold', name: 'Gold', color: Colors.gold },
+const { width } = Dimensions.get('window');
+
+const ORANGE_BG = '#FFA000'; // matching the gold/orange header
+const LIGHT_ORANGE = '#FFF8E1'; // matching current user bg
+
+// Dummy data mirroring the image
+const PODIUM_DATA = [
+    { rank: 2, name: 'Priya S.', initials: 'PS', xp: '3,840', color: '#03A9F4', medal: '🥈' },
+    { rank: 1, name: 'Amit K.', initials: 'AK', xp: '5,210', color: '#FFC107', medal: '👑' },
+    { rank: 3, name: 'Neha M.', initials: 'NM', xp: '3,120', color: '#9C27B0', medal: '🥉' },
+];
+
+const CURRENT_USER = {
+    rank: 7,
+    name: 'आप (Rahul K.)',
+    initials: 'RK',
+    location: 'पटना, बिहार',
+    xp: '1,240',
+    isCurrent: true
+};
+
+const LIST_DATA = [
+    { rank: 4, name: 'Vivek Tiwari', initials: 'VT', location: 'इलाहाबाद, UP', xp: '2,980', color: '#388E3C' },
+    { rank: 5, name: 'Sonal Kumari', initials: 'SK', location: 'पटना, बिहार', xp: '2,750', color: '#F44336' },
+    { rank: 6, name: 'Manish Rana', initials: 'MR', location: 'जयपुर, राजस्थान', xp: '1,980', color: '#424242' },
+    { rank: 8, name: 'Deepak Kumar', initials: 'DK', location: 'वाराणसी, UP', xp: '1,100', color: '#9C27B0' },
 ];
 
 const LeaderboardScreen = () => {
     const { t } = useTranslation();
-    const { user } = useUser();
-    const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    // Pulse animation for the current user's row
-    const highlightOpacity = useSharedValue(0.1);
-
-    useEffect(() => {
-        const fetchLeaderboard = async () => {
-            try {
-                const data = await api.getLeaderboard('reputation', 'weekly');
-                setLeaderboardData(data as any[]);
-            } catch (error) {
-                console.error('Failed to load leaderboard:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchLeaderboard();
-
-        highlightOpacity.value = withRepeat(
-            withSequence(
-                withTiming(0.4, { duration: 1000 }),
-                withTiming(0.1, { duration: 1000 })
-            ),
-            -1,
-            true
-        );
-    }, []);
-
-    const highlightStyle = useAnimatedStyle(() => ({
-        backgroundColor: `rgba(28, 176, 246, ${highlightOpacity.value})`, // Pulse secondary color
-    }));
+    const [selectedTab, setSelectedTab] = useState('इस सप्ताह');
+    const tabs = ['इस सप्ताह', 'इस माह', 'सर्वकाल'];
 
     const renderHeader = () => (
         <View style={styles.headerContainer}>
-            {/* The League Shield Area */}
-            <View style={styles.shieldContainer}>
-                <View style={[styles.shield, { borderColor: Colors.goldShadow, backgroundColor: Colors.gold }]}>
-                    <Text style={styles.shieldEmoji}>🛡️</Text>
+            <View style={styles.headerTop}>
+                <Text style={styles.headerTitle}>Leaderboard 🏆</Text>
+                <Text style={styles.headerSubtitle}>इस सप्ताह के सर्वश्रेष्ठ अभ्यासकर्ता</Text>
+                
+                {/* Tabs */}
+                <View style={styles.tabsRow}>
+                    {tabs.map((tab) => {
+                        const isSelected = selectedTab === tab;
+                        return (
+                            <TouchableOpacity
+                                key={tab}
+                                style={[styles.tabButton, isSelected && styles.tabButtonActive]}
+                                onPress={() => setSelectedTab(tab)}
+                            >
+                                <Text style={[styles.tabText, isSelected && styles.tabTextActive]}>
+                                    {tab}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
                 </View>
-                <Text style={styles.leagueTitle}>{t('leaderboard.goldLeague')}</Text>
-                <Text style={styles.leagueSubtitle}>{t('leaderboard.promotionText')}</Text>
             </View>
-            <View style={styles.divider} />
+
+            {/* Podium Card */}
+            <View style={styles.podiumCard}>
+                <View style={styles.podiumContainer}>
+                    {PODIUM_DATA.map((item, index) => {
+                        const isFirst = item.rank === 1;
+                        return (
+                            <View key={item.rank} style={[styles.podiumColumn, isFirst && styles.podiumColumnFirst]}>
+                                <Text style={styles.medalEmoji}>{item.medal}</Text>
+                                <View style={[
+                                    styles.podiumAvatar, 
+                                    { borderColor: item.color },
+                                    isFirst && styles.podiumAvatarFirst
+                                ]}>
+                                    <Text style={[styles.podiumInitials, isFirst && { fontSize: 24 }]}>{item.initials}</Text>
+                                </View>
+                                <Text style={styles.podiumName}>{item.name}</Text>
+                                <Text style={styles.podiumXP}>{item.xp} XP</Text>
+                                
+                                <View style={[
+                                    styles.podiumBlock, 
+                                    { backgroundColor: item.color },
+                                    isFirst && styles.podiumBlockFirst,
+                                    item.rank === 2 && styles.podiumBlockSecond,
+                                    item.rank === 3 && styles.podiumBlockThird,
+                                ]}>
+                                    <Text style={styles.podiumRankText}>{item.rank}</Text>
+                                </View>
+                            </View>
+                        );
+                    })}
+                </View>
+            </View>
         </View>
     );
 
-    const renderItem = ({ item, index }: any) => {
-        const isCurrentUser = item.id === user?.id;
-        const isTop3 = index < 3;
-
-        let rankColor = Colors.textMuted;
-        if (index === 0) rankColor = Colors.gold;
-        if (index === 1) rankColor = '#C0C0C0';
-        if (index === 2) rankColor = '#CD7F32';
-
-        return (
-            <Animated.View entering={FadeInUp.delay(index * 50).springify().damping(15)}>
-                <View style={[
-                    styles.rowContainer,
-                    isCurrentUser && styles.currentUserRow
-                ]}>
-                    <Text style={[styles.rankText, { color: rankColor }, isTop3 && { fontSize: 24, fontWeight: '900' }]}>
-                        {index + 1}
-                    </Text>
-
-                    <View style={styles.avatarCircle}>
-                        <Text style={styles.avatarEmoji}>🧑‍🎓</Text>
-                    </View>
-
-                    <View style={styles.userInfo}>
-                        <Text style={[styles.userName, isCurrentUser && { color: Colors.secondary }]}>
-                            {item.name || `User${item.id}`}
-                        </Text>
-                    </View>
-
-                    <View style={styles.xpContainer}>
-                        <Text style={styles.xpText}>{item.reputation}</Text>
-                        <Text style={styles.xpLabel}>{t('leaderboard.xp')}</Text>
-                    </View>
+    const renderCurrentUserHighlight = () => (
+        <View style={styles.highlightWrapper}>
+            <View style={styles.currentUserCard}>
+                <Text style={styles.highlightRank}>{CURRENT_USER.rank}</Text>
+                <View style={styles.highlightAvatar}>
+                    <Text style={styles.highlightInitials}>{CURRENT_USER.initials}</Text>
                 </View>
+                <View style={styles.listUserInfo}>
+                    <Text style={[styles.listName, { color: '#212121' }]}>{CURRENT_USER.name}</Text>
+                    <Text style={styles.listLocation}>{CURRENT_USER.location}</Text>
+                </View>
+                <Text style={styles.highlightXP}>{CURRENT_USER.xp} XP</Text>
+            </View>
 
-                {/* Thin internal separator */}
-                {index < leaderboardData.length - 1 && <View style={styles.separator} />}
-            </Animated.View>
+            <View style={styles.dividerRow}>
+                <Text style={styles.dividerDashes}>{"================="}</Text>
+                <Text style={styles.dividerText}>अन्य प्रतिभागी</Text>
+                <Text style={styles.dividerDashes}>{"================="}</Text>
+            </View>
+        </View>
+    );
+
+    const renderItem = ({ item }: any) => {
+        return (
+            <View style={styles.listCard}>
+                <Text style={styles.listRank}>{item.rank}</Text>
+                <View style={[styles.listAvatar, { backgroundColor: item.color }]}>
+                    <Text style={styles.listInitials}>{item.initials}</Text>
+                </View>
+                <View style={styles.listUserInfo}>
+                    <Text style={styles.listName}>{item.name}</Text>
+                    <Text style={styles.listLocation}>{item.location}</Text>
+                </View>
+                <Text style={styles.listXP}>{item.xp} XP</Text>
+            </View>
         );
     };
 
-    if (loading) {
-        return (
-            <View style={styles.centered}>
-                <ActivityIndicator size="large" color={Colors.secondary} />
-            </View>
-        );
-    }
-
     return (
-        <SafeAreaView style={styles.container}>
-            {renderHeader()}
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
             <FlatList
-                data={leaderboardData}
+                data={LIST_DATA}
                 renderItem={renderItem}
-                keyExtractor={(item) => item.id.toString()}
+                keyExtractor={(item) => item.rank.toString()}
                 contentContainerStyle={styles.listContent}
                 showsVerticalScrollIndicator={false}
+                ListHeaderComponent={() => (
+                    <>
+                        {renderHeader()}
+                        {renderCurrentUserHighlight()}
+                    </>
+                )}
             />
         </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    safeArea: {
         flex: 1,
-        backgroundColor: Colors.white,
-    },
-    centered: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    headerContainer: {
-        paddingTop: Spacing.xxl,
-        alignItems: 'center',
-    },
-    shieldContainer: {
-        alignItems: 'center',
-        marginBottom: Spacing.xl,
-    },
-    shield: {
-        width: 100,
-        height: 120,
-        borderRadius: 20,
-        // Shield specific shaping trick
-        borderBottomLeftRadius: 50,
-        borderBottomRightRadius: 50,
-        borderWidth: 4,
-        borderBottomWidth: 10,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: Spacing.lg,
-    },
-    shieldEmoji: {
-        fontSize: 48,
-    },
-    leagueTitle: {
-        ...Typography.h1,
-        color: Colors.gold,
-        marginBottom: 4,
-    },
-    leagueSubtitle: {
-        ...Typography.bodyBold,
-        color: Colors.textMuted,
-    },
-    divider: {
-        height: 2,
-        backgroundColor: Colors.borderLight,
-        width: '100%',
+        backgroundColor: '#F5F7FA', // Matches bottom area
     },
     listContent: {
-        paddingHorizontal: Spacing.lg,
         paddingBottom: 100, // Space for tab bar
     },
-    rowContainer: {
+
+    // Header styling
+    headerContainer: {
+        marginBottom: Spacing.xl,
+    },
+    headerTop: {
+        backgroundColor: ORANGE_BG,
+        paddingHorizontal: Spacing.xl,
+        paddingTop: 20,
+        paddingBottom: 60, // Space for the overlapping podium card
+    },
+    headerTitle: {
+        ...Typography.hero,
+        color: Colors.white,
+        marginBottom: 4,
+    },
+    headerSubtitle: {
+        ...Typography.bodyBold,
+        color: 'rgba(255, 255, 255, 0.9)',
+        marginBottom: Spacing.lg,
+    },
+    
+    // Tabs
+    tabsRow: {
+        flexDirection: 'row',
+        gap: 8,
+    },
+    tabButton: {
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: BorderRadius.round,
+    },
+    tabButtonActive: {
+        backgroundColor: Colors.white,
+    },
+    tabText: {
+        ...Typography.bodyBold,
+        color: Colors.white,
+    },
+    tabTextActive: {
+        color: ORANGE_BG,
+    },
+
+    // Podium Card
+    podiumCard: {
+        backgroundColor: Colors.white,
+        borderRadius: 24,
+        marginHorizontal: Spacing.xl,
+        marginTop: -40, // Pull it up into the orange header
+        paddingTop: Spacing.xl,
+        paddingHorizontal: Spacing.sm,
+        ...Shadows.card3D,
+        borderColor: '#F0F0F0',
+        elevation: 4,
+    },
+    podiumContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'flex-end',
+        height: 240, // Fixed height for alignment
+    },
+    podiumColumn: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    podiumColumnFirst: {
+        zIndex: 2, // Ensure 1st place is on top
+    },
+    medalEmoji: {
+        fontSize: 24,
+        marginBottom: 4,
+    },
+    podiumAvatar: {
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        borderWidth: 3,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#03A9F4', // Fallback
+        marginBottom: 8,
+    },
+    podiumAvatarFirst: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: '#FFC107',
+        borderWidth: 4,
+    },
+    podiumInitials: {
+        color: Colors.white,
+        fontWeight: 'bold',
+        fontSize: 18,
+    },
+    podiumName: {
+        ...Typography.bodyBold,
+        fontSize: 13,
+        textAlign: 'center',
+        color: '#212121',
+    },
+    podiumXP: {
+        ...Typography.small,
+        color: '#8E9AAB',
+        marginBottom: 12,
+    },
+    podiumBlock: {
+        width: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderTopLeftRadius: 8,
+        borderTopRightRadius: 8,
+    },
+    podiumBlockFirst: {
+        height: 100,
+    },
+    podiumBlockSecond: {
+        height: 60,
+    },
+    podiumBlockThird: {
+        height: 50,
+    },
+    podiumRankText: {
+        ...Typography.h2,
+        color: Colors.white,
+    },
+
+    // Current User Row
+    highlightWrapper: {
+        paddingHorizontal: Spacing.xl,
+        marginBottom: Spacing.xl,
+    },
+    currentUserCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 12,
-        paddingHorizontal: 8,
-        borderRadius: BorderRadius.lg,
+        backgroundColor: LIGHT_ORANGE,
+        ...Shadows.card3D,
+        borderColor: ORANGE_BG,
+        borderWidth: 1.5,
+        borderRadius: BorderRadius.xl,
+        paddingVertical: 14,
+        paddingHorizontal: Spacing.md,
+        borderBottomColor: ORANGE_BG,
     },
-    currentUserRow: {
-        backgroundColor: 'rgba(28, 176, 246, 0.1)', // Light blue tint
-    },
-    separator: {
-        height: 2,
-        backgroundColor: Colors.borderLight,
-        marginLeft: 50, // Indent past rank
-        marginRight: 10,
-    },
-    rankText: {
-        ...Typography.h2,
-        width: 40,
+    highlightRank: {
+        ...Typography.h3,
+        color: ORANGE_BG,
+        width: 30,
         textAlign: 'center',
-        fontVariant: ['tabular-nums'],
+        marginRight: 8,
     },
-    avatarCircle: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        backgroundColor: Colors.backgroundOffset,
+    highlightAvatar: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: ORANGE_BG,
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 12,
-        borderWidth: 2,
-        borderColor: Colors.borderLight,
     },
-    avatarEmoji: {
-        fontSize: 24,
+    highlightInitials: {
+        color: Colors.white,
+        fontWeight: 'bold',
+        fontSize: 16,
     },
-    userInfo: {
+    highlightXP: {
+        ...Typography.bodyBold,
+        color: ORANGE_BG,
+    },
+
+    // Divider
+    dividerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 24,
+    },
+    dividerDashes: {
+        color: '#B0BEC5',
+        letterSpacing: 2,
+        fontSize: 10,
+    },
+    dividerText: {
+        ...Typography.small,
+        color: '#8E9AAB',
+        marginHorizontal: 8,
+    },
+
+    // Standard List Items
+    listCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: Colors.white,
+        borderRadius: BorderRadius.xl,
+        paddingVertical: 14,
+        paddingHorizontal: Spacing.md,
+        marginHorizontal: Spacing.xl,
+        marginBottom: 12,
+        ...Shadows.card3D,
+        borderColor: '#F0F0F0',
+        elevation: 1,
+    },
+    listRank: {
+        ...Typography.h3,
+        color: '#B0BEC5',
+        width: 30,
+        textAlign: 'center',
+        marginRight: 8,
+    },
+    listAvatar: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    listInitials: {
+        color: Colors.white,
+        fontWeight: 'bold',
+        fontSize: 16,
+    },
+    listUserInfo: {
         flex: 1,
     },
-    userName: {
+    listName: {
         ...Typography.bodyBold,
-        fontSize: 18,
+        color: '#212121',
+        fontSize: 15,
     },
-    xpContainer: {
-        alignItems: 'flex-end',
+    listLocation: {
+        ...Typography.caption,
+        fontSize: 11,
     },
-    xpText: {
+    listXP: {
         ...Typography.bodyBold,
-        fontSize: 18,
-        color: Colors.textMain,
-        fontVariant: ['tabular-nums'],
+        color: ORANGE_BG,
     },
-    xpLabel: {
-        ...Typography.small,
-        color: Colors.textMuted,
-    }
 });
 
 export default LeaderboardScreen;

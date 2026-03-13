@@ -1,24 +1,15 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity, StyleSheet, Text, Modal } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Text, Modal, Platform } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
     withTiming,
-    FadeInRight,
-    FadeOutRight,
 } from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors, Typography, Spacing, BorderRadius } from '../theme/theme';
-
-// Tab icons mapping
-const ICONS: Record<string, string> = {
-    Home: '🏠',
-    QA: '💬',
-    Leaderboard: '🛡️',
-    Profile: '👧'
-};
+import { Colors, Typography, Spacing, Shadows, BorderRadius } from '../theme/theme';
+import { Home, MessageSquare, PenTool, BarChart2, User, BookOpen } from 'lucide-react-native';
 
 const AnimatedTabBar = ({ state, descriptors, navigation }: BottomTabBarProps) => {
     const insets = useSafeAreaInsets();
@@ -27,7 +18,23 @@ const AnimatedTabBar = ({ state, descriptors, navigation }: BottomTabBarProps) =
 
     const tabs = state.routes.map((route, index) => {
         const { options } = descriptors[route.key];
-        const label = t(`tabs.${route.name}`, { defaultValue: route.name });
+
+        let label = t(`tabs.${route.name}`, { defaultValue: route.name });
+        let IconComponent = Home;
+
+        if (route.name === 'Home') {
+            label = 'होम';
+            IconComponent = Home;
+        } else if (route.name === 'QA') {
+            label = 'Q&A';
+            IconComponent = MessageSquare;
+        } else if (route.name === 'Leaderboard') {
+            label = 'रैंकिंग';
+            IconComponent = BarChart2;
+        } else if (route.name === 'Profile') {
+            label = 'प्रोफाइल';
+            IconComponent = User;
+        }
 
         const isFocused = state.index === index;
 
@@ -39,70 +46,64 @@ const AnimatedTabBar = ({ state, descriptors, navigation }: BottomTabBarProps) =
             });
 
             if (!isFocused && !event.defaultPrevented) {
-                // If they navigate away, close the menu
                 setIsFeaturesMenuOpen(false);
                 navigation.navigate(route.name);
             }
         };
 
-        const icon = ICONS[route.name] || '📌';
-
         return (
             <TabItem
                 key={route.key}
                 isFocused={isFocused && !isFeaturesMenuOpen}
-                icon={icon}
-                label={label as string}
+                IconComponent={IconComponent}
+                label={label}
                 onPress={onPress}
             />
         );
     });
 
     const featuresButton = (
-        <TabItem
-            key="features"
-            isFocused={isFeaturesMenuOpen}
-            icon="✨"
-            label={t('tabs.Features', { defaultValue: 'Features' })}
-            onPress={() => setIsFeaturesMenuOpen(!isFeaturesMenuOpen)}
-        />
+        <View key="features" style={styles.centerButtonWrapper}>
+            <TouchableOpacity
+                style={styles.centerButton}
+                activeOpacity={0.8}
+                onPress={() => setIsFeaturesMenuOpen(!isFeaturesMenuOpen)}
+            >
+                <PenTool color={Colors.white} size={24} />
+            </TouchableOpacity>
+            <Text style={styles.centerLabel}>{t('tabs.Features', { defaultValue: 'Features' })}</Text>
+        </View>
     );
 
-    // Insert features button right in the middle (index 2 out of 4)
     tabs.splice(2, 0, featuresButton);
 
     return (
-        <View style={[styles.containerWrapper, { paddingBottom: insets.bottom > 0 ? insets.bottom : 8 }]}>
-            <View style={styles.container}>
+        <View style={styles.containerWrapper}>
+            <View style={[styles.container, { paddingBottom: insets.bottom > 0 ? insets.bottom : 10 }]}>
                 {tabs}
             </View>
 
             <Modal visible={isFeaturesMenuOpen} transparent animationType="fade" onRequestClose={() => setIsFeaturesMenuOpen(false)}>
                 <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsFeaturesMenuOpen(false)}>
-
-                    {/* The semi-circle background docked to the bottom */}
-                    <Animated.View style={[styles.radialBgContainer]} />
-
-                    <View style={[styles.radialMenuCenter, { bottom: 40 }]}>
-                        {/* 🦉 Silent Library Button */}
+                    <Animated.View style={styles.radialBgContainer} />
+                    <View style={[styles.radialMenuCenter, { bottom: insets.bottom + 80 }]}>
                         <FeaturesMenuItem
-                            icon="🦉"
+                            IconComponent={BookOpen}
                             label="Silent Library"
-                            translateY={-120}
+                            translateY={-90}
                             onPress={() => {
                                 setIsFeaturesMenuOpen(false);
                                 navigation.navigate('SilentLibrary');
                             }}
                         />
                     </View>
-
                 </TouchableOpacity>
             </Modal>
         </View>
     );
 };
 
-const FeaturesMenuItem = ({ icon, label, onPress, translateY = -100 }: any) => {
+const FeaturesMenuItem = ({ IconComponent, label, onPress, translateY = -100 }: any) => {
     const progress = useSharedValue(0);
 
     React.useEffect(() => {
@@ -126,7 +127,7 @@ const FeaturesMenuItem = ({ icon, label, onPress, translateY = -100 }: any) => {
                 onPress={onPress}
                 activeOpacity={0.8}
             >
-                <Text style={styles.featureIcon}>{icon}</Text>
+                <IconComponent color={Colors.secondary} size={24} />
             </TouchableOpacity>
             <View style={styles.featureLabelContainer}>
                 <Text style={styles.featureLabel}>{label}</Text>
@@ -135,118 +136,146 @@ const FeaturesMenuItem = ({ icon, label, onPress, translateY = -100 }: any) => {
     );
 };
 
-// Enhanced Animated TabItem
-const TabItem = ({ isFocused, icon, label, onPress }: any) => {
+const TabItem = ({ isFocused, IconComponent, label, onPress }: any) => {
     const flexVal = useSharedValue(isFocused ? 1 : 0);
 
     React.useEffect(() => {
-        flexVal.value = withTiming(isFocused ? 1 : 0, { duration: 300 });
+        flexVal.value = withTiming(isFocused ? 1 : 0, { duration: 200 });
     }, [isFocused]);
-
-    const animatedContainerStyle = useAnimatedStyle(() => {
-        return {
-            flex: 1 + flexVal.value, // expands from flex 1 to flex 2
-            backgroundColor: isFocused ? Colors.primary : Colors.backgroundOffset,
-        };
-    });
 
     const animatedIconStyle = useAnimatedStyle(() => {
         return {
-            transform: [{ scale: 1 + (flexVal.value * 0.15) }], // scales icon slightly up when active
+            transform: [{ scale: 1 + (flexVal.value * 0.2) }],
         };
     });
 
     return (
-        <Animated.View style={[styles.tabItemWrapper, animatedContainerStyle]}>
-            <TouchableOpacity
-                accessibilityRole="button"
-                activeOpacity={0.8}
-                onPress={onPress}
-                style={styles.tabTouchable}
-            >
-                <Animated.Text style={[styles.icon, animatedIconStyle]}>
-                    {icon}
-                </Animated.Text>
-
-                {isFocused && (
-                    <Animated.Text
-                        entering={FadeInRight.duration(300)}
-                        exiting={FadeOutRight.duration(200)}
-                        style={styles.label}
-                        numberOfLines={1}
-                    >
-                        {label}
-                    </Animated.Text>
-                )}
-            </TouchableOpacity>
-        </Animated.View>
+        <TouchableOpacity
+            accessibilityRole="button"
+            activeOpacity={0.8}
+            onPress={onPress}
+            style={styles.tabTouchable}
+        >
+            <Animated.View style={[
+                animatedIconStyle,
+                { opacity: isFocused ? 1 : 0.4, marginBottom: 4 }
+            ]}>
+                <IconComponent
+                    color={isFocused ? Colors.orange : '#A0AAB8'}
+                    size={24}
+                    strokeWidth={isFocused ? 2.5 : 2}
+                />
+            </Animated.View>
+            <Text style={[
+                styles.label,
+                isFocused ? styles.labelActive : styles.labelInactive
+            ]}>
+                {label}
+            </Text>
+            {isFocused && (
+                <View style={styles.activeIndicator} />
+            )}
+        </TouchableOpacity>
     );
 };
 
 const styles = StyleSheet.create({
     containerWrapper: {
         backgroundColor: 'transparent',
-        paddingHorizontal: Spacing.xl,
-        // Allows taps to pass through transparent padding
-        pointerEvents: 'box-none',
-        zIndex: 10,
+        paddingHorizontal: Spacing.lg,
+        paddingBottom: 24, // Space below the pill
     },
     container: {
         flexDirection: 'row',
         backgroundColor: Colors.white,
-        borderWidth: 2,
-        borderColor: Colors.borderLight,
-        borderBottomWidth: 4,
-        borderBottomColor: Colors.borderMuted,
-        borderRadius: BorderRadius.round,
-        padding: 6,
+        paddingVertical: 12,
+        paddingHorizontal: 8,
         alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 8,
-    },
-    tabItemWrapper: {
-        height: 50,
-        borderRadius: 25,
-        overflow: 'hidden',
+        justifyContent: 'space-around',
+        borderRadius: 40, // High border radius for floating pill
+        ...Shadows.card3D, 
+        borderWidth: 1,
+        borderColor: Colors.borderLight,
+        elevation: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
     },
     tabTouchable: {
         flex: 1,
-        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingHorizontal: 8, // reduced slightly to fit 5 items
-    },
-    icon: {
-        fontSize: 20,
+        height: 50,
+        position: 'relative',
     },
     label: {
-        ...Typography.bodyBold,
-        color: Colors.white,
-        marginLeft: 4,
-        fontSize: 12, // reduced slightly to fit 5 items
+        ...Typography.small,
+        fontSize: 10,
+        marginBottom: 6,
     },
-    // Radial Menu Styles
+    labelActive: {
+        color: Colors.orange,
+        fontWeight: 'bold',
+    },
+    labelInactive: {
+        color: '#A0AAB8',
+        fontWeight: '600',
+    },
+    activeIndicator: {
+        position: 'absolute',
+        bottom: -2,
+        width: 4,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: Colors.orange,
+    },
+
+    // Middle Purple Button
+    centerButtonWrapper: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        height: 50,
+        position: 'relative',
+    },
+    centerButton: {
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        backgroundColor: Colors.accent, // Purple
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'absolute',
+        top: -46, // Pop out above the tab bar
+        borderWidth: 4,
+        borderColor: '#E1BEE7', // Lighter purple rim to match the floating look
+        elevation: 5,
+        shadowColor: Colors.accent,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
+        shadowRadius: 6,
+    },
+    centerLabel: {
+        ...Typography.small,
+        fontSize: 10,
+        color: Colors.accent,
+        fontWeight: 'bold',
+        marginBottom: 6, // Align with other tabs text
+    },
+
+    // Radial Menu
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'transparent',
+        backgroundColor: 'rgba(255, 255, 255, 0.8)', // Lighter overlay matching the design
         alignItems: 'center',
     },
     radialBgContainer: {
         position: 'absolute',
-        bottom: "10%",
-        width: 200,
-        height: 100,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        borderTopLeftRadius: 200,
-        borderTopRightRadius: 200,
-        borderWidth: 2,
-        borderColor: Colors.borderLight,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-        elevation: 5,
-        alignItems: 'center',
+        bottom: 0,
+        width: '100%',
+        height: 120,
+        backgroundColor: 'transparent',
     },
     radialMenuCenter: {
         position: 'absolute',
@@ -258,37 +287,37 @@ const styles = StyleSheet.create({
         position: 'absolute',
     },
     featureButtonCircle: {
-        width: 40,
-        height: 40,
-        borderRadius: 30,
+        width: 50,
+        height: 50,
+        borderRadius: 25,
         backgroundColor: Colors.white,
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 3,
-        borderColor: Colors.secondary,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 3,
-        elevation: 6,
-    },
-    featureIcon: {
-        fontSize: 20,
-    },
-    featureLabelContainer: {
-        marginTop: 6,
-        backgroundColor: Colors.white,
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 12,
         borderWidth: 2,
         borderColor: Colors.borderLight,
-        borderBottomWidth: 3,
-        borderBottomColor: Colors.borderMuted,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 4,
+    },
+    featureLabelContainer: {
+        marginTop: 8,
+        backgroundColor: Colors.white,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: Colors.borderLight,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 2,
     },
     featureLabel: {
         ...Typography.bodyBold,
-        fontSize: 10,
+        fontSize: 12,
         color: Colors.textMain,
     }
 });
