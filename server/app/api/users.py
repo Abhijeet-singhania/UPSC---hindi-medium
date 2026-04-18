@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.db.models import User
 from app.schemas.user import UserCreate, UserUpdate, UserResponse
+from app.services.reputation_service import get_reputation_history, get_level
 
 router = APIRouter()
 
@@ -76,5 +77,54 @@ def get_user_stats(user_id: int, db: Session = Depends(get_db)):
         "reputation": user.reputation,
         "questions_asked": question_count,
         "answers_given": answer_count,
-        "total_study_minutes": total_study_minutes
+        "total_study_minutes": total_study_minutes,
+        "streak_days": user.streak_days,
+        "last_study_date": user.last_study_date.isoformat() if user.last_study_date else None,
+    }
+
+
+@router.get("/{user_id}/reputation-history")
+def get_user_reputation_history(
+    user_id: int,
+    limit: int = 20,
+    db: Session = Depends(get_db),
+):
+    """Get reputation change history for a user."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    logs = get_reputation_history(db, user_id, limit)
+    return {
+        "user_id": user_id,
+        "total_reputation": user.reputation,
+        "logs": [
+            {
+                "id": log.id,
+                "points": log.points,
+                "reason": log.reason,
+                "source_type": log.source_type,
+                "source_id": log.source_id,
+                "created_at": log.created_at,
+            }
+            for log in logs
+        ],
+    }
+
+
+@router.get("/{user_id}/reputation-summary")
+def get_user_reputation_summary(user_id: int, db: Session = Depends(get_db)):
+    """Get reputation summary with level information."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    level_info = get_level(user.reputation)
+
+    return {
+        "user_id": user_id,
+        "name": user.name,
+        "reputation": user.reputation,
+        "role": user.role.value if user.role else "user",
+        **level_info,
     }

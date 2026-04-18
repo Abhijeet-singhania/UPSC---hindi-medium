@@ -6,6 +6,7 @@ from app.db.database import get_db
 from app.db.models import Question, Tag, QuestionTag, User, Vote
 from app.schemas.question import QuestionCreate, QuestionUpdate, QuestionResponse
 from app.config import settings
+from app.services.reputation_service import add_reputation
 
 router = APIRouter()
 
@@ -41,7 +42,7 @@ def create_question(
         db.add(question_tag)
     
     # Add reputation points
-    user.reputation += settings.POINTS_PER_QUESTION
+    add_reputation(db, user, settings.POINTS_PER_QUESTION, "question", "question", question.id)
     
     db.commit()
     db.refresh(question)
@@ -139,7 +140,7 @@ def vote_question(
     # Apply new vote effect
     if value == 1:
         question.upvotes += 1
-        question.author.reputation += settings.POINTS_PER_UPVOTE
+        add_reputation(db, question.author, settings.POINTS_PER_UPVOTE, "upvote", "question", question.id)
     elif value == -1:
         question.downvotes += 1
     

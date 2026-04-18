@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, date
 
 
 class UserBase(BaseModel):
@@ -24,6 +24,8 @@ class UserResponse(UserBase):
     role: str
     reputation: int
     wallet_balance: int
+    streak_days: int = 0
+    last_study_date: Optional[date] = None
     created_at: datetime
 
     class Config:

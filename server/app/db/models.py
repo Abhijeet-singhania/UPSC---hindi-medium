@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Float, ForeignKey, Enum, Date
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
@@ -8,6 +8,7 @@ from app.db.database import Base
 
 class UserRole(str, enum.Enum):
     USER = "user"
+    CONTRIBUTOR = "contributor"
     ADMIN = "admin"
     MODERATOR = "moderator"
     MENTOR = "mentor"
@@ -18,6 +19,11 @@ class ExamStage(str, enum.Enum):
     PRELIMS = "prelims"
     MAINS = "mains"
     INTERVIEW = "interview"
+
+
+class PastYearExamType(str, enum.Enum):
+    PRELIMS = "prelims"
+    MAINS = "mains"
 
 
 class User(Base):
@@ -32,6 +38,8 @@ class User(Base):
     role = Column(Enum(UserRole), default=UserRole.USER)
     reputation = Column(Integer, default=0)
     wallet_balance = Column(Integer, default=0)
+    streak_days = Column(Integer, default=0)
+    last_study_date = Column(Date, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -39,6 +47,7 @@ class User(Base):
     questions = relationship("Question", back_populates="author")
     answers = relationship("Answer", back_populates="author")
     silent_sessions = relationship("SilentSession", back_populates="user")
+    reputation_logs = relationship("ReputationLog", back_populates="user")
 
 
 class Tag(Base):
@@ -169,4 +178,80 @@ class DailyAnswer(Base):
     # Relationships
     daily_question = relationship("DailyQuestion", back_populates="submissions")
     author = relationship("User")
+
+
+class Report(Base):
+    """Abuse reports for questions, answers, or users."""
+    __tablename__ = "reports"
+
+    id = Column(Integer, primary_key=True, index=True)
+    reporter_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    target_type = Column(String(20), nullable=False)  # 'question', 'answer', 'daily_answer', 'user'
+    target_id = Column(Integer, nullable=False)
+    reason = Column(String(50), nullable=False)  # 'spam', 'abuse', 'inappropriate', 'plagiarism', 'other'
+    description = Column(Text, nullable=True)
+    status = Column(String(20), default="pending")  # 'pending', 'reviewed', 'resolved', 'dismissed'
+    reviewed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relationships
+    reporter = relationship("User", foreign_keys=[reporter_id])
+    reviewer = relationship("User", foreign_keys=[reviewed_by])
+
+
+class ReputationLog(Base):
+    """Tracks every reputation change for audit/history."""
+    __tablename__ = "reputation_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    points = Column(Integer, nullable=False)  # can be negative
+    reason = Column(String(50), nullable=False)  # 'upvote', 'answer', 'question', 'study', 'best_answer', 'doubt_solved'
+    source_type = Column(String(30), nullable=True)  # 'question', 'answer', 'daily_answer', 'silent_session'
+    source_id = Column(Integer, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    user = relationship("User", back_populates="reputation_logs")
+
+
+class SilentStreak(Base):
+    """Tracks daily study streaks for users."""
+    __tablename__ = "silent_streaks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    date = Column(Date, nullable=False)
+    total_minutes = Column(Integer, default=0)
+    sessions_count = Column(Integer, default=1)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class PastYearProblem(Base):
+    """Past year questions for Prelims/Mains practice."""
+    __tablename__ = "past_year_problems"
+
+    id = Column(Integer, primary_key=True, index=True)
+    year = Column(Integer, nullable=False, index=True)
+    exam_type = Column(Enum(PastYearExamType), nullable=False, index=True)
+    paper = Column(String(50), nullable=True, index=True)  # e.g. GS1, GS2, CSE Prelims
+    subject = Column(String(100), nullable=True, index=True)  # e.g. Economy, Polity
+    topic = Column(String(150), nullable=True)
+    question_number = Column(String(20), nullable=True)
+    marks = Column(Integer, nullable=True)  # mostly for mains
+    word_limit = Column(Integer, nullable=True)  # mostly for mains
+    question_text = Column(Text, nullable=False)
+    option_a = Column(Text, nullable=True)
+    option_b = Column(Text, nullable=True)
+    option_c = Column(Text, nullable=True)
+    option_d = Column(Text, nullable=True)
+    correct_option = Column(String(1), nullable=True)  # A/B/C/D, optional
+    explanation = Column(Text, nullable=True)
+    language = Column(String(10), default="hi", index=True)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    creator = relationship("User")
 

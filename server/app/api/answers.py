@@ -6,6 +6,7 @@ from app.db.database import get_db
 from app.db.models import Answer, Question, User, Vote
 from app.schemas.answer import AnswerCreate, AnswerUpdate, AnswerResponse
 from app.config import settings
+from app.services.reputation_service import add_reputation
 
 router = APIRouter()
 
@@ -33,7 +34,7 @@ def create_answer(
     db.add(answer)
     
     # Add reputation points
-    user.reputation += settings.POINTS_PER_ANSWER
+    add_reputation(db, user, settings.POINTS_PER_ANSWER, "answer", "answer", answer.id)
     
     db.commit()
     db.refresh(answer)
@@ -111,7 +112,7 @@ def vote_answer(
     
     if value == 1:
         answer.upvotes += 1
-        answer.author.reputation += settings.POINTS_PER_UPVOTE
+        add_reputation(db, answer.author, settings.POINTS_PER_UPVOTE, "upvote", "answer", answer.id)
     elif value == -1:
         answer.downvotes += 1
     
@@ -142,6 +143,11 @@ def accept_answer(
     
     answer.is_accepted = True
     question.is_solved = True
-    
+
+    # Bonus reputation for getting answer accepted (doubt solved)
+    answer_author = db.query(User).filter(User.id == answer.user_id).first()
+    if answer_author:
+        add_reputation(db, answer_author, settings.POINTS_DOUBT_SOLVED, "doubt_solved", "answer", answer.id)
+
     db.commit()
     return {"message": "Answer accepted", "answer_id": answer_id}

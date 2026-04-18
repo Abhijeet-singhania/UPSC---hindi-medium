@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     POINTS_PER_ANSWER: int = 5
     POINTS_PER_QUESTION: int = 2
     POINTS_PER_STUDY_MINUTE: int = 1
+    POINTS_BEST_ANSWER: int = 25
+    POINTS_DOUBT_SOLVED: int = 15
+    POINTS_DAILY_SUBMISSION: int = 10
+    CONTRIBUTOR_REPUTATION_THRESHOLD: int = 200
     
     class Config:
         env_file = ".env"

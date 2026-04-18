@@ -10,6 +10,7 @@ from app.schemas.daily_answer import (
     DailyAnswerCreate, DailyAnswerUpdate, DailyAnswerResponse
 )
 from app.config import settings
+from app.services.reputation_service import add_reputation
 
 router = APIRouter()
 
@@ -143,7 +144,7 @@ def submit_daily_answer(
     db.add(answer)
     
     # Add reputation for submission
-    user.reputation += settings.POINTS_PER_ANSWER
+    add_reputation(db, user, settings.POINTS_DAILY_SUBMISSION, "daily_submission", "daily_answer", answer.id)
     
     db.commit()
     db.refresh(answer)
@@ -206,7 +207,7 @@ def vote_daily_answer(
     
     if value == 1:
         answer.upvotes += 1
-        answer.author.reputation += settings.POINTS_PER_UPVOTE
+        add_reputation(db, answer.author, settings.POINTS_PER_UPVOTE, "upvote", "daily_answer", answer.id)
     
     db.commit()
     return {"upvotes": answer.upvotes}
@@ -235,6 +236,11 @@ def pin_daily_answer(
     
     answer.is_best_answer = True
     answer.is_pinned = True
+
+    # Bonus reputation for best answer
+    best_author = db.query(User).filter(User.id == answer.user_id).first()
+    if best_author:
+        add_reputation(db, best_author, settings.POINTS_BEST_ANSWER, "best_answer", "daily_answer", answer.id)
     
     db.commit()
     return {"message": "Answer pinned as best", "answer_id": answer_id}
