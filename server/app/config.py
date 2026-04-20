@@ -18,6 +18,11 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/api/v1"
     PROJECT_NAME: str = "UPSC Hindi Peer Network"
     
+    # Security
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "SPARTA")
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 1 week
+    
     # Points Configuration
     POINTS_PER_UPVOTE: int = 10
     POINTS_PER_ANSWER: int = 5

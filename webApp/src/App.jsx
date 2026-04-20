@@ -1,6 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import AppLayout from './components/layout/AppLayout';
+import Welcome from './pages/Welcome/Welcome';
+import Auth from './pages/Auth/Auth';
 import Dashboard from './pages/Dashboard/Dashboard';
 import Roadmap from './pages/Roadmap/Roadmap';
 import CurrentAffairs from './pages/CurrentAffairs/CurrentAffairs';
@@ -10,20 +12,28 @@ import Community from './pages/Community/Community';
 import Wellbeing from './pages/Wellbeing/Wellbeing';
 import PastYearProblems from './pages/PastYearProblems/PastYearProblems';
 
+import ProtectedRoute from './components/layout/ProtectedRoute';
+
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<AppLayout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="roadmap" element={<Roadmap />} />
-          <Route path="content" element={<StudyContent />} />
-          <Route path="affairs" element={<CurrentAffairs />} />
-          <Route path="prelims" element={<PrelimsLab />} />
-          <Route path="past-year" element={<PastYearProblems />} />
-          <Route path="community" element={<Community />} />
-          <Route path="wellbeing" element={<Wellbeing />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/" element={<Welcome />} />
+        <Route path="/auth" element={<Auth />} />
+        
+        {/* Protected Routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppLayout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/roadmap" element={<Roadmap />} />
+            <Route path="/content" element={<StudyContent />} />
+            <Route path="/affairs" element={<CurrentAffairs />} />
+            <Route path="/prelims" element={<PrelimsLab />} />
+            <Route path="/past-year" element={<PastYearProblems />} />
+            <Route path="/community" element={<Community />} />
+            <Route path="/wellbeing" element={<Wellbeing />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
         </Route>
       </Routes>
     </Router>

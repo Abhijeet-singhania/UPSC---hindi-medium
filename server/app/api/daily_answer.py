@@ -11,6 +11,7 @@ from app.schemas.daily_answer import (
 )
 from app.config import settings
 from app.services.reputation_service import add_reputation
+from app.api.users import get_current_user
 
 router = APIRouter()
 
@@ -20,14 +21,11 @@ router = APIRouter()
 @router.post("/questions/", response_model=DailyQuestionResponse)
 def create_daily_question(
     question_data: DailyQuestionCreate,
-    user_id: int = Query(..., description="Admin User ID"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Create a new daily question (Admin only)."""
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    if user.role not in [UserRole.ADMIN, UserRole.MODERATOR]:
+    if current_user.role not in [UserRole.ADMIN, UserRole.MODERATOR]:
         raise HTTPException(status_code=403, detail="Only admins can create daily questions")
     
     daily_question = DailyQuestion(
@@ -36,7 +34,7 @@ def create_daily_question(
         subject=question_data.subject,
         word_limit=question_data.word_limit,
         marks=question_data.marks,
-        posted_by=user_id
+        posted_by=current_user.id
     )
     db.add(daily_question)
     db.commit()
@@ -86,13 +84,12 @@ def get_daily_question(question_id: int, db: Session = Depends(get_db)):
 def update_daily_question(
     question_id: int,
     question_data: DailyQuestionUpdate,
-    user_id: int = Query(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Update a daily question (Admin only)."""
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user or user.role not in [UserRole.ADMIN, UserRole.MODERATOR]:
-        raise HTTPException(status_code=403, detail="Only admins can update")
+    if current_user.role not in [UserRole.ADMIN, UserRole.MODERATOR]:
+        raise HTTPException(status_code=403, detail="Only admins can update daily questions")
     
     question = db.query(DailyQuestion).filter(DailyQuestion.id == question_id).first()
     if not question:
@@ -111,14 +108,10 @@ def update_daily_question(
 @router.post("/answers/", response_model=DailyAnswerResponse)
 def submit_daily_answer(
     answer_data: DailyAnswerCreate,
-    user_id: int = Query(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    """Submit an answer to today's daily question."""
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
+    """Submit an answer to today's daily question (requires authentication)."""
     question = db.query(DailyQuestion).filter(
         DailyQuestion.id == answer_data.daily_question_id
     ).first()
@@ -128,7 +121,7 @@ def submit_daily_answer(
     # Check if user already submitted
     existing = db.query(DailyAnswer).filter(
         DailyAnswer.daily_question_id == answer_data.daily_question_id,
-        DailyAnswer.user_id == user_id
+        DailyAnswer.user_id == current_user.id
     ).first()
     if existing:
         raise HTTPException(status_code=400, detail="You already submitted an answer")
@@ -137,14 +130,14 @@ def submit_daily_answer(
     
     answer = DailyAnswer(
         daily_question_id=answer_data.daily_question_id,
-        user_id=user_id,
+        user_id=current_user.id,
         content=answer_data.content,
         word_count=word_count
     )
     db.add(answer)
     
     # Add reputation for submission
-    add_reputation(db, user, settings.POINTS_DAILY_SUBMISSION, "daily_submission", "daily_answer", answer.id)
+    add_reputation(db, current_user, settings.POINTS_DAILY_SUBMISSION, "daily_submission", "daily_answer", answer.id)
     
     db.commit()
     db.refresh(answer)
@@ -174,16 +167,16 @@ def list_daily_answers(
 def vote_daily_answer(
     answer_id: int,
     value: int = Query(..., ge=-1, le=1),
-    user_id: int = Query(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    """Vote on a daily answer."""
+    """Vote on a daily answer (requires authentication)."""
     answer = db.query(DailyAnswer).filter(DailyAnswer.id == answer_id).first()
     if not answer:
         raise HTTPException(status_code=404, detail="Answer not found")
     
     existing_vote = db.query(Vote).filter(
-        Vote.user_id == user_id,
+        Vote.user_id == current_user.id,
         Vote.target_type == "daily_answer",
         Vote.target_id == answer_id
     ).first()
@@ -198,7 +191,7 @@ def vote_daily_answer(
     else:
         if value != 0:
             new_vote = Vote(
-                user_id=user_id,
+                user_id=current_user.id,
                 target_type="daily_answer",
                 target_id=answer_id,
                 value=value
@@ -216,12 +209,11 @@ def vote_daily_answer(
 @router.post("/answers/{answer_id}/pin")
 def pin_daily_answer(
     answer_id: int,
-    user_id: int = Query(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Pin/mark as best answer (Admin only)."""
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user or user.role not in [UserRole.ADMIN, UserRole.MODERATOR]:
+    if current_user.role not in [UserRole.ADMIN, UserRole.MODERATOR]:
         raise HTTPException(status_code=403, detail="Only admins can pin answers")
     
     answer = db.query(DailyAnswer).filter(DailyAnswer.id == answer_id).first()

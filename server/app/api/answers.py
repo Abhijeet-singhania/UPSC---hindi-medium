@@ -7,6 +7,7 @@ from app.db.models import Answer, Question, User, Vote
 from app.schemas.answer import AnswerCreate, AnswerUpdate, AnswerResponse
 from app.config import settings
 from app.services.reputation_service import add_reputation
+from app.api.users import get_current_user
 
 router = APIRouter()
 
@@ -14,14 +15,10 @@ router = APIRouter()
 @router.post("/", response_model=AnswerResponse)
 def create_answer(
     answer_data: AnswerCreate,
-    user_id: int = Query(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    """Create an answer to a question."""
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
+    """Create an answer to a question (requires authentication)."""
     question = db.query(Question).filter(Question.id == answer_data.question_id).first()
     if not question:
         raise HTTPException(status_code=404, detail="Question not found")
@@ -29,12 +26,12 @@ def create_answer(
     answer = Answer(
         content=answer_data.content,
         question_id=answer_data.question_id,
-        user_id=user_id
+        user_id=current_user.id
     )
     db.add(answer)
     
     # Add reputation points
-    add_reputation(db, user, settings.POINTS_PER_ANSWER, "answer", "answer", answer.id)
+    add_reputation(db, current_user, settings.POINTS_PER_ANSWER, "answer", "answer", answer.id)
     
     db.commit()
     db.refresh(answer)
@@ -54,15 +51,15 @@ def list_answers(question_id: int, db: Session = Depends(get_db)):
 def update_answer(
     answer_id: int,
     answer_data: AnswerUpdate,
-    user_id: int = Query(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Update an answer (only by owner)."""
     answer = db.query(Answer).filter(Answer.id == answer_id).first()
     if not answer:
         raise HTTPException(status_code=404, detail="Answer not found")
-    if answer.user_id != user_id:
-        raise HTTPException(status_code=403, detail="Not authorized")
+    if answer.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to update this answer")
     
     for key, value in answer_data.model_dump(exclude_unset=True).items():
         setattr(answer, key, value)
@@ -76,16 +73,16 @@ def update_answer(
 def vote_answer(
     answer_id: int,
     value: int = Query(..., ge=-1, le=1),
-    user_id: int = Query(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    """Vote on an answer."""
+    """Vote on an answer (requires authentication)."""
     answer = db.query(Answer).filter(Answer.id == answer_id).first()
     if not answer:
         raise HTTPException(status_code=404, detail="Answer not found")
     
     existing_vote = db.query(Vote).filter(
-        Vote.user_id == user_id,
+        Vote.user_id == current_user.id,
         Vote.target_type == "answer",
         Vote.target_id == answer_id
     ).first()
@@ -103,7 +100,7 @@ def vote_answer(
     else:
         if value != 0:
             new_vote = Vote(
-                user_id=user_id,
+                user_id=current_user.id,
                 target_type="answer",
                 target_id=answer_id,
                 value=value
@@ -123,8 +120,8 @@ def vote_answer(
 @router.post("/{answer_id}/accept")
 def accept_answer(
     answer_id: int,
-    user_id: int = Query(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Accept an answer (only by question owner)."""
     answer = db.query(Answer).filter(Answer.id == answer_id).first()
@@ -132,7 +129,7 @@ def accept_answer(
         raise HTTPException(status_code=404, detail="Answer not found")
     
     question = answer.question
-    if question.user_id != user_id:
+    if question.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Only question owner can accept")
     
     # Unaccept any previously accepted answer

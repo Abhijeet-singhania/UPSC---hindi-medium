@@ -1,6 +1,8 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useDispatch } from 'react-redux';
+import { logout } from '../../store/slices/authSlice';
 import { 
   LayoutDashboard, 
   Map, 
@@ -18,12 +20,14 @@ import {
 
 const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const { t } = useTranslation();
+  const dispatch = useDispatch();
 
   const navGroups = [
     {
       title: t('sidebar.study'),
       items: [
-        { id: 'dashboard', label: t('sidebar.dashboard'), icon: <LayoutDashboard size={18} />, path: '/' },
+        { id: 'dashboard', label: t('sidebar.dashboard'), icon: <LayoutDashboard size={18} />, path: '/dashboard' },
+
         { id: 'roadmap', label: t('sidebar.myRoadmap'), icon: <Map size={18} />, path: '/roadmap' },
         { id: 'content', label: t('sidebar.studyContent'), icon: <BookOpen size={18} />, path: '/content' },
         { id: 'affairs', label: t('sidebar.currentAffairs'), icon: <Newspaper size={18} />, path: '/affairs', badge: 7 },
@@ -102,6 +106,12 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
             <span className="text-[11px] text-[#A3A19E]">Keep it up!</span>
           </div>
         )}
+      </div>
+
+      <div className={`mx-6 mb-6 ${isCollapsed ? 'mx-3' : ''}`}>
+        <button onClick={() => dispatch(logout())} className="w-full bg-[#1C1B18] border border-[#2f2d2a] text-[#A3A19E] py-2 rounded-lg hover:text-white hover:bg-[#292825] transition cursor-pointer text-sm">
+           {isCollapsed ? 'L' : t('sidebar.logout')}
+        </button>
       </div>
     </aside>
   );

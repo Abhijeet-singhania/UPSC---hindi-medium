@@ -5,6 +5,7 @@ from typing import List
 from app.db.database import get_db
 from app.db.models import Report, User, UserRole
 from app.schemas.report import ReportCreate, ReportStatusUpdate, ReportResponse
+from app.api.users import get_current_user
 
 router = APIRouter()
 
@@ -16,14 +17,10 @@ VALID_STATUSES = {"reviewed", "resolved", "dismissed"}
 @router.post("/", response_model=ReportResponse)
 def submit_report(
     report_data: ReportCreate,
-    user_id: int = Query(..., description="Reporter User ID"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    """Submit an abuse report."""
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
+    """Submit an abuse report (requires authentication)."""
     if report_data.target_type not in VALID_TARGET_TYPES:
         raise HTTPException(
             status_code=400,
@@ -38,7 +35,7 @@ def submit_report(
 
     # Prevent duplicate reports
     existing = db.query(Report).filter(
-        Report.reporter_id == user_id,
+        Report.reporter_id == current_user.id,
         Report.target_type == report_data.target_type,
         Report.target_id == report_data.target_id,
         Report.status == "pending",
@@ -47,7 +44,7 @@ def submit_report(
         raise HTTPException(status_code=400, detail="You already reported this item")
 
     report = Report(
-        reporter_id=user_id,
+        reporter_id=current_user.id,
         target_type=report_data.target_type,
         target_id=report_data.target_id,
         reason=report_data.reason,
@@ -65,12 +62,11 @@ def list_reports(
     status: str = Query("pending", description="Filter by status"),
     skip: int = 0,
     limit: int = 20,
-    user_id: int = Query(..., description="Admin User ID"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """List reports (Admin/Moderator only)."""
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user or user.role not in [UserRole.ADMIN, UserRole.MODERATOR]:
+    if current_user.role not in [UserRole.ADMIN, UserRole.MODERATOR]:
         raise HTTPException(status_code=403, detail="Only admins can view reports")
 
     query = db.query(Report)
@@ -90,12 +86,11 @@ def list_reports(
 def update_report_status(
     report_id: int,
     status_data: ReportStatusUpdate,
-    user_id: int = Query(..., description="Admin User ID"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Update report status (Admin/Moderator only)."""
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user or user.role not in [UserRole.ADMIN, UserRole.MODERATOR]:
+    if current_user.role not in [UserRole.ADMIN, UserRole.MODERATOR]:
         raise HTTPException(status_code=403, detail="Only admins can update reports")
 
     if status_data.status not in VALID_STATUSES:
@@ -109,7 +104,7 @@ def update_report_status(
         raise HTTPException(status_code=404, detail="Report not found")
 
     report.status = status_data.status
-    report.reviewed_by = user_id
+    report.reviewed_by = current_user.id
 
     db.commit()
     db.refresh(report)
@@ -119,12 +114,11 @@ def update_report_status(
 
 @router.get("/count")
 def get_report_counts(
-    user_id: int = Query(..., description="Admin User ID"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Get report counts by status (Admin only)."""
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user or user.role not in [UserRole.ADMIN, UserRole.MODERATOR]:
+    if current_user.role not in [UserRole.ADMIN, UserRole.MODERATOR]:
         raise HTTPException(status_code=403, detail="Only admins can view report counts")
 
     pending = db.query(Report).filter(Report.status == "pending").count()

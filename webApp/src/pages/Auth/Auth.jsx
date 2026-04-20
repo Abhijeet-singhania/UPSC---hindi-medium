@@ -1,0 +1,179 @@
+import React, { useState } from 'react';
+import { useNavigate, Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { motion } from 'framer-motion';
+import { useDispatch, useSelector } from 'react-redux';
+import { loginUser, clearError } from '../../store/slices/authSlice';
+
+const Auth = () => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { t } = useTranslation();
+  
+  const { isAuthenticated, loading, error } = useSelector((state) => state.auth);
+
+  const [mode, setMode] = useState('login'); // 'login' or 'register'
+  const [registerStep, setRegisterStep] = useState(1); // 1 or 2
+
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    confirmPassword: '',
+    bio: '',
+    examStage: 'Prelims'
+  });
+
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  const handleChange = (e) => {
+    setFormData(prev => ({...prev, [e.target.name]: e.target.value}));
+  };
+
+  const handleFinish = (e) => {
+    if(e) e.preventDefault();
+    if (mode === 'login') {
+      dispatch(loginUser({ email: formData.email, password: formData.password }));
+    } else {
+      // Mock local register - in production link to a Register API Thunk
+      navigate('/dashboard'); 
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#11100F] flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans relative overflow-hidden">
+      {/* Background aesthetics */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-[#BFA532]/10 blur-[100px] pointer-events-none" />
+
+      <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+        <h2 className="text-center text-3xl font-serif font-bold text-white mb-2">Drishti</h2>
+        <h2 className="mt-2 text-center text-2xl font-bold tracking-tight text-[#EBEAE8]">
+          {mode === 'login' ? t('auth.login') : (registerStep === 1 ? t('auth.register') : t('auth.step2Title'))}
+        </h2>
+        {mode === 'register' && registerStep === 2 && (
+          <p className="text-center text-[#A3A19E] mt-2 text-sm">{t('auth.step2Sub')}</p>
+        )}
+      </div>
+
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+        <div className="bg-[#1C1B18] py-8 px-4 shadow-[0_8px_30px_rgb(0,0,0,0.4)] sm:rounded-2xl sm:px-10 border border-[#2f2d2a]">
+          
+          {mode === 'login' && (
+            <motion.form key="login" initial="hidden" animate="visible" variants={itemVariants} className="space-y-6" onSubmit={handleFinish}>
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-sm p-3 rounded-md">
+                  {error}
+                </div>
+              )}
+              <div>
+                <label className="block text-sm font-medium text-[#EBEAE8]">{t('auth.emailLabel')}</label>
+                <div className="mt-1">
+                  <input name="email" type="email" required onChange={handleChange} className="block w-full appearance-none rounded-md border border-[#3A3935] bg-[#2B2A27] px-3 py-2 text-white placeholder-[#716F6C] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm transition-colors" placeholder={t('auth.emailPlaceholder')} />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#EBEAE8]">{t('auth.passwordLabel')}</label>
+                <div className="mt-1">
+                  <input name="password" type="password" required onChange={handleChange} className="block w-full appearance-none rounded-md border border-[#3A3935] bg-[#2B2A27] px-3 py-2 text-white placeholder-[#716F6C] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm transition-colors" placeholder={t('auth.passwordPlaceholder')} />
+                </div>
+              </div>
+
+              <div>
+                <button type="submit" disabled={loading} className="flex w-full justify-center rounded-lg bg-primary py-2.5 px-4 text-sm font-semibold text-white shadow-sm hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-[#1C1B18] transition-colors cursor-pointer disabled:opacity-50">
+                  {loading ? 'Authorizing...' : t('auth.login')}
+                </button>
+              </div>
+
+              <div className="mt-6 text-center text-sm">
+                <span className="text-[#A3A19E]">{t('auth.noAccount')} </span>
+                <button type="button" onClick={() => { setMode('register'); dispatch(clearError()); }} className="font-semibold text-primary hover:text-primary-hover cursor-pointer bg-transparent border-none">
+                  {t('auth.signUp')}
+                </button>
+              </div>
+            </motion.form>
+          )}
+
+          {mode === 'register' && registerStep === 1 && (
+            <motion.form key="register1" initial="hidden" animate="visible" variants={itemVariants} className="space-y-6" onSubmit={(e) => { e.preventDefault(); setRegisterStep(2); }}>
+              <div>
+                <label className="block text-sm font-medium text-[#EBEAE8]">{t('auth.emailLabel')}</label>
+                <div className="mt-1">
+                  <input name="email" type="email" required onChange={handleChange} className="block w-full appearance-none rounded-md border border-[#3A3935] bg-[#2B2A27] px-3 py-2 text-white placeholder-[#716F6C] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm transition-colors" placeholder={t('auth.emailPlaceholder')} />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#EBEAE8]">{t('auth.passwordLabel')}</label>
+                <div className="mt-1">
+                  <input name="password" type="password" required onChange={handleChange} className="block w-full appearance-none rounded-md border border-[#3A3935] bg-[#2B2A27] px-3 py-2 text-white placeholder-[#716F6C] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm transition-colors" placeholder={t('auth.passwordPlaceholder')} />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#EBEAE8]">{t('auth.confirmPasswordLabel')}</label>
+                <div className="mt-1">
+                  <input name="confirmPassword" type="password" required onChange={handleChange} className="block w-full appearance-none rounded-md border border-[#3A3935] bg-[#2B2A27] px-3 py-2 text-white placeholder-[#716F6C] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm transition-colors" placeholder={t('auth.confirmPasswordPlaceholder')} />
+                </div>
+              </div>
+
+              <div>
+                <button type="submit" className="flex w-full justify-center rounded-lg bg-primary py-2.5 px-4 text-sm font-semibold text-white shadow-sm hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors cursor-pointer">
+                  {t('auth.step1Btn')}
+                </button>
+              </div>
+
+              <div className="mt-6 text-center text-sm">
+                <span className="text-[#A3A19E]">{t('auth.haveAccount')} </span>
+                <button type="button" onClick={() => { setMode('login'); setRegisterStep(1); dispatch(clearError()); }} className="font-semibold text-primary hover:text-primary-hover cursor-pointer bg-transparent border-none">
+                  {t('auth.signIn')}
+                </button>
+              </div>
+            </motion.form>
+          )}
+
+          {mode === 'register' && registerStep === 2 && (
+            <motion.form key="register2" initial="hidden" animate="visible" variants={itemVariants} className="space-y-6" onSubmit={handleFinish}>
+              <div>
+                <label className="block text-sm font-medium text-[#EBEAE8]">{t('auth.bioLabel')}</label>
+                <div className="mt-1">
+                  <textarea name="bio" rows={3} onChange={handleChange} className="block w-full appearance-none rounded-md border border-[#3A3935] bg-[#2B2A27] px-3 py-2 text-white placeholder-[#716F6C] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm transition-colors" placeholder={t('auth.bioPlaceholder')} />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#EBEAE8]">{t('auth.examStageLabel')}</label>
+                <div className="mt-1">
+                  <select name="examStage" value={formData.examStage} onChange={handleChange} className="block w-full rounded-md border border-[#3A3935] bg-[#2B2A27] px-3 py-2 text-white focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm transition-colors cursor-pointer appearance-none">
+                    <option value="Prelims">{t('auth.stagePrelims')}</option>
+                    <option value="Mains">{t('auth.stageMains')}</option>
+                    <option value="Interview">{t('auth.stageInterview')}</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-4 pt-2">
+                <button type="button" onClick={handleFinish} className="flex flex-1 justify-center rounded-lg bg-transparent border border-[#716F6C] py-2.5 px-4 text-sm font-medium text-[#EBEAE8] hover:bg-white/5 focus:outline-none transition-colors cursor-pointer">
+                  {t('auth.skipFinish')}
+                </button>
+                <button type="submit" className="flex flex-1 justify-center rounded-lg bg-primary py-2.5 px-4 text-sm font-semibold text-white shadow-sm hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors cursor-pointer">
+                  {t('auth.saveFinish')}
+                </button>
+              </div>
+            </motion.form>
+          )}
+
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Auth;

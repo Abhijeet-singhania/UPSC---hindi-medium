@@ -30,7 +30,9 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    device_id = Column(String(255), unique=True, index=True)  # Mock auth
+    device_id = Column(String(255), unique=True, index=True)  # Mock auth/Legacy
+    email = Column(String(255), unique=True, index=True, nullable=True)
+    hashed_password = Column(String(255), nullable=True)
     name = Column(String(100), nullable=True)
     bio = Column(Text, nullable=True)
     exam_stage = Column(Enum(ExamStage), default=ExamStage.BEGINNER)

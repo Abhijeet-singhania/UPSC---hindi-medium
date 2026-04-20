@@ -3,6 +3,21 @@ from typing import Optional, List
 from datetime import datetime
 
 
+class TagBase(BaseModel):
+    name: str
+
+
+class TagCreate(TagBase):
+    pass
+
+
+class TagResponse(TagBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+
 class QuestionBase(BaseModel):
     title: str
     content: str

@@ -1,26 +1,43 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime, date
 
 
 class UserBase(BaseModel):
     name: Optional[str] = None
+    email: Optional[EmailStr] = None
     bio: Optional[str] = None
     exam_stage: Optional[str] = "beginner"
     optional_subject: Optional[str] = None
 
 
 class UserCreate(UserBase):
-    device_id: str
+    email: EmailStr
+    password: str
+    device_id: Optional[str] = None
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
 
 
 class UserUpdate(UserBase):
-    pass
+    password: Optional[str] = None
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    email: Optional[str] = None
 
 
 class UserResponse(UserBase):
     id: int
-    device_id: str
+    device_id: Optional[str] = None
     role: str
     reputation: int
     wallet_balance: int

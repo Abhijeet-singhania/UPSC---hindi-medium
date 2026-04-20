@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useSelector } from 'react-redux';
 
 /**
  * A generic custom hook for making API calls.
@@ -10,6 +11,7 @@ export const useApi = (baseUrl) => {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { token } = useSelector((state) => state.auth);
 
   /**
    * Executes the API call.
@@ -63,6 +65,10 @@ export const useApi = (baseUrl) => {
       
       if (!isFormData && body) {
         defaultHeaders['Content-Type'] = 'application/json';
+      }
+
+      if (token) {
+        defaultHeaders['Authorization'] = `Bearer ${token}`;
       }
 
       const mergedHeaders = {
