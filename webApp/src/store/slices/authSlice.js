@@ -100,6 +100,13 @@ const authSlice = createSlice({
     },
     clearError: (state) => {
       state.error = null;
+    },
+    mockLogin: (state) => {
+      state.isAuthenticated = true;
+      state.user = { email: 'mockuser@example.com' };
+      state.token = 'mock_jwt_token';
+      state.error = null;
+      localStorage.setItem('access_token', 'mock_jwt_token');
     }
   },
   extraReducers: (builder) => {
@@ -143,6 +150,6 @@ const authSlice = createSlice({
   }
 });
 
-export const { logout, clearError } = authSlice.actions;
+export const { logout, clearError, mockLogin } = authSlice.actions;
 
 export default authSlice.reducer;

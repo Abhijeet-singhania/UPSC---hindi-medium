@@ -11,6 +11,7 @@ import PrelimsLab from './pages/PrelimsLab/PrelimsLab';
 import Community from './pages/Community/Community';
 import Wellbeing from './pages/Wellbeing/Wellbeing';
 import PastYearProblems from './pages/PastYearProblems/PastYearProblems';
+import AskAI from './pages/AskAI/AskAI';
 
 import ProtectedRoute from './components/layout/ProtectedRoute';
 
@@ -20,7 +21,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Welcome />} />
         <Route path="/auth" element={<Auth />} />
-        
+
         {/* Protected Routes */}
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
@@ -30,6 +31,7 @@ function App() {
             <Route path="/affairs" element={<CurrentAffairs />} />
             <Route path="/prelims" element={<PrelimsLab />} />
             <Route path="/past-year" element={<PastYearProblems />} />
+            <Route path="/ask-ai" element={<AskAI />} />
             <Route path="/community" element={<Community />} />
             <Route path="/wellbeing" element={<Wellbeing />} />
             <Route path="*" element={<Navigate to="/" replace />} />

@@ -3,7 +3,7 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
-import { loginUser, registerUser, clearError } from '../../store/slices/authSlice';
+import { loginUser, registerUser, clearError, mockLogin } from '../../store/slices/authSlice';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -59,6 +59,10 @@ const Auth = () => {
     }
   };
 
+  const handleMockLogin = () => {
+    dispatch(mockLogin());
+  };
+
   const itemVariants = {
     hidden: { opacity: 0, y: 10 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }
@@ -107,6 +111,12 @@ const Auth = () => {
               <div>
                 <button type="submit" disabled={loading} className="flex w-full justify-center rounded-lg bg-primary py-2.5 px-4 text-sm font-semibold text-white shadow-sm hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-[#1C1B18] transition-colors cursor-pointer disabled:opacity-50">
                   {loading ? 'Authorizing...' : t('auth.login')}
+                </button>
+              </div>
+
+              <div>
+                <button type="button" onClick={handleMockLogin} className="flex w-full justify-center rounded-lg bg-[#2B2A27] border border-[#3A3935] py-2.5 px-4 text-sm font-semibold text-[#A3A19E] shadow-sm hover:text-white hover:border-[#716F6C] focus:outline-none transition-colors cursor-pointer">
+                  Mock Login (Bypass API)
                 </button>
               </div>
 

@@ -15,7 +15,8 @@ import {
   HeartPulse,
   Flame,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Sparkles
 } from 'lucide-react';
 
 const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
@@ -27,10 +28,10 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
       title: t('sidebar.study'),
       items: [
         { id: 'dashboard', label: t('sidebar.dashboard'), icon: <LayoutDashboard size={18} />, path: '/dashboard' },
-
         { id: 'roadmap', label: t('sidebar.myRoadmap'), icon: <Map size={18} />, path: '/roadmap' },
         { id: 'content', label: t('sidebar.studyContent'), icon: <BookOpen size={18} />, path: '/content' },
         { id: 'affairs', label: t('sidebar.currentAffairs'), icon: <Newspaper size={18} />, path: '/affairs', badge: 7 },
+        { id: 'ask-ai', label: t('sidebar.askAI'), icon: <Sparkles size={18} />, path: '/ask-ai' },
       ]
     },
     {
