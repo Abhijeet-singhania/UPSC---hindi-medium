@@ -5,39 +5,74 @@
   --color-primary: var(--c-primary);
   --color-primary-hover: var(--c-primary-hover);
   --color-primary-light: var(--c-primary-light);
+  
+  /* Semantic Backgrounds */
+  --color-bg-base: var(--bg-base);
+  --color-bg-panel: var(--bg-panel);
+  --color-bg-panel-hover: var(--bg-panel-hover);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-surface-dark: var(--bg-surface-dark);
+
+  /* Semantic Texts */
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+
+  /* Semantic Borders */
+  --color-border-default: var(--border-default);
+  --color-border-muted: var(--border-muted);
+  --color-border-strong: var(--border-strong);
+
+  /* Legacy / Other Backgrounds */
   --color-bg-sidebar: var(--bg-sidebar);
   --color-bg-main: var(--bg-main);
   --color-bg-card: var(--bg-card);
   --color-bg-card-dark: var(--bg-card-dark);
+
+  /* Fonts */
   --font-serif: var(--font-serif);
   --font-sans: var(--font-sans);
 }
 
-:root {
+:root, .dark {
   /* Brand Colors */
   --c-primary: #D4613C; /* The terracotta orange */
   --c-primary-hover: #e47551;
   --c-primary-light: #f5e4df;
+
+  /* Semantic Theme Colors (Defaulting to Dark) */
+  --bg-base: #11100F;
+  --bg-panel: #1C1B18;
+  --bg-panel-hover: #292825;
+  --bg-surface: #2B2A27;
+  --bg-surface-dark: #181715;
+
+  --border-default: #2f2d2a;
+  --border-muted: #3A3935;
+  --border-strong: #716F6C;
+
+  --text-primary: #EBEAE8;
+  --text-secondary: #A3A19E;
+  --text-muted: #716F6C;
   
-  /* Backgrounds */
+  /* Backgrounds (Legacy/Fallbacks) */
   --bg-sidebar: #1C1B18;
   --bg-sidebar-hover: #292825;
-  --bg-main: #FDFBF8; /* Creamy off-white */
-  --bg-card: #FFFFFF;
+  --bg-main: #11100F; /* Updated to dark for default */
+  --bg-card: #1C1B18;
   --bg-card-dark: #121110;
   --bg-tag-green: #e6f3eb;
   --bg-tag-orange: #fbefe9;
   --bg-table-header: #121110;
   
-  /* Texts */
-  --text-dark: #201E1C;   /* Primary text on light BG */
-  --text-muted: #716F6C;
-  --text-light: #EBEAE8;  /* Primary text on dark BG */
+  /* Texts (Legacy/Fallbacks) */
+  --text-dark: #EBEAE8; /* Flipped for dark default */
+  --text-light: #EBEAE8; 
   --text-light-muted: #A3A19E;
   --text-green: #2B7A4B;
   
-  /* Borders */
-  --border-color: #Eeece9;
+  /* Borders (Legacy/Fallbacks) */
+  --border-color: #2f2d2a;
   --border-sidebar: #2f2d2a;
   
   /* Fonts */
@@ -56,14 +91,67 @@
   --heat-5: #6d2c16;
 }
 
+.light {
+  /* Semantic Theme Colors (Light) */
+  --bg-base: #FDFBF8;
+  --bg-panel: #FFFFFF;
+  --bg-panel-hover: #F7F5F2;
+  --bg-surface: #FDFBF8;
+  --bg-surface-dark: #FFFFFF;
+
+  --border-default: #Eeece9;
+  --border-muted: #E2E0DD;
+  --border-strong: #C4C2BF;
+
+  --text-primary: #201E1C;
+  --text-secondary: #575653;
+  --text-muted: #807E7B;
+  
+  /* Backgrounds (Legacy/Fallbacks) */
+  --bg-sidebar: #FFFFFF;
+  --bg-sidebar-hover: #F7F5F2;
+  --bg-main: #FDFBF8;
+  --bg-card: #FFFFFF;
+  --bg-card-dark: #FFFFFF;
+  
+  /* Texts (Legacy/Fallbacks) */
+  --text-dark: #201E1C;
+  --text-light: #201E1C;
+  --text-light-muted: #716F6C;
+  
+  /* Borders (Legacy/Fallbacks) */
+  --border-color: #Eeece9;
+  --border-sidebar: #Eeece9;
+}
+
 body {
   font-family: var(--font-sans);
-  color: var(--text-dark);
-  background-color: var(--bg-main);
+  color: var(--text-primary);
+  background-color: var(--bg-base);
   -webkit-font-smoothing: antialiased;
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-serif);
   font-weight: 600;
+}
+
+/* Global Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(212, 97, 60, 0.5); /* var(--color-primary) with 50% opacity */
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #D4613C; /* var(--color-primary) */
+}
+
+html {
+  scrollbar-width: thin;
+  scrollbar-color: #D4613C transparent;
 }

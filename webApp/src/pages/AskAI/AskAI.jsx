@@ -56,10 +56,10 @@ const AskAI = () => {
         <div className="flex justify-between items-start">
           <div>
             <div className="text-[11px] tracking-[2px] text-primary font-bold mb-2 uppercase">{t('askAI.mentorMode')}</div>
-            <h1 className="text-3xl font-serif text-white mb-2">
+            <h1 className="text-3xl font-serif text-text-primary mb-2">
               {t('askAI.titlePrefix')}<em className="text-primary italic not-italic">{t('askAI.titleEm')}</em>{t('askAI.titleSuffix')}
             </h1>
-            <p className="text-sm text-[#A3A19E] max-w-2xl">{t('askAI.dek')}</p>
+            <p className="text-sm text-text-secondary max-w-2xl">{t('askAI.dek')}</p>
           </div>
           <div className="hidden md:flex bg-[#2B7A4B]/10 border border-[#2B7A4B]/30 text-[#2B7A4B] px-3 py-1.5 rounded-full text-[10px] font-mono tracking-widest items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-[#2B7A4B] animate-pulse" />
@@ -71,54 +71,54 @@ const AskAI = () => {
       <div className="px-8 pb-8 flex-1 min-h-0">
         <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr_280px] gap-6 h-full">
           {/* Left Rail */}
-          <aside className="bg-[#1C1B18] border border-[#2f2d2a] rounded-2xl hidden lg:flex flex-col overflow-hidden">
-            <div className="p-4 border-b border-[#2f2d2a] flex justify-between items-center">
-              <div className="text-[10px] tracking-widest text-[#A3A19E] font-bold">{t('askAI.sessions')}</div>
-              <button className="text-[#A3A19E] hover:text-white transition cursor-pointer"><Plus size={14} /></button>
+          <aside className="bg-bg-panel border border-border-default rounded-2xl hidden lg:flex flex-col overflow-hidden">
+            <div className="p-4 border-b border-border-default flex justify-between items-center">
+              <div className="text-[10px] tracking-widest text-text-secondary font-bold">{t('askAI.sessions')}</div>
+              <button className="text-text-secondary hover:text-text-primary transition cursor-pointer"><Plus size={14} /></button>
             </div>
             <div className="flex-1 overflow-y-auto [scrollbar-width:thin] [scrollbar-color:#2f2d2a_transparent]">
               {sessions.map((s, i) => (
-                <div key={i} className={`p-4 border-b border-[#2f2d2a] cursor-pointer transition ${i === 0 ? 'bg-[#292825]' : 'hover:bg-[#292825]/50'}`}>
-                  <div className="text-[13px] text-[#EBEAE8] flex items-center gap-2">
+                <div key={i} className={`p-4 border-b border-border-default cursor-pointer transition ${i === 0 ? 'bg-bg-panel-hover' : 'hover:bg-bg-panel-hover/50'}`}>
+                  <div className="text-[13px] text-text-primary flex items-center gap-2">
                     {s.live && <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0 animate-pulse" />}
                     <span className="truncate">{s.t}</span>
                   </div>
-                  <div className="font-mono text-[10px] text-[#716F6C] mt-1 tracking-wider">{s.time}</div>
+                  <div className="font-mono text-[10px] text-text-muted mt-1 tracking-wider">{s.time}</div>
                 </div>
               ))}
             </div>
-            <div className="p-4 border-t border-[#2f2d2a] bg-[#11100F]">
+            <div className="p-4 border-t border-border-default bg-bg-base">
               <div className="font-mono text-[10px] text-primary tracking-widest mb-1">{t('askAI.aiCredits')}</div>
-              <div className="text-[11px] text-[#716F6C]">{t('askAI.proPlanInfo')}</div>
+              <div className="text-[11px] text-text-muted">{t('askAI.proPlanInfo')}</div>
             </div>
           </aside>
 
           {/* Center Chat */}
-          <div className="bg-[#1C1B18] border border-[#2f2d2a] rounded-2xl flex flex-col overflow-hidden shadow-xl">
+          <div className="bg-bg-panel border border-border-default rounded-2xl flex flex-col overflow-hidden shadow-xl">
             <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-6 [scrollbar-width:thin] [scrollbar-color:#2f2d2a_transparent]">
               {messages.map((m, i) => <Bubble key={i} m={m} t={t} />)}
               <div ref={endRef} />
             </div>
 
-            <div className="p-4 bg-[#11100F] border-t border-[#2f2d2a]">
+            <div className="p-4 bg-bg-base border-t border-border-default">
               <div className="flex flex-wrap gap-2 mb-3">
                 {suggestions.map((s, i) => (
-                  <button key={i} className="text-[11px] text-[#A3A19E] bg-[#1C1B18] border border-[#2f2d2a] px-3 py-1.5 rounded-lg hover:text-white hover:border-[#716F6C] transition cursor-pointer">
+                  <button key={i} className="text-[11px] text-text-secondary bg-bg-panel border border-border-default px-3 py-1.5 rounded-lg hover:text-text-primary hover:border-border-strong transition cursor-pointer">
                     {s}
                   </button>
                 ))}
               </div>
-              <div className="flex gap-3 items-center bg-[#1C1B18] border border-[#2f2d2a] rounded-xl p-2 px-4 focus-within:border-[#716F6C] transition">
-                <Sparkles size={16} className="text-[#A3A19E]" />
+              <div className="flex gap-3 items-center bg-bg-panel border border-border-default rounded-xl p-2 px-4 focus-within:border-border-strong transition">
+                <Sparkles size={16} className="text-text-secondary" />
                 <input
                   value={input}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && send()}
                   placeholder={t('askAI.inputPlaceholder')}
-                  className="flex-1 bg-transparent border-none outline-none text-[14px] text-[#EBEAE8] placeholder:text-[#716F6C]"
+                  className="flex-1 bg-transparent border-none outline-none text-[14px] text-text-primary placeholder:text-text-muted"
                 />
-                <span className="hidden sm:inline font-mono text-[10px] text-[#716F6C] border border-[#2f2d2a] px-2 py-0.5 rounded">⌘ ↵</span>
-                <button onClick={send} className="bg-primary hover:bg-primary-hover text-white p-2 rounded-lg transition ml-1 cursor-pointer">
+                <span className="hidden sm:inline font-mono text-[10px] text-text-muted border border-border-default px-2 py-0.5 rounded">⌘ ↵</span>
+                <button onClick={send} className="bg-primary hover:bg-primary-hover text-text-primary p-2 rounded-lg transition ml-1 cursor-pointer">
                   <ArrowRight size={14} />
                 </button>
               </div>
@@ -127,28 +127,28 @@ const AskAI = () => {
 
           {/* Right Rail */}
           <aside className="hidden lg:flex flex-col gap-4 overflow-hidden">
-            <div className="bg-[#1C1B18] border border-[#2f2d2a] rounded-2xl p-4">
-              <div className="text-[10px] tracking-widest text-[#A3A19E] font-bold mb-3">{t('askAI.citedKicker')}</div>
+            <div className="bg-bg-panel border border-border-default rounded-2xl p-4">
+              <div className="text-[10px] tracking-widest text-text-secondary font-bold mb-3">{t('askAI.citedKicker')}</div>
               <ul className="flex flex-col gap-2">
                 {cites.map((c, i) => (
-                  <li key={i} className="px-3 py-2 border border-[#2f2d2a] rounded-lg bg-[#292825] flex justify-between items-center text-[11px] text-[#EBEAE8] cursor-pointer hover:border-[#A3A19E] transition">
+                  <li key={i} className="px-3 py-2 border border-border-default rounded-lg bg-bg-panel-hover flex justify-between items-center text-[11px] text-text-primary cursor-pointer hover:border-[#A3A19E] transition">
                     <span className="truncate mr-2">{c}</span>
-                    <ChevronRight size={12} className="text-[#A3A19E] shrink-0" />
+                    <ChevronRight size={12} className="text-text-secondary shrink-0" />
                   </li>
                 ))}
               </ul>
             </div>
 
-            <div className="bg-[#1C1B18] border border-[#2f2d2a] rounded-2xl p-4 flex-1">
-              <div className="text-[10px] tracking-widest text-[#A3A19E] font-bold mb-3">{t('askAI.relatedPyqKicker')}</div>
+            <div className="bg-bg-panel border border-border-default rounded-2xl p-4 flex-1">
+              <div className="text-[10px] tracking-widest text-text-secondary font-bold mb-3">{t('askAI.relatedPyqKicker')}</div>
               <div className="flex flex-col">
                 {queuedPyqs.map((p, i) => (
-                  <div key={p.id} className={`py-3 flex items-center justify-between gap-3 ${i !== 0 ? 'border-t border-[#2f2d2a]' : ''}`}>
+                  <div key={p.id} className={`py-3 flex items-center justify-between gap-3 ${i !== 0 ? 'border-t border-border-default' : ''}`}>
                     <div className="min-w-0">
-                      <div className="font-mono text-[10px] text-[#716F6C] tracking-widest mb-1">{p.id} · NAT'L {p.a}</div>
-                      <div className="text-[12px] text-[#EBEAE8] truncate">{p.t}</div>
+                      <div className="font-mono text-[10px] text-text-muted tracking-widest mb-1">{p.id} · NAT'L {p.a}</div>
+                      <div className="text-[12px] text-text-primary truncate">{p.t}</div>
                     </div>
-                    <button className="text-[10px] bg-[#292825] hover:bg-[#3A3935] border border-[#2f2d2a] px-3 py-1.5 rounded-lg text-white transition shrink-0 cursor-pointer">
+                    <button className="text-[10px] bg-bg-panel-hover hover:bg-[#3A3935] border border-border-default px-3 py-1.5 rounded-lg text-text-primary transition shrink-0 cursor-pointer">
                       {t('askAI.drillBtn')}
                     </button>
                   </div>
@@ -172,27 +172,27 @@ const AskAI = () => {
 const Bubble = ({ m, t }) => {
   if (m.role === "user") {
     return (
-      <div className="self-end max-w-[90%] md:max-w-[80%] bg-[#292825] border border-[#3A3935] text-[#EBEAE8] px-5 py-3 rounded-2xl rounded-tr-sm text-[14px] leading-relaxed shadow-sm">
+      <div className="self-end max-w-[90%] md:max-w-[80%] bg-bg-panel-hover border border-border-muted text-text-primary px-5 py-3 rounded-2xl rounded-tr-sm text-[14px] leading-relaxed shadow-sm">
         {m.text}
       </div>
     );
   }
   return (
     <div className="self-start max-w-[95%] md:max-w-[85%] flex gap-3 md:gap-4">
-      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-[#BFA532] flex items-center justify-center text-white shrink-0 shadow-lg">
+      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-[#BFA532] flex items-center justify-center text-text-primary shrink-0 shadow-lg">
         <Sparkles size={16} />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="font-mono text-[10px] text-[#716F6C] tracking-[0.15em] mb-2 uppercase">
+        <div className="font-mono text-[10px] text-text-muted tracking-[0.15em] mb-2 uppercase">
           {m.thinking ? t('askAI.mentorThinking') : t('askAI.mentorReply')}
         </div>
-        <div className="bg-[#11100F] border border-[#2f2d2a] px-4 md:px-5 py-3 md:py-4 rounded-2xl rounded-tl-sm text-[13px] md:text-[14px] leading-relaxed text-[#EBEAE8] whitespace-pre-wrap shadow-sm">
+        <div className="bg-bg-base border border-border-default px-4 md:px-5 py-3 md:py-4 rounded-2xl rounded-tl-sm text-[13px] md:text-[14px] leading-relaxed text-text-primary whitespace-pre-wrap shadow-sm">
           {m.text}
         </div>
         {m.cites && m.cites.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-2">
             {m.cites.map((c, i) => (
-              <span key={i} className="text-[10px] bg-[#292825] border border-[#3A3935] text-[#A3A19E] px-2 py-1 rounded-md cursor-pointer hover:text-white transition">
+              <span key={i} className="text-[10px] bg-bg-panel-hover border border-border-muted text-text-secondary px-2 py-1 rounded-md cursor-pointer hover:text-text-primary transition">
                 ↳ {c}
               </span>
             ))}

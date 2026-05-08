@@ -69,23 +69,23 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#11100F] flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-bg-base flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans relative overflow-hidden">
       {/* Background aesthetics */}
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-[#BFA532]/10 blur-[100px] pointer-events-none" />
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
-        <h2 className="text-center text-3xl font-serif font-bold text-white mb-2">Drishti</h2>
-        <h2 className="mt-2 text-center text-2xl font-bold tracking-tight text-[#EBEAE8]">
+        <h2 className="text-center text-3xl font-serif font-bold text-text-primary mb-2">Drishti</h2>
+        <h2 className="mt-2 text-center text-2xl font-bold tracking-tight text-text-primary">
           {mode === 'login' ? t('auth.login') : (registerStep === 1 ? t('auth.register') : t('auth.step2Title'))}
         </h2>
         {mode === 'register' && registerStep === 2 && (
-          <p className="text-center text-[#A3A19E] mt-2 text-sm">{t('auth.step2Sub')}</p>
+          <p className="text-center text-text-secondary mt-2 text-sm">{t('auth.step2Sub')}</p>
         )}
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10">
-        <div className="bg-[#1C1B18] py-8 px-4 shadow-[0_8px_30px_rgb(0,0,0,0.4)] sm:rounded-2xl sm:px-10 border border-[#2f2d2a]">
+        <div className="bg-bg-panel py-8 px-4 shadow-[0_8px_30px_rgb(0,0,0,0.4)] sm:rounded-2xl sm:px-10 border border-border-default">
           
           {mode === 'login' && (
             <motion.form key="login" initial="hidden" animate="visible" variants={itemVariants} className="space-y-6" onSubmit={handleFinish}>
@@ -95,33 +95,33 @@ const Auth = () => {
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-[#EBEAE8]">{t('auth.emailLabel')}</label>
+                <label className="block text-sm font-medium text-text-primary">{t('auth.emailLabel')}</label>
                 <div className="mt-1">
-                  <input name="email" type="email" required onChange={handleChange} className="block w-full appearance-none rounded-md border border-[#3A3935] bg-[#2B2A27] px-3 py-2 text-white placeholder-[#716F6C] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm transition-colors" placeholder={t('auth.emailPlaceholder')} />
+                  <input name="email" type="email" required onChange={handleChange} className="block w-full appearance-none rounded-md border border-border-muted bg-bg-surface px-3 py-2 text-text-primary placeholder-[#716F6C] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm transition-colors" placeholder={t('auth.emailPlaceholder')} />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#EBEAE8]">{t('auth.passwordLabel')}</label>
+                <label className="block text-sm font-medium text-text-primary">{t('auth.passwordLabel')}</label>
                 <div className="mt-1">
-                  <input name="password" type="password" required onChange={handleChange} className="block w-full appearance-none rounded-md border border-[#3A3935] bg-[#2B2A27] px-3 py-2 text-white placeholder-[#716F6C] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm transition-colors" placeholder={t('auth.passwordPlaceholder')} />
+                  <input name="password" type="password" required onChange={handleChange} className="block w-full appearance-none rounded-md border border-border-muted bg-bg-surface px-3 py-2 text-text-primary placeholder-[#716F6C] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm transition-colors" placeholder={t('auth.passwordPlaceholder')} />
                 </div>
               </div>
 
               <div>
-                <button type="submit" disabled={loading} className="flex w-full justify-center rounded-lg bg-primary py-2.5 px-4 text-sm font-semibold text-white shadow-sm hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-[#1C1B18] transition-colors cursor-pointer disabled:opacity-50">
+                <button type="submit" disabled={loading} className="flex w-full justify-center rounded-lg bg-primary py-2.5 px-4 text-sm font-semibold text-text-primary shadow-sm hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-[#1C1B18] transition-colors cursor-pointer disabled:opacity-50">
                   {loading ? 'Authorizing...' : t('auth.login')}
                 </button>
               </div>
 
               <div>
-                <button type="button" onClick={handleMockLogin} className="flex w-full justify-center rounded-lg bg-[#2B2A27] border border-[#3A3935] py-2.5 px-4 text-sm font-semibold text-[#A3A19E] shadow-sm hover:text-white hover:border-[#716F6C] focus:outline-none transition-colors cursor-pointer">
+                <button type="button" onClick={handleMockLogin} className="flex w-full justify-center rounded-lg bg-bg-surface border border-border-muted py-2.5 px-4 text-sm font-semibold text-text-secondary shadow-sm hover:text-text-primary hover:border-border-strong focus:outline-none transition-colors cursor-pointer">
                   Mock Login (Bypass API)
                 </button>
               </div>
 
               <div className="mt-6 text-center text-sm">
-                <span className="text-[#A3A19E]">{t('auth.noAccount')} </span>
+                <span className="text-text-secondary">{t('auth.noAccount')} </span>
                 <button type="button" onClick={() => { setMode('register'); dispatch(clearError()); }} className="font-semibold text-primary hover:text-primary-hover cursor-pointer bg-transparent border-none">
                   {t('auth.signUp')}
                 </button>
@@ -132,40 +132,40 @@ const Auth = () => {
           {mode === 'register' && registerStep === 1 && (
             <motion.form key="register1" initial="hidden" animate="visible" variants={itemVariants} className="space-y-6" onSubmit={handleStep1Submit}>
               <div>
-                <label className="block text-sm font-medium text-[#EBEAE8]">{t('auth.nameLabel')}</label>
+                <label className="block text-sm font-medium text-text-primary">{t('auth.nameLabel')}</label>
                 <div className="mt-1">
-                  <input name="name" type="text" required onChange={handleChange} className="block w-full appearance-none rounded-md border border-[#3A3935] bg-[#2B2A27] px-3 py-2 text-white placeholder-[#716F6C] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm transition-colors" placeholder={t('auth.namePlaceholder')} />
+                  <input name="name" type="text" required onChange={handleChange} className="block w-full appearance-none rounded-md border border-border-muted bg-bg-surface px-3 py-2 text-text-primary placeholder-[#716F6C] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm transition-colors" placeholder={t('auth.namePlaceholder')} />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#EBEAE8]">{t('auth.emailLabel')}</label>
+                <label className="block text-sm font-medium text-text-primary">{t('auth.emailLabel')}</label>
                 <div className="mt-1">
-                  <input name="email" type="email" required onChange={handleChange} className="block w-full appearance-none rounded-md border border-[#3A3935] bg-[#2B2A27] px-3 py-2 text-white placeholder-[#716F6C] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm transition-colors" placeholder={t('auth.emailPlaceholder')} />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[#EBEAE8]">{t('auth.passwordLabel')}</label>
-                <div className="mt-1">
-                  <input name="password" type="password" required onChange={handleChange} className="block w-full appearance-none rounded-md border border-[#3A3935] bg-[#2B2A27] px-3 py-2 text-white placeholder-[#716F6C] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm transition-colors" placeholder={t('auth.passwordPlaceholder')} />
+                  <input name="email" type="email" required onChange={handleChange} className="block w-full appearance-none rounded-md border border-border-muted bg-bg-surface px-3 py-2 text-text-primary placeholder-[#716F6C] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm transition-colors" placeholder={t('auth.emailPlaceholder')} />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#EBEAE8]">{t('auth.confirmPasswordLabel')}</label>
+                <label className="block text-sm font-medium text-text-primary">{t('auth.passwordLabel')}</label>
                 <div className="mt-1">
-                  <input name="confirmPassword" type="password" required onChange={handleChange} className="block w-full appearance-none rounded-md border border-[#3A3935] bg-[#2B2A27] px-3 py-2 text-white placeholder-[#716F6C] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm transition-colors" placeholder={t('auth.confirmPasswordPlaceholder')} />
+                  <input name="password" type="password" required onChange={handleChange} className="block w-full appearance-none rounded-md border border-border-muted bg-bg-surface px-3 py-2 text-text-primary placeholder-[#716F6C] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm transition-colors" placeholder={t('auth.passwordPlaceholder')} />
                 </div>
               </div>
 
               <div>
-                <button type="submit" className="flex w-full justify-center rounded-lg bg-primary py-2.5 px-4 text-sm font-semibold text-white shadow-sm hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors cursor-pointer">
+                <label className="block text-sm font-medium text-text-primary">{t('auth.confirmPasswordLabel')}</label>
+                <div className="mt-1">
+                  <input name="confirmPassword" type="password" required onChange={handleChange} className="block w-full appearance-none rounded-md border border-border-muted bg-bg-surface px-3 py-2 text-text-primary placeholder-[#716F6C] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm transition-colors" placeholder={t('auth.confirmPasswordPlaceholder')} />
+                </div>
+              </div>
+
+              <div>
+                <button type="submit" className="flex w-full justify-center rounded-lg bg-primary py-2.5 px-4 text-sm font-semibold text-text-primary shadow-sm hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors cursor-pointer">
                   {t('auth.step1Btn')}
                 </button>
               </div>
 
               <div className="mt-6 text-center text-sm">
-                <span className="text-[#A3A19E]">{t('auth.haveAccount')} </span>
+                <span className="text-text-secondary">{t('auth.haveAccount')} </span>
                 <button type="button" onClick={() => { setMode('login'); setRegisterStep(1); dispatch(clearError()); }} className="font-semibold text-primary hover:text-primary-hover cursor-pointer bg-transparent border-none">
                   {t('auth.signIn')}
                 </button>
@@ -181,23 +181,23 @@ const Auth = () => {
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-[#EBEAE8]">{t('auth.bioLabel')}</label>
+                <label className="block text-sm font-medium text-text-primary">{t('auth.bioLabel')}</label>
                 <div className="mt-1">
-                  <textarea name="bio" rows={3} onChange={handleChange} className="block w-full appearance-none rounded-md border border-[#3A3935] bg-[#2B2A27] px-3 py-2 text-white placeholder-[#716F6C] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm transition-colors" placeholder={t('auth.bioPlaceholder')} />
+                  <textarea name="bio" rows={3} onChange={handleChange} className="block w-full appearance-none rounded-md border border-border-muted bg-bg-surface px-3 py-2 text-text-primary placeholder-[#716F6C] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm transition-colors" placeholder={t('auth.bioPlaceholder')} />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#EBEAE8]">{t('auth.optionalSubjectLabel')}</label>
+                <label className="block text-sm font-medium text-text-primary">{t('auth.optionalSubjectLabel')}</label>
                 <div className="mt-1">
-                  <input name="optionalSubject" type="text" onChange={handleChange} className="block w-full appearance-none rounded-md border border-[#3A3935] bg-[#2B2A27] px-3 py-2 text-white placeholder-[#716F6C] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm transition-colors" placeholder={t('auth.optionalSubjectPlaceholder')} />
+                  <input name="optionalSubject" type="text" onChange={handleChange} className="block w-full appearance-none rounded-md border border-border-muted bg-bg-surface px-3 py-2 text-text-primary placeholder-[#716F6C] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm transition-colors" placeholder={t('auth.optionalSubjectPlaceholder')} />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#EBEAE8]">{t('auth.examStageLabel')}</label>
+                <label className="block text-sm font-medium text-text-primary">{t('auth.examStageLabel')}</label>
                 <div className="mt-1">
-                  <select name="examStage" value={formData.examStage} onChange={handleChange} className="block w-full rounded-md border border-[#3A3935] bg-[#2B2A27] px-3 py-2 text-white focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm transition-colors cursor-pointer appearance-none">
+                  <select name="examStage" value={formData.examStage} onChange={handleChange} className="block w-full rounded-md border border-border-muted bg-bg-surface px-3 py-2 text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm transition-colors cursor-pointer appearance-none">
                     <option value="beginner">{t('auth.stageBeginner') || 'Beginner'}</option>
                     <option value="prelims">{t('auth.stagePrelims')}</option>
                     <option value="mains">{t('auth.stageMains')}</option>
@@ -207,10 +207,10 @@ const Auth = () => {
               </div>
 
               <div className="flex gap-4 pt-2">
-                <button type="button" onClick={handleFinish} className="flex flex-1 justify-center rounded-lg bg-transparent border border-[#716F6C] py-2.5 px-4 text-sm font-medium text-[#EBEAE8] hover:bg-white/5 focus:outline-none transition-colors cursor-pointer">
+                <button type="button" onClick={handleFinish} className="flex flex-1 justify-center rounded-lg bg-transparent border border-border-strong py-2.5 px-4 text-sm font-medium text-text-primary hover:bg-white/5 focus:outline-none transition-colors cursor-pointer">
                   {t('auth.skipFinish')}
                 </button>
-                <button type="submit" disabled={loading} className="flex flex-1 justify-center rounded-lg bg-primary py-2.5 px-4 text-sm font-semibold text-white shadow-sm hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors cursor-pointer disabled:opacity-50">
+                <button type="submit" disabled={loading} className="flex flex-1 justify-center rounded-lg bg-primary py-2.5 px-4 text-sm font-semibold text-text-primary shadow-sm hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors cursor-pointer disabled:opacity-50">
                   {loading ? 'Processing...' : t('auth.saveFinish')}
                 </button>
               </div>

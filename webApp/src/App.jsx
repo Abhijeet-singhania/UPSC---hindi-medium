@@ -14,31 +14,34 @@ import PastYearProblems from './pages/PastYearProblems/PastYearProblems';
 import AskAI from './pages/AskAI/AskAI';
 
 import ProtectedRoute from './components/layout/ProtectedRoute';
+import { ThemeProvider } from './context/ThemeContext';
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Welcome />} />
-        <Route path="/auth" element={<Auth />} />
+    <ThemeProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Welcome />} />
+          <Route path="/auth" element={<Auth />} />
 
-        {/* Protected Routes */}
-        <Route element={<ProtectedRoute />}>
-          <Route element={<AppLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/roadmap" element={<Roadmap />} />
-            <Route path="/content" element={<StudyContent />} />
-            <Route path="/affairs" element={<CurrentAffairs />} />
-            <Route path="/prelims" element={<PrelimsLab />} />
-            <Route path="/past-year" element={<PastYearProblems />} />
-            <Route path="/ask-ai" element={<AskAI />} />
-            <Route path="/community" element={<Community />} />
-            <Route path="/wellbeing" element={<Wellbeing />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
+          {/* Protected Routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route element={<AppLayout />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/roadmap" element={<Roadmap />} />
+              <Route path="/content" element={<StudyContent />} />
+              <Route path="/affairs" element={<CurrentAffairs />} />
+              <Route path="/prelims" element={<PrelimsLab />} />
+              <Route path="/past-year" element={<PastYearProblems />} />
+              <Route path="/ask-ai" element={<AskAI />} />
+              <Route path="/community" element={<Community />} />
+              <Route path="/wellbeing" element={<Wellbeing />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
           </Route>
-        </Route>
-      </Routes>
-    </Router>
+        </Routes>
+      </Router>
+    </ThemeProvider>
   );
 }
 

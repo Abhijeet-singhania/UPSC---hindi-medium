@@ -76,20 +76,20 @@ const PastYearProblems = () => {
   return (
     <div className="flex flex-col">
       <div className="mb-6">
-        <h2 className="font-serif text-[28px] font-semibold text-[#201E1C] mb-1">{t('pastYearProblems.title')}</h2>
-        <p className="text-[#716F6C] text-[13px]">{t('pastYearProblems.subtitle')}</p>
+        <h2 className="font-serif text-[28px] font-semibold text-text-primary mb-1">{t('pastYearProblems.title')}</h2>
+        <p className="text-text-muted text-[13px]">{t('pastYearProblems.subtitle')}</p>
       </div>
 
       <div className="flex gap-8 items-start">
         <div className="w-[320px] shrink-0">
-          <div className="bg-white border border-[#Eeece9] rounded-xl p-6 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+          <div className="bg-bg-panel border border-border-default rounded-xl p-6 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
             <div className="flex items-center gap-2 mb-4">
-              <Search size={16} className="text-[#716F6C]" />
+              <Search size={16} className="text-text-muted" />
               <input
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder={t('pastYearProblems.searchPlaceholder')}
-                className="w-full border border-[#Eeece9] rounded-md text-[13px] px-3 py-2 outline-none focus:border-primary"
+                className="w-full border border-border-default rounded-md text-[13px] px-3 py-2 outline-none focus:border-primary"
               />
             </div>
 
@@ -97,7 +97,7 @@ const PastYearProblems = () => {
               <select
                 value={selectedExamType}
                 onChange={(e) => setSelectedExamType(e.target.value)}
-                className="border border-[#Eeece9] rounded-md text-[13px] px-3 py-2 bg-white text-[#201E1C]"
+                className="border border-border-default rounded-md text-[13px] px-3 py-2 bg-bg-panel text-text-primary"
               >
                 <option value="">{t('pastYearProblems.filterExamType')}</option>
                 {(filters.exam_types || []).map((examType) => (
@@ -110,7 +110,7 @@ const PastYearProblems = () => {
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
-                className="border border-[#Eeece9] rounded-md text-[13px] px-3 py-2 bg-white text-[#201E1C]"
+                className="border border-border-default rounded-md text-[13px] px-3 py-2 bg-bg-panel text-text-primary"
               >
                 <option value="">{t('pastYearProblems.filterYear')}</option>
                 {(filters.years || []).map((year) => (
@@ -123,7 +123,7 @@ const PastYearProblems = () => {
               <select
                 value={selectedSubject}
                 onChange={(e) => setSelectedSubject(e.target.value)}
-                className="border border-[#Eeece9] rounded-md text-[13px] px-3 py-2 bg-white text-[#201E1C]"
+                className="border border-border-default rounded-md text-[13px] px-3 py-2 bg-bg-panel text-text-primary"
               >
                 <option value="">{t('pastYearProblems.filterSubject')}</option>
                 {(filters.subjects || []).map((subject) => (
@@ -136,7 +136,7 @@ const PastYearProblems = () => {
               <select
                 value={selectedPaper}
                 onChange={(e) => setSelectedPaper(e.target.value)}
-                className="border border-[#Eeece9] rounded-md text-[13px] px-3 py-2 bg-white text-[#201E1C]"
+                className="border border-border-default rounded-md text-[13px] px-3 py-2 bg-bg-panel text-text-primary"
               >
                 <option value="">{t('pastYearProblems.filterPaper')}</option>
                 {(filters.papers || []).map((paper) => (
@@ -149,7 +149,7 @@ const PastYearProblems = () => {
 
             <button
               onClick={resetFilters}
-              className="w-full bg-white border border-[#Eeece9] py-2 px-4 rounded-md text-[13px] font-medium text-[#201E1C] cursor-pointer hover:bg-[#f9f9f9] transition-colors"
+              className="w-full bg-bg-panel border border-border-default py-2 px-4 rounded-md text-[13px] font-medium text-text-primary cursor-pointer hover:bg-bg-panel-hover transition-colors"
             >
               {t('pastYearProblems.clearFilters')}
             </button>
@@ -161,15 +161,15 @@ const PastYearProblems = () => {
             )}
 
             {(isLoadingFilters || isLoadingProblems) && (
-              <div className="mt-4 text-[12px] text-[#716F6C]">{t('pastYearProblems.loading')}</div>
+              <div className="mt-4 text-[12px] text-text-muted">{t('pastYearProblems.loading')}</div>
             )}
           </div>
         </div>
 
         <div className="flex-1">
-          <div className="bg-white border border-[#Eeece9] rounded-xl p-6 shadow-[0_1px_2px_rgba(0,0,0,0.05)] mb-4">
-            <div className="text-[13px] text-[#716F6C]">
-              {t('pastYearProblems.totalFound')}: <strong className="text-[#201E1C]">{Array.isArray(problemsData) ? problemsData.length : 0}</strong>
+          <div className="bg-bg-panel border border-border-default rounded-xl p-6 shadow-[0_1px_2px_rgba(0,0,0,0.05)] mb-4">
+            <div className="text-[13px] text-text-muted">
+              {t('pastYearProblems.totalFound')}: <strong className="text-text-primary">{Array.isArray(problemsData) ? problemsData.length : 0}</strong>
             </div>
           </div>
 
@@ -179,28 +179,28 @@ const PastYearProblems = () => {
                 <button
                   key={problem.id}
                   onClick={() => setSelectedProblem(problem)}
-                  className={`text-left bg-white border rounded-xl p-5 shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition-colors cursor-pointer ${
+                  className={`text-left bg-bg-panel border rounded-xl p-5 shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition-colors cursor-pointer ${
                     selectedProblem?.id === problem.id
                       ? 'border-primary bg-[#FDF9F5]'
-                      : 'border-[#Eeece9] hover:bg-[#faf9f7]'
+                      : 'border-border-default hover:bg-[#faf9f7]'
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-2 text-[11px] uppercase tracking-[1px]">
                     <span className="px-2 py-1 rounded bg-[#fbefe9] text-primary font-semibold">{problem.exam_type}</span>
-                    <span className="px-2 py-1 rounded bg-[#f0f0f0] text-[#716F6C] font-semibold">{problem.year}</span>
+                    <span className="px-2 py-1 rounded bg-[#f0f0f0] text-text-muted font-semibold">{problem.year}</span>
                     {problem.paper && <span className="px-2 py-1 rounded bg-[#e6f3eb] text-[#2B7A4B] font-semibold">{problem.paper}</span>}
                   </div>
-                  <h3 className="text-[15px] font-semibold text-[#201E1C] leading-[1.5] mb-2">
+                  <h3 className="text-[15px] font-semibold text-text-primary leading-[1.5] mb-2">
                     {problem.question_text}
                   </h3>
-                  <div className="text-[12px] text-[#716F6C]">
+                  <div className="text-[12px] text-text-muted">
                     {problem.subject || t('pastYearProblems.noSubject')}
                     {problem.topic ? ` · ${problem.topic}` : ''}
                   </div>
                 </button>
               ))
             ) : (
-              <div className="bg-white border border-[#Eeece9] rounded-xl p-6 text-[13px] text-[#716F6C]">
+              <div className="bg-bg-panel border border-border-default rounded-xl p-6 text-[13px] text-text-muted">
                 {t('pastYearProblems.noData')}
               </div>
             )}
@@ -208,29 +208,29 @@ const PastYearProblems = () => {
         </div>
 
         <div className="w-[380px] shrink-0">
-          <div className="bg-white border border-[#Eeece9] rounded-xl p-6 shadow-[0_1px_2px_rgba(0,0,0,0.05)] sticky top-[96px]">
+          <div className="bg-bg-panel border border-border-default rounded-xl p-6 shadow-[0_1px_2px_rgba(0,0,0,0.05)] sticky top-[96px]">
             {selectedProblem ? (
               <>
                 <div className="flex justify-between items-start mb-4">
                   <span className="text-[11px] uppercase tracking-[1px] text-primary font-semibold">
                     {selectedProblem.exam_type} · {selectedProblem.year}
                   </span>
-                  <div className="text-[11px] text-[#716F6C] flex items-center gap-1">
+                  <div className="text-[11px] text-text-muted flex items-center gap-1">
                     <CalendarRange size={12} />
                     {selectedProblem.paper || t('pastYearProblems.noPaper')}
                   </div>
                 </div>
 
-                <h4 className="text-[16px] font-semibold text-[#201E1C] leading-[1.6] mb-4">
+                <h4 className="text-[16px] font-semibold text-text-primary leading-[1.6] mb-4">
                   {selectedProblem.question_text}
                 </h4>
 
                 {(selectedProblem.option_a || selectedProblem.option_b || selectedProblem.option_c || selectedProblem.option_d) && (
                   <div className="mb-4">
-                    <div className="text-[11px] uppercase tracking-[1px] text-[#716F6C] font-semibold mb-2">
+                    <div className="text-[11px] uppercase tracking-[1px] text-text-muted font-semibold mb-2">
                       {t('pastYearProblems.options')}
                     </div>
-                    <div className="flex flex-col gap-2 text-[13px] text-[#201E1C]">
+                    <div className="flex flex-col gap-2 text-[13px] text-text-primary">
                       {selectedProblem.option_a && <div>A. {selectedProblem.option_a}</div>}
                       {selectedProblem.option_b && <div>B. {selectedProblem.option_b}</div>}
                       {selectedProblem.option_c && <div>C. {selectedProblem.option_c}</div>}
@@ -241,20 +241,20 @@ const PastYearProblems = () => {
 
                 <div className="grid grid-cols-2 gap-3 mb-4 text-[12px]">
                   <div className="bg-[#f4f3ef] p-3 rounded-md">
-                    <div className="text-[#716F6C] mb-1">{t('pastYearProblems.subject')}</div>
-                    <div className="text-[#201E1C] font-medium">{selectedProblem.subject || '-'}</div>
+                    <div className="text-text-muted mb-1">{t('pastYearProblems.subject')}</div>
+                    <div className="text-text-primary font-medium">{selectedProblem.subject || '-'}</div>
                   </div>
                   <div className="bg-[#f4f3ef] p-3 rounded-md">
-                    <div className="text-[#716F6C] mb-1">{t('pastYearProblems.marks')}</div>
-                    <div className="text-[#201E1C] font-medium">{selectedProblem.marks || '-'}</div>
+                    <div className="text-text-muted mb-1">{t('pastYearProblems.marks')}</div>
+                    <div className="text-text-primary font-medium">{selectedProblem.marks || '-'}</div>
                   </div>
                   <div className="bg-[#f4f3ef] p-3 rounded-md">
-                    <div className="text-[#716F6C] mb-1">{t('pastYearProblems.wordLimit')}</div>
-                    <div className="text-[#201E1C] font-medium">{selectedProblem.word_limit || '-'}</div>
+                    <div className="text-text-muted mb-1">{t('pastYearProblems.wordLimit')}</div>
+                    <div className="text-text-primary font-medium">{selectedProblem.word_limit || '-'}</div>
                   </div>
                   <div className="bg-[#f4f3ef] p-3 rounded-md">
-                    <div className="text-[#716F6C] mb-1">{t('pastYearProblems.correctOption')}</div>
-                    <div className="text-[#201E1C] font-medium">{selectedProblem.correct_option || '-'}</div>
+                    <div className="text-text-muted mb-1">{t('pastYearProblems.correctOption')}</div>
+                    <div className="text-text-primary font-medium">{selectedProblem.correct_option || '-'}</div>
                   </div>
                 </div>
 
@@ -269,7 +269,7 @@ const PastYearProblems = () => {
                 )}
               </>
             ) : (
-              <div className="text-[13px] text-[#716F6C]">{t('pastYearProblems.selectProblem')}</div>
+              <div className="text-[13px] text-text-muted">{t('pastYearProblems.selectProblem')}</div>
             )}
           </div>
         </div>
