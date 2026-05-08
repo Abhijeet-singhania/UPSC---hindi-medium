@@ -27,6 +27,32 @@ export const loginUser = createAsyncThunk(
   }
 );
 
+export const registerUser = createAsyncThunk(
+  'auth/registerUser',
+  async (userData, { dispatch, rejectWithValue }) => {
+    try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/';
+      const response = await fetch(`${baseUrl}api/v1/users/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData), // { name, email, password, bio, exam_stage, optional_subject }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        return rejectWithValue(errorData.detail || 'Registration failed. Please try again.');
+      }
+
+      // Automatically log in the user after successful registration
+      return dispatch(loginUser({ email: userData.email, password: userData.password })).unwrap();
+    } catch (err) {
+      return rejectWithValue(err.message || 'Network error occurred');
+    }
+  }
+);
+
 const getInitialState = () => {
   try {
     const token = localStorage.getItem('access_token');
@@ -100,6 +126,19 @@ const authSlice = createSlice({
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to authenticate';
+      })
+      .addCase(registerUser.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(registerUser.fulfilled, (state) => {
+        // State will be handled by loginUser.fulfilled since it's dispatched after success
+        // But we can clear loading here just in case
+        state.loading = false;
+      })
+      .addCase(registerUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to register';
       });
   }
 });

@@ -3,7 +3,7 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
-import { loginUser, clearError } from '../../store/slices/authSlice';
+import { loginUser, registerUser, clearError } from '../../store/slices/authSlice';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -16,11 +16,13 @@ const Auth = () => {
   const [registerStep, setRegisterStep] = useState(1); // 1 or 2
 
   const [formData, setFormData] = useState({
+    name: '',
     email: '',
     password: '',
     confirmPassword: '',
     bio: '',
-    examStage: 'Prelims'
+    examStage: 'prelims',
+    optionalSubject: ''
   });
 
   if (isAuthenticated) {
@@ -31,13 +33,29 @@ const Auth = () => {
     setFormData(prev => ({...prev, [e.target.name]: e.target.value}));
   };
 
+  const handleStep1Submit = (e) => {
+    e.preventDefault();
+    if (formData.password !== formData.confirmPassword) {
+      alert(t('auth.passwordsMismatch') || 'Passwords do not match');
+      return;
+    }
+    setRegisterStep(2);
+  };
+
   const handleFinish = (e) => {
     if(e) e.preventDefault();
     if (mode === 'login') {
       dispatch(loginUser({ email: formData.email, password: formData.password }));
     } else {
-      // Mock local register - in production link to a Register API Thunk
-      navigate('/dashboard'); 
+      const payload = {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        bio: formData.bio,
+        exam_stage: formData.examStage,
+        optional_subject: formData.optionalSubject
+      };
+      dispatch(registerUser(payload));
     }
   };
 
@@ -102,7 +120,13 @@ const Auth = () => {
           )}
 
           {mode === 'register' && registerStep === 1 && (
-            <motion.form key="register1" initial="hidden" animate="visible" variants={itemVariants} className="space-y-6" onSubmit={(e) => { e.preventDefault(); setRegisterStep(2); }}>
+            <motion.form key="register1" initial="hidden" animate="visible" variants={itemVariants} className="space-y-6" onSubmit={handleStep1Submit}>
+              <div>
+                <label className="block text-sm font-medium text-[#EBEAE8]">{t('auth.nameLabel')}</label>
+                <div className="mt-1">
+                  <input name="name" type="text" required onChange={handleChange} className="block w-full appearance-none rounded-md border border-[#3A3935] bg-[#2B2A27] px-3 py-2 text-white placeholder-[#716F6C] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm transition-colors" placeholder={t('auth.namePlaceholder')} />
+                </div>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-[#EBEAE8]">{t('auth.emailLabel')}</label>
                 <div className="mt-1">
@@ -141,6 +165,11 @@ const Auth = () => {
 
           {mode === 'register' && registerStep === 2 && (
             <motion.form key="register2" initial="hidden" animate="visible" variants={itemVariants} className="space-y-6" onSubmit={handleFinish}>
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-sm p-3 rounded-md">
+                  {error}
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-[#EBEAE8]">{t('auth.bioLabel')}</label>
                 <div className="mt-1">
@@ -149,12 +178,20 @@ const Auth = () => {
               </div>
 
               <div>
+                <label className="block text-sm font-medium text-[#EBEAE8]">{t('auth.optionalSubjectLabel')}</label>
+                <div className="mt-1">
+                  <input name="optionalSubject" type="text" onChange={handleChange} className="block w-full appearance-none rounded-md border border-[#3A3935] bg-[#2B2A27] px-3 py-2 text-white placeholder-[#716F6C] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm transition-colors" placeholder={t('auth.optionalSubjectPlaceholder')} />
+                </div>
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-[#EBEAE8]">{t('auth.examStageLabel')}</label>
                 <div className="mt-1">
                   <select name="examStage" value={formData.examStage} onChange={handleChange} className="block w-full rounded-md border border-[#3A3935] bg-[#2B2A27] px-3 py-2 text-white focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm transition-colors cursor-pointer appearance-none">
-                    <option value="Prelims">{t('auth.stagePrelims')}</option>
-                    <option value="Mains">{t('auth.stageMains')}</option>
-                    <option value="Interview">{t('auth.stageInterview')}</option>
+                    <option value="beginner">{t('auth.stageBeginner') || 'Beginner'}</option>
+                    <option value="prelims">{t('auth.stagePrelims')}</option>
+                    <option value="mains">{t('auth.stageMains')}</option>
+                    <option value="interview">{t('auth.stageInterview')}</option>
                   </select>
                 </div>
               </div>
@@ -163,8 +200,8 @@ const Auth = () => {
                 <button type="button" onClick={handleFinish} className="flex flex-1 justify-center rounded-lg bg-transparent border border-[#716F6C] py-2.5 px-4 text-sm font-medium text-[#EBEAE8] hover:bg-white/5 focus:outline-none transition-colors cursor-pointer">
                   {t('auth.skipFinish')}
                 </button>
-                <button type="submit" className="flex flex-1 justify-center rounded-lg bg-primary py-2.5 px-4 text-sm font-semibold text-white shadow-sm hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors cursor-pointer">
-                  {t('auth.saveFinish')}
+                <button type="submit" disabled={loading} className="flex flex-1 justify-center rounded-lg bg-primary py-2.5 px-4 text-sm font-semibold text-white shadow-sm hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors cursor-pointer disabled:opacity-50">
+                  {loading ? 'Processing...' : t('auth.saveFinish')}
                 </button>
               </div>
             </motion.form>

@@ -14,7 +14,7 @@ The **UPSC Hindi Peer Network** is a specialized backend platform designed for U
 ## 3. Core Features
 
 ### A. User Management & Reputation System
-- **Authentication:** Currently implements a "Mock Auth" using `device_id` as a unique identifier. The schema supports transition to Email/Password with `hashed_password` fields.
+- **Authentication:** JWT (JSON Web Token) authentication is fully integrated (`OAuth2PasswordBearer`). It allows login via email/password, returning an `access_token` for secured route consumption.
 - **Roles:** User, Contributor, Admin, Moderator, Mentor.
 - **Exam Stages:** Beginner, Prelims, Mains, Interview.
 - **Levels:** Beginner (0+), Learner (50+), Contributor (200+), Scholar (500+), Mentor (1000+).
@@ -69,17 +69,21 @@ Built on SQLAlchemy with the following key models:
 ## 5. Service Layer
 - **`ReputationService`**: Centralized engine for managing points, levels, and role promotions. Ensures consistency across the app by logging every change in `ReputationLog`.
 - **`RedisService`**: Manages real-time leaderboards for reputation and study minutes using sorted sets.
+- **`AuthService`**: Manages password hashing, token creation, and validation for user login flows.
 
 ## 6. Codebase Structure
-- `app/api/`: Feature-based route handlers (e.g., `silent_library.py`, `daily_answer.py`).
+- `app/api/`: Feature-based route handlers (e.g., `silent_library.py`, `daily_answer.py`, `users.py`, `past_year_problems.py`).
 - `app/db/`: Database configuration (`database.py`) and schema definitions (`models.py`).
 - `app/schemas/`: Pydantic models for request validation and response serialization.
 - `app/services/`: Business logic (e.g., `auth_service.py`, `reputation_service.py`).
 - `app/config.py`: Centralized settings using `pydantic-settings`.
 - `app/main.py`: Entry point, middleware, and database seeding logic.
 
-## 7. Observations & Potential Improvements
-- **Security:** Transition from `device_id` to JWT-based authentication is needed for production.
+## 7. Current Steps Done (Context for Future Iterations)
+- **JWT Authentication Flow**: The `Mock Auth` using `device_id` was replaced with secure JWT-based email/password authentication via `auth_service.py`. Endpoints now validate access using the `get_current_user` dependency.
+- **PYQ Integration**: Completed endpoints for the Past Year Problems.
+
+## 8. Observations & Potential Improvements
 - **Asset Management:** Add support for image/PDF uploads for handwritten Daily Answers.
 - **Search:** Implement PostgreSQL Full Text Search or a dedicated engine for Hindi content.
 - **Testing:** Introduce a `tests/` directory with `pytest` for endpoint and service validation.

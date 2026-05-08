@@ -319,6 +319,12 @@
     "skipFinish": "Skip & Finish",
     "saveFinish": "Save & Finish",
     "step2Title": "Almost there!",
-    "step2Sub": "Personalize your experience"
+    "step2Sub": "Personalize your experience",
+    "nameLabel": "Full Name",
+    "namePlaceholder": "Enter your full name",
+    "optionalSubjectLabel": "Optional Subject (Optional)",
+    "optionalSubjectPlaceholder": "e.g. PSIR, Sociology",
+    "passwordsMismatch": "Passwords do not match",
+    "stageBeginner": "Beginner"
   }
 }

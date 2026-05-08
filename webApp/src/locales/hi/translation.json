@@ -319,6 +319,12 @@
     "skipFinish": "छोड़ें और समाप्त करें",
     "saveFinish": "सहेजें और समाप्त करें",
     "step2Title": "बस थोड़ा और!",
-    "step2Sub": "अपने अनुभव को वैयक्तिकृत करें"
+    "step2Sub": "अपने अनुभव को वैयक्तिकृत करें",
+    "nameLabel": "पूरा नाम",
+    "namePlaceholder": "अपना पूरा नाम दर्ज करें",
+    "optionalSubjectLabel": "वैकल्पिक विषय (वैकल्पिक)",
+    "optionalSubjectPlaceholder": "उदा. PSIR, समाजशास्त्र",
+    "passwordsMismatch": "पासवर्ड मेल नहीं खाते",
+    "stageBeginner": "शुरुआती (Beginner)"
   }
 }
