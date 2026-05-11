@@ -13,6 +13,7 @@ import Wellbeing from './pages/Wellbeing/Wellbeing';
 import PastYearProblems from './pages/PastYearProblems/PastYearProblems';
 import AskAI from './pages/AskAI/AskAI';
 import Rewards from './pages/Rewards/Rewards';
+import Settings from './pages/Settings/Settings';
 
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import { ThemeProvider } from './context/ThemeContext';
@@ -38,6 +39,7 @@ function App() {
               <Route path="/rewards" element={<Rewards />} />
               <Route path="/community" element={<Community />} />
               <Route path="/wellbeing" element={<Wellbeing />} />
+              <Route path="/settings" element={<Settings />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           </Route>

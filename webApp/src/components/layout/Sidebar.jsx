@@ -19,7 +19,8 @@ import {
   Sparkles,
   Sun,
   Moon,
-  Trophy
+  Trophy,
+  Settings
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -126,7 +127,15 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
         )}
       </div>
 
-      <div className={`mx-6 mb-6 ${isCollapsed ? 'mx-3' : ''}`}>
+      <div className={`mx-6 mb-6 flex flex-col gap-2 ${isCollapsed ? 'mx-3' : ''}`}>
+        <NavLink 
+          to="/settings" 
+          className={({ isActive }) => `w-full border border-border-default py-2 rounded-lg transition cursor-pointer text-sm flex items-center justify-center gap-2 ${isActive ? 'bg-primary text-text-primary border-primary' : 'bg-bg-panel text-text-secondary hover:text-text-primary hover:bg-bg-panel-hover'}`}
+          title={isCollapsed ? t('sidebar.settings') : ''}
+        >
+          <Settings size={16} />
+          {!isCollapsed && t('sidebar.settings')}
+        </NavLink>
         <button onClick={() => dispatch(logout())} className="w-full bg-bg-panel border border-border-default text-text-secondary py-2 rounded-lg hover:text-text-primary hover:bg-bg-panel-hover transition cursor-pointer text-sm">
           {isCollapsed ? 'L' : t('sidebar.logout')}
         </button>

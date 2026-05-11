@@ -14,7 +14,8 @@
     "growth": "GROWTH",
     "logout": "Logout",
     "askAI": "Ask AI",
-    "rewards": "Ranks & Rewards"
+    "rewards": "Ranks & Rewards",
+    "settings": "Settings"
   },
   "dashboard": {
     "greeting": "Arjun, let's get to work.",
@@ -412,5 +413,24 @@
     "factText": "Every claim is cross-checked against the syllabus corpus. If I can't cite, I won't say. If a PYQ answer key conflicts with NCERT, I'll flag it openly.",
     "mentorReply": "MENTOR · REPLY",
     "mentorThinking": "MENTOR · THINKING…"
+  },
+  "settings": {
+    "title": "Settings",
+    "profile": "Profile",
+    "preferences": "Preferences",
+    "bio": "Bio",
+    "email": "Email Address",
+    "fullName": "Full Name",
+    "optionalSubject": "Optional Subject",
+    "examStage": "Current Exam Stage",
+    "saveChanges": "Save Changes",
+    "language": "Language",
+    "languageSub": "Choose your preferred application language.",
+    "theme": "Theme",
+    "themeSub": "Toggle between Light and Dark mode.",
+    "english": "English",
+    "hindi": "Hindi",
+    "lightMode": "Light Mode",
+    "darkMode": "Dark Mode"
   }
 }
