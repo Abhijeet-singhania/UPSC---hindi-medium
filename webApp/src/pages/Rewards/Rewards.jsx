@@ -1,0 +1,264 @@
+import React from 'react';
+import { Trophy, Check, X } from 'lucide-react';
+import { useSelector } from 'react-redux';
+
+// Mock data replacing window.SAMPLE.BADGES
+const MOCK_BADGES = [
+  { name: "First Blood", desc: "Complete your first PYQ drill.", rarity: "Common", earned: true },
+  { name: "Night Owl", desc: "Study in the Silent Library past 2 AM.", rarity: "Rare", earned: true },
+  { name: "Streak 30", desc: "Maintain a 30-day streak.", rarity: "Epic", earned: false, progress: 23, total: 30 },
+  { name: "Flawless", desc: "Score 100% in a 50-question mock.", rarity: "Legendary", earned: false, progress: 0, total: 1 },
+  { name: "Cabinet", desc: "Reach Level 81.", rarity: "Mythic", earned: false, progress: 23, total: 81 },
+];
+
+const PageHeader = ({ kicker, title, dek, right }) => (
+  <div className="mb-8">
+    <div className="flex justify-between items-start mb-2">
+      <div className="text-[12px] tracking-[3px] text-primary uppercase font-bold mb-4">{kicker}</div>
+      {right}
+    </div>
+    <h1 className="text-4xl font-serif text-text-primary mb-4 leading-tight">{title}</h1>
+    <p className="text-lg text-text-secondary max-w-2xl">{dek}</p>
+  </div>
+);
+
+const Rewards = () => {
+  const { user } = useSelector(state => state.auth);
+  // Fallback for user if missing fields
+  const safeUser = user || { name: "Arjun Sharma", initials: "AR" };
+
+  return (
+    <div className="flex flex-col gap-6 max-w-[1200px] mx-auto w-full">
+      <PageHeader
+        kicker="THE LADDER · 81 LEVELS · 8 RANKS"
+        title={<>From Aspirant to <em className="text-primary not-italic font-serif font-medium">Cabinet Secretary</em>.</>}
+        dek="Earn cosmetics, badges, and titles for the work you'd do anyway. Streaks matter. Mistake-logs matter more. No pay-to-win — none of this is sold."
+        right={<div className="bg-primary/10 border border-primary text-primary px-3 py-1.5 rounded-full text-[11px] font-semibold flex items-center gap-2 shadow-sm"><Trophy size={14}/> Strategist · Lvl 23</div>}
+      />
+
+      {/* Grid container */}
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-6">
+        
+        {/* Main Column */}
+        <div className="flex flex-col gap-6">
+          
+          {/* Profile Card */}
+          <div className="bg-bg-panel border border-border-default rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+            <div className="bg-bg-surface-dark text-text-primary p-8 md:p-10 flex flex-col md:flex-row items-center md:items-start gap-8 relative overflow-hidden">
+              <div className="absolute inset-0 opacity-[0.06] bg-[radial-gradient(600px_200px_at_30%_50%,_var(--color-primary),_transparent_70%)]" />
+              
+              <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-primary to-[#BFA532] border-[3px] border-bg-surface-dark flex items-center justify-center text-white text-4xl font-serif shrink-0 shadow-lg">
+                {safeUser.initials || safeUser.name?.substring(0, 2).toUpperCase() || 'AR'}
+              </div>
+              
+              <div className="flex-1 relative text-center md:text-left">
+                <div className="text-[10px] text-text-muted tracking-[2px] uppercase mb-1">STRATEGIST · LEVEL 23 · ANONYMOUS</div>
+                <h2 className="text-3xl font-serif font-medium mb-3 tracking-tight">{safeUser.name || 'Arjun Sharma'}</h2>
+                <div className="flex flex-wrap justify-center md:justify-start gap-4 font-mono text-[11px] text-text-secondary tracking-widest">
+                  <span>JOINED · MAR 2025</span>
+                  <span>NATIONAL · #7 GS-I</span>
+                  <span>SQUAD · DAWN</span>
+                </div>
+              </div>
+              
+              <div className="relative text-center md:text-right mt-4 md:mt-0">
+                <div className="font-mono text-[10px] text-text-muted tracking-[0.15em] mb-1">NEXT RANK</div>
+                <div className="font-serif text-2xl text-primary font-medium mb-1">OFFICER</div>
+                <div className="text-[11px] text-text-secondary">3 levels to go</div>
+              </div>
+            </div>
+
+            {/* XP progress bar to next level */}
+            <div className="p-6 md:px-8 md:py-6 bg-bg-panel-hover">
+              <div className="flex justify-between font-mono text-[11px] text-text-muted mb-2">
+                <span>LVL 23 · STRATEGIST</span>
+                <span>1,847 / 2,500 XP to LVL 24</span>
+              </div>
+              <div className="h-2 bg-border-default rounded-full overflow-hidden">
+                <div className="w-[73.8%] h-full bg-gradient-to-r from-primary to-[#BFA532] rounded-full" />
+              </div>
+            </div>
+          </div>
+
+          {/* Rank Ladder */}
+          <div className="bg-bg-panel border border-border-default rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden">
+            <div className="px-6 py-5 border-b border-border-default">
+              <div className="text-[10px] text-text-muted tracking-[2px] uppercase mb-1">THE LADDER</div>
+              <h3 className="font-serif text-[22px] font-medium text-text-primary">Eight ranks. The hierarchy is the journey.</h3>
+            </div>
+            <div className="p-6 overflow-x-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-primary/50 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb:hover]:bg-primary [scrollbar-width:thin] [scrollbar-color:#D4613C_transparent]">
+              <RankLadder current={23}/>
+            </div>
+          </div>
+
+          {/* Badges grid */}
+          <div className="bg-bg-panel border border-border-default rounded-2xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-end mb-6 gap-4">
+              <div>
+                <div className="text-[10px] text-text-muted tracking-[2px] uppercase mb-1">TROPHY ROOM</div>
+                <h3 className="font-serif text-[22px] font-medium text-text-primary">5 of 240 badges earned</h3>
+              </div>
+              <div className="flex gap-2">
+                <button className="px-4 py-1.5 rounded-lg text-xs font-medium bg-bg-surface-dark text-text-primary border border-border-muted transition hover:opacity-90 cursor-pointer">All</button>
+                <button className="px-4 py-1.5 rounded-lg text-xs font-medium text-text-secondary hover:bg-bg-panel-hover transition cursor-pointer">Earned</button>
+                <button className="px-4 py-1.5 rounded-lg text-xs font-medium text-text-secondary hover:bg-bg-panel-hover transition cursor-pointer">In progress</button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {MOCK_BADGES.map(b => <BadgeCard key={b.name} b={b}/>)}
+            </div>
+          </div>
+          
+        </div>
+
+        {/* Sidebar */}
+        <aside className="flex flex-col gap-6">
+          <div className="bg-bg-panel border border-border-default rounded-2xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+            <div className="text-[10px] text-text-muted tracking-[2px] uppercase mb-2">XP THIS WEEK</div>
+            <div className="text-4xl font-serif text-text-primary mb-4">+1,847</div>
+            <div className="flex gap-1.5 items-end h-16">
+              {[40, 65, 35, 90, 55, 80, 45].map((h, i) => (
+                <div key={i} className={`flex-1 rounded-sm ${i === 6 ? 'bg-primary' : 'bg-border-muted'}`} style={{ height: `${h}%` }}/>
+              ))}
+            </div>
+            <div className="flex justify-between mt-3 font-mono text-[9px] text-text-muted">
+              {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => <span key={i}>{d}</span>)}
+            </div>
+          </div>
+
+          <div className="bg-bg-panel border border-border-default rounded-2xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+            <div className="text-[10px] text-text-muted tracking-[2px] uppercase mb-4">XP SOURCES · LIFETIME</div>
+            <ul className="flex flex-col gap-4">
+              {[
+                { src: "PYQ Drills", xp: 18420, pct: 42 },
+                { src: "Lessons completed", xp: 9120, pct: 21 },
+                { src: "Silent Library", xp: 7842, pct: 18 },
+                { src: "1v1 Duels", xp: 4710, pct: 11 },
+                { src: "Streaks & misc.", xp: 3318, pct: 8 },
+              ].map(s => (
+                <li key={s.src}>
+                  <div className="flex justify-between text-xs mb-1.5">
+                    <span className="text-text-secondary">{s.src}</span>
+                    <span className="font-mono text-text-primary">+{s.xp.toLocaleString("en-IN")}</span>
+                  </div>
+                  <div className="h-1 bg-border-default rounded-full">
+                    <div className="h-full bg-primary rounded-full" style={{ width: `${s.pct}%` }}/>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="bg-bg-panel border border-border-default rounded-2xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+            <div className="text-[10px] text-text-muted tracking-[2px] uppercase mb-2">COSMETICS · UNLOCKED</div>
+            <p className="text-xs text-text-secondary leading-relaxed mb-4">Ranks unlock dashboard themes and avatar frames. None of this is sold.</p>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { t: "Inkwell", on: true },
+                { t: "Saffron", on: true, current: true },
+                { t: "Mission", on: true },
+                { t: "Cloister", lock: true },
+                { t: "Cabinet", lock: "Lvl 60" },
+                { t: "Service", lock: "Lvl 81" },
+              ].map((c, i) => (
+                <div key={i} className={`aspect-[1/1] rounded-xl p-2 flex flex-col justify-end text-[9px] font-mono tracking-widest relative overflow-hidden ${
+                  c.lock ? "bg-bg-panel-hover text-text-muted border border-border-default" :
+                  i === 1 ? "bg-gradient-to-br from-primary to-[#BFA532] text-white border-[2px] border-primary" :
+                  i === 0 ? "bg-bg-surface-dark text-text-primary border border-border-muted" :
+                  "bg-gradient-to-br from-indigo-500 to-indigo-900 text-white border border-border-default"
+                }`}>
+                  {c.lock && typeof c.lock === "string" && <div className="mb-1">🔒 {c.lock}</div>}
+                  <div className="font-semibold uppercase truncate relative z-10">{c.t}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </aside>
+
+      </div>
+    </div>
+  );
+};
+
+const RankLadder = ({ current }) => {
+  const ranks = [
+    { name: "Aspirant", lvl: "1–5" },
+    { name: "Cadet", lvl: "6–15" },
+    { name: "Strategist", lvl: "16–25", current: true },
+    { name: "Officer", lvl: "26–40" },
+    { name: "Senior Officer", lvl: "41–60" },
+    { name: "Joint Secretary", lvl: "61–80" },
+    { name: "Cabinet Sec", lvl: "81+" }
+  ];
+  return (
+    <div className="flex items-stretch min-w-[700px] py-4">
+      {ranks.map((r, i) => {
+        const passed = i < 2;
+        const active = i === 2;
+        return (
+          <div key={i} className="flex-1 relative">
+            {/* connector */}
+            {i < ranks.length - 1 && (
+              <div className={`absolute left-[60%] right-[-40%] top-[18px] h-px ${passed ? 'border-t border-primary' : 'border-t border-dashed border-border-default'}`} />
+            )}
+            <div className={`relative w-9 h-9 rounded-full flex items-center justify-center font-mono text-[11px] font-bold mx-auto border-2 ${
+              passed ? "bg-primary border-primary text-white shadow-[0_0_12px_rgba(212,97,60,0.4)]" :
+              active ? "bg-bg-surface-dark border-bg-surface-dark text-text-primary shadow-md" :
+              "bg-bg-panel border-border-default text-text-muted"
+            }`}>
+              {passed ? <Check size={14} strokeWidth={2.5} /> : i + 1}
+            </div>
+            <div className="text-center mt-3">
+              <div className={`font-serif text-sm font-medium ${active ? 'text-primary' : passed ? 'text-text-primary' : 'text-text-muted'}`}>{r.name}</div>
+              <div className="font-mono text-[9.5px] text-text-muted mt-1 tracking-widest">LVL {r.lvl}</div>
+              {active && <div className="font-mono text-[10px] text-primary mt-1.5 font-semibold">YOU · LVL 23</div>}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+const BadgeCard = ({ b }) => {
+  const earned = b.earned;
+  
+  // Mapping rare colors to tailwind hexes
+  let colorHex;
+  switch (b.rarity) {
+    case 'Rare': colorHex = '#818cf8'; break; // indigo-400
+    case 'Epic': colorHex = '#D4613C'; break; // primary
+    case 'Legendary': colorHex = '#BFA532'; break; // gold
+    case 'Mythic': colorHex = '#ef4444'; break; // crimson/red
+    default: colorHex = 'var(--color-text-muted)'; // common
+  }
+
+  const borderStyle = earned ? { borderColor: colorHex } : { borderColor: 'var(--color-border-default)' };
+  const iconBgStyle = earned ? { background: `linear-gradient(135deg, ${colorHex}, var(--color-bg-surface-dark))` } : { background: 'var(--color-bg-surface)' };
+  const rarityTextStyle = { color: colorHex };
+  const progressBarStyle = { width: `${(b.progress/b.total)*100}%`, background: colorHex };
+
+  return (
+    <div className={`p-4 rounded-xl border flex flex-col gap-2 relative transition-all ${earned ? 'bg-bg-panel shadow-sm hover:-translate-y-1 hover:shadow-md' : 'bg-bg-panel-hover opacity-85'}`} style={borderStyle}>
+      <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${earned ? 'text-white shadow-sm' : 'text-text-muted'}`} style={iconBgStyle}>
+        {earned ? <Trophy size={22} /> : <X size={22} />}
+      </div>
+      <div className={`font-serif text-[15px] font-semibold mt-1 ${earned ? 'text-text-primary' : 'text-text-secondary'}`}>{b.name}</div>
+      <div className="text-[11px] text-text-secondary leading-relaxed flex-1">{b.desc}</div>
+      
+      <div className="mt-2 pt-2 border-t border-dashed border-border-default flex justify-between items-center">
+        <span className="font-mono text-[9px] tracking-widest font-semibold uppercase" style={rarityTextStyle}>{b.rarity}</span>
+        {!earned && b.progress && <span className="font-mono text-[10px] text-text-muted">{b.progress}/{b.total}</span>}
+        {earned && <Check size={12} strokeWidth={2.5} className="text-text-primary opacity-60"/>}
+      </div>
+      
+      {!earned && b.progress && (
+        <div className="h-[3px] bg-border-default rounded-full mt-1">
+          <div className="h-full rounded-full transition-all duration-1000" style={progressBarStyle} />
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Rewards;

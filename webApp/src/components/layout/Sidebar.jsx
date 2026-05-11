@@ -18,7 +18,8 @@ import {
   ChevronRight,
   Sparkles,
   Sun,
-  Moon
+  Moon,
+  Trophy
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -49,6 +50,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
     {
       title: t('sidebar.growth'),
       items: [
+        { id: 'rewards', label: t('sidebar.rewards'), icon: <Trophy size={18} />, path: '/rewards', badge: 'Lvl 23' },
         { id: 'community', label: t('sidebar.community'), icon: <Users size={18} />, path: '/community', badge: 3 },
         { id: 'wellbeing', label: t('sidebar.wellbeing'), icon: <HeartPulse size={18} />, path: '/wellbeing' },
       ]

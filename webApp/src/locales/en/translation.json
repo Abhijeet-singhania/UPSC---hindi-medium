@@ -13,7 +13,8 @@
     "practice": "PRACTICE",
     "growth": "GROWTH",
     "logout": "Logout",
-    "askAI": "Ask AI"
+    "askAI": "Ask AI",
+    "rewards": "Ranks & Rewards"
   },
   "dashboard": {
     "greeting": "Arjun, let's get to work.",
