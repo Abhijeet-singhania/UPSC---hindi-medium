@@ -1,14 +1,16 @@
-import React from 'react';
-import { Trophy, Check, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Trophy, Check, X, Loader2, Crown } from 'lucide-react';
 import { useSelector } from 'react-redux';
 
-// Mock data replacing window.SAMPLE.BADGES
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+
 const MOCK_BADGES = [
   { name: "First Blood", desc: "Complete your first PYQ drill.", rarity: "Common", earned: true },
-  { name: "Night Owl", desc: "Study in the Silent Library past 2 AM.", rarity: "Rare", earned: true },
-  { name: "Streak 30", desc: "Maintain a 30-day streak.", rarity: "Epic", earned: false, progress: 23, total: 30 },
+  { name: "Night Owl", desc: "Study in the Silent Library.", rarity: "Rare", earned: true },
+  { name: "Streak 30", desc: "Maintain a 30-day streak.", rarity: "Epic", earned: false, progress: 0, total: 30 },
   { name: "Flawless", desc: "Score 100% in a 50-question mock.", rarity: "Legendary", earned: false, progress: 0, total: 1 },
-  { name: "Cabinet", desc: "Reach Level 81.", rarity: "Mythic", earned: false, progress: 23, total: 81 },
+  { name: "Scholar", desc: "Reach 500 reputation points.", rarity: "Epic", earned: false, progress: 0, total: 500 },
+  { name: "Cabinet", desc: "Reach Mentor rank.", rarity: "Mythic", earned: false, progress: 0, total: 1000 },
 ];
 
 const PageHeader = ({ kicker, title, dek, right }) => (
@@ -22,10 +24,66 @@ const PageHeader = ({ kicker, title, dek, right }) => (
   </div>
 );
 
+// Map reputation points → level (mirrors server reputation_service.py)
+const LEVELS = [
+  { name: "Beginner", min: 0, rank: "Aspirant", lvlNum: 1 },
+  { name: "Learner", min: 50, rank: "Cadet", lvlNum: 6 },
+  { name: "Contributor", min: 200, rank: "Strategist", lvlNum: 16 },
+  { name: "Scholar", min: 500, rank: "Officer", lvlNum: 26 },
+  { name: "Mentor", min: 1000, rank: "Senior Officer", lvlNum: 41 },
+];
+
+function getLevel(reputation) {
+  let current = LEVELS[0];
+  let next = LEVELS[1];
+  for (let i = 0; i < LEVELS.length; i++) {
+    if (reputation >= LEVELS[i].min) {
+      current = LEVELS[i];
+      next = LEVELS[i + 1] || null;
+    }
+  }
+  const toNext = next ? next.min - reputation : 0;
+  const fromCurrent = next ? next.min - current.min : 1;
+  const progress = next ? Math.round(((reputation - current.min) / fromCurrent) * 100) : 100;
+  return { current, next, toNext, progress };
+}
+
 const Rewards = () => {
   const { user } = useSelector(state => state.auth);
-  // Fallback for user if missing fields
-  const safeUser = user || { name: "Arjun Sharma", initials: "AR" };
+  const reputation = user?.reputation ?? 0;
+  const { current: currentLevel, next: nextLevel, toNext, progress: xpProgress } = getLevel(reputation);
+  const safeUser = user || {};
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [studyBoard, setStudyBoard] = useState([]);
+  const [userRankings, setUserRankings] = useState(null);
+  const [loadingBoard, setLoadingBoard] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`${API_BASE}/api/v1/leaderboard/reputation?limit=10`).then(r => r.ok ? r.json() : null),
+      fetch(`${API_BASE}/api/v1/leaderboard/study/alltime?limit=10`).then(r => r.ok ? r.json() : null),
+    ]).then(([rep, study]) => {
+      if (rep) setLeaderboard(rep.leaderboard || []);
+      if (study) setStudyBoard(study.leaderboard || []);
+      setLoadingBoard(false);
+    }).catch(() => setLoadingBoard(false));
+  }, []);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    fetch(`${API_BASE}/api/v1/leaderboard/user/${user.id}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => d && setUserRankings(d.rankings))
+      .catch(() => {});
+  }, [user?.id]);
+
+  // Compute earned badges dynamically based on real user data
+  const dynamicBadges = MOCK_BADGES.map(b => {
+    if (b.name === 'Scholar') return { ...b, progress: reputation, earned: reputation >= 500 };
+    if (b.name === 'Cabinet') return { ...b, progress: reputation, earned: reputation >= 1000 };
+    if (b.name === 'Streak 30') return { ...b, progress: safeUser.streak_days ?? 0 };
+    return b;
+  });
 
   return (
     <div className="flex flex-col gap-6 max-w-[1200px] mx-auto w-full">
@@ -33,7 +91,7 @@ const Rewards = () => {
         kicker="THE LADDER · 81 LEVELS · 8 RANKS"
         title={<>From Aspirant to <em className="text-primary not-italic font-serif font-medium">Cabinet Secretary</em>.</>}
         dek="Earn cosmetics, badges, and titles for the work you'd do anyway. Streaks matter. Mistake-logs matter more. No pay-to-win — none of this is sold."
-        right={<div className="bg-primary/10 border border-primary text-primary px-3 py-1.5 rounded-full text-[11px] font-semibold flex items-center gap-2 shadow-sm"><Trophy size={14}/> Strategist · Lvl 23</div>}
+        right={<div className="bg-primary/10 border border-primary text-primary px-3 py-1.5 rounded-full text-[11px] font-semibold flex items-center gap-2 shadow-sm"><Trophy size={14}/> {currentLevel.rank} · {reputation} pts</div>}
       />
 
       {/* Grid container */}
@@ -48,34 +106,44 @@ const Rewards = () => {
               <div className="absolute inset-0 opacity-[0.06] bg-[radial-gradient(600px_200px_at_30%_50%,_var(--color-primary),_transparent_70%)]" />
               
               <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-primary to-[#BFA532] border-[3px] border-bg-surface-dark flex items-center justify-center text-white text-4xl font-serif shrink-0 shadow-lg">
-                {safeUser.initials || safeUser.name?.substring(0, 2).toUpperCase() || 'AR'}
+                {(safeUser.name || 'U').substring(0, 2).toUpperCase()}
               </div>
-              
+
               <div className="flex-1 relative text-center md:text-left">
-                <div className="text-[10px] text-text-muted tracking-[2px] uppercase mb-1">STRATEGIST · LEVEL 23 · ANONYMOUS</div>
-                <h2 className="text-3xl font-serif font-medium mb-3 tracking-tight">{safeUser.name || 'Arjun Sharma'}</h2>
+                <div className="text-[10px] text-text-muted tracking-[2px] uppercase mb-1">
+                  {currentLevel.rank} · {reputation} XP · {safeUser.role?.toUpperCase() || 'USER'}
+                </div>
+                <h2 className="text-3xl font-serif font-medium mb-3 tracking-tight">{safeUser.name || 'Aspirant'}</h2>
                 <div className="flex flex-wrap justify-center md:justify-start gap-4 font-mono text-[11px] text-text-secondary tracking-widest">
-                  <span>JOINED · MAR 2025</span>
-                  <span>NATIONAL · #7 GS-I</span>
-                  <span>SQUAD · DAWN</span>
+                  <span>LEVEL · {currentLevel.name.toUpperCase()}</span>
+                  <span>EXAM STAGE · {(safeUser.exam_stage || 'beginner').toUpperCase()}</span>
                 </div>
               </div>
-              
+
               <div className="relative text-center md:text-right mt-4 md:mt-0">
                 <div className="font-mono text-[10px] text-text-muted tracking-[0.15em] mb-1">NEXT RANK</div>
-                <div className="font-serif text-2xl text-primary font-medium mb-1">OFFICER</div>
-                <div className="text-[11px] text-text-secondary">3 levels to go</div>
+                {nextLevel ? (
+                  <>
+                    <div className="font-serif text-2xl text-primary font-medium mb-1">{nextLevel.rank}</div>
+                    <div className="text-[11px] text-text-secondary">{toNext} pts to go</div>
+                  </>
+                ) : (
+                  <div className="font-serif text-2xl text-primary font-medium mb-1">Max Level</div>
+                )}
               </div>
             </div>
 
             {/* XP progress bar to next level */}
             <div className="p-6 md:px-8 md:py-6 bg-bg-panel-hover">
               <div className="flex justify-between font-mono text-[11px] text-text-muted mb-2">
-                <span>LVL 23 · STRATEGIST</span>
-                <span>1,847 / 2,500 XP to LVL 24</span>
+                <span>{currentLevel.name.toUpperCase()} · {reputation} XP</span>
+                {nextLevel && <span>{toNext} XP to {nextLevel.name}</span>}
               </div>
               <div className="h-2 bg-border-default rounded-full overflow-hidden">
-                <div className="w-[73.8%] h-full bg-gradient-to-r from-primary to-[#BFA532] rounded-full" />
+                <div
+                  className="h-full bg-gradient-to-r from-primary to-[#BFA532] rounded-full"
+                  style={{ width: `${xpProgress}%` }}
+                />
               </div>
             </div>
           </div>
@@ -84,10 +152,10 @@ const Rewards = () => {
           <div className="bg-bg-panel border border-border-default rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden">
             <div className="px-6 py-5 border-b border-border-default">
               <div className="text-[10px] text-text-muted tracking-[2px] uppercase mb-1">THE LADDER</div>
-              <h3 className="font-serif text-[22px] font-medium text-text-primary">Eight ranks. The hierarchy is the journey.</h3>
+              <h3 className="font-serif text-[22px] font-medium text-text-primary">Five ranks. The hierarchy is the journey.</h3>
             </div>
             <div className="p-6 overflow-x-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-primary/50 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb:hover]:bg-primary [scrollbar-width:thin] [scrollbar-color:#D4613C_transparent]">
-              <RankLadder current={23}/>
+              <RankLadder currentRank={currentLevel.rank} />
             </div>
           </div>
 
@@ -96,17 +164,70 @@ const Rewards = () => {
             <div className="flex flex-col sm:flex-row justify-between sm:items-end mb-6 gap-4">
               <div>
                 <div className="text-[10px] text-text-muted tracking-[2px] uppercase mb-1">TROPHY ROOM</div>
-                <h3 className="font-serif text-[22px] font-medium text-text-primary">5 of 240 badges earned</h3>
-              </div>
-              <div className="flex gap-2">
-                <button className="px-4 py-1.5 rounded-lg text-xs font-medium bg-bg-surface-dark text-text-primary border border-border-muted transition hover:opacity-90 cursor-pointer">All</button>
-                <button className="px-4 py-1.5 rounded-lg text-xs font-medium text-text-secondary hover:bg-bg-panel-hover transition cursor-pointer">Earned</button>
-                <button className="px-4 py-1.5 rounded-lg text-xs font-medium text-text-secondary hover:bg-bg-panel-hover transition cursor-pointer">In progress</button>
+                <h3 className="font-serif text-[22px] font-medium text-text-primary">
+                  {dynamicBadges.filter(b => b.earned).length} of {dynamicBadges.length} badges earned
+                </h3>
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {MOCK_BADGES.map(b => <BadgeCard key={b.name} b={b}/>)}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {dynamicBadges.map(b => <BadgeCard key={b.name} b={b}/>)}
             </div>
+          </div>
+
+          {/* Live Leaderboard */}
+          <div className="bg-bg-panel border border-border-default rounded-2xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+            <div className="text-[10px] text-text-muted tracking-[2px] uppercase mb-2">LIVE LEADERBOARD</div>
+            <h3 className="font-serif text-[22px] font-medium text-text-primary mb-5">Reputation Rankings</h3>
+            {loadingBoard ? (
+              <div className="flex items-center gap-2 text-text-muted text-sm py-4">
+                <Loader2 size={14} className="animate-spin" /> Loading leaderboard...
+              </div>
+            ) : leaderboard.length === 0 ? (
+              <p className="text-text-muted text-sm">No leaderboard data yet. Start earning XP!</p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {leaderboard.map((entry, i) => {
+                  const isMe = user?.id && entry.user_id === user.id;
+                  return (
+                    <div key={entry.user_id} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isMe ? 'bg-primary/8 border border-primary/20' : 'bg-bg-panel-hover'}`}>
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0 ${
+                        i === 0 ? 'bg-[#BFA532] text-white' : i === 1 ? 'bg-[#a0a0a0] text-white' : i === 2 ? 'bg-[#cd7f32] text-white' : 'bg-bg-surface text-text-muted'
+                      }`}>
+                        {i < 3 ? <Crown size={12} /> : entry.rank}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[13px] font-medium text-text-primary truncate flex items-center gap-2">
+                          {entry.name}
+                          {isMe && <span className="text-[10px] bg-primary/15 text-primary px-1.5 py-0.5 rounded font-semibold">YOU</span>}
+                        </div>
+                        <div className="text-[11px] text-text-muted capitalize">{entry.exam_stage}</div>
+                      </div>
+                      <span className="text-sm font-bold text-primary shrink-0">{entry.score} pts</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {userRankings && (
+              <div className="mt-4 pt-4 border-t border-border-default">
+                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2">Your rankings</div>
+                <div className="grid grid-cols-2 gap-2 text-[12px]">
+                  <div className="bg-bg-panel-hover px-3 py-2 rounded-lg">
+                    <div className="text-text-muted">Reputation rank</div>
+                    <div className="font-semibold text-text-primary">
+                      #{userRankings.reputation?.rank ?? '—'}
+                    </div>
+                  </div>
+                  <div className="bg-bg-panel-hover px-3 py-2 rounded-lg">
+                    <div className="text-text-muted">Study time rank</div>
+                    <div className="font-semibold text-text-primary">
+                      #{userRankings.study_alltime?.rank ?? '—'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
           
         </div>
@@ -114,39 +235,48 @@ const Rewards = () => {
         {/* Sidebar */}
         <aside className="flex flex-col gap-6">
           <div className="bg-bg-panel border border-border-default rounded-2xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-            <div className="text-[10px] text-text-muted tracking-[2px] uppercase mb-2">XP THIS WEEK</div>
-            <div className="text-4xl font-serif text-text-primary mb-4">+1,847</div>
-            <div className="flex gap-1.5 items-end h-16">
-              {[40, 65, 35, 90, 55, 80, 45].map((h, i) => (
-                <div key={i} className={`flex-1 rounded-sm ${i === 6 ? 'bg-primary' : 'bg-border-muted'}`} style={{ height: `${h}%` }}/>
-              ))}
-            </div>
-            <div className="flex justify-between mt-3 font-mono text-[9px] text-text-muted">
-              {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => <span key={i}>{d}</span>)}
+            <div className="text-[10px] text-text-muted tracking-[2px] uppercase mb-2">YOUR STATS</div>
+            <div className="flex flex-col gap-3 mt-3">
+              <div className="flex justify-between items-center">
+                <span className="text-[12px] text-text-secondary">Total XP</span>
+                <span className="font-mono font-semibold text-text-primary">{reputation.toLocaleString('en-IN')}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[12px] text-text-secondary">Current Rank</span>
+                <span className="font-semibold text-primary text-[12px]">{currentLevel.rank}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[12px] text-text-secondary">Streak</span>
+                <span className="font-mono font-semibold text-text-primary">{safeUser.streak_days ?? 0} days</span>
+              </div>
+              {userRankings?.reputation?.rank && (
+                <div className="flex justify-between items-center">
+                  <span className="text-[12px] text-text-secondary">Global rank</span>
+                  <span className="font-mono font-semibold text-text-primary">#{userRankings.reputation.rank}</span>
+                </div>
+              )}
             </div>
           </div>
 
+          {/* Study time leaderboard */}
           <div className="bg-bg-panel border border-border-default rounded-2xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-            <div className="text-[10px] text-text-muted tracking-[2px] uppercase mb-4">XP SOURCES · LIFETIME</div>
-            <ul className="flex flex-col gap-4">
-              {[
-                { src: "PYQ Drills", xp: 18420, pct: 42 },
-                { src: "Lessons completed", xp: 9120, pct: 21 },
-                { src: "Silent Library", xp: 7842, pct: 18 },
-                { src: "1v1 Duels", xp: 4710, pct: 11 },
-                { src: "Streaks & misc.", xp: 3318, pct: 8 },
-              ].map(s => (
-                <li key={s.src}>
-                  <div className="flex justify-between text-xs mb-1.5">
-                    <span className="text-text-secondary">{s.src}</span>
-                    <span className="font-mono text-text-primary">+{s.xp.toLocaleString("en-IN")}</span>
-                  </div>
-                  <div className="h-1 bg-border-default rounded-full">
-                    <div className="h-full bg-primary rounded-full" style={{ width: `${s.pct}%` }}/>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <div className="text-[10px] text-text-muted tracking-[2px] uppercase mb-4">TOP STUDIERS · ALL TIME</div>
+            {studyBoard.length === 0 && !loadingBoard ? (
+              <p className="text-[12px] text-text-muted">No study time data yet.</p>
+            ) : (
+              <ul className="flex flex-col gap-3">
+                {studyBoard.slice(0, 5).map((e, i) => {
+                  const isMe = user?.id && e.user_id === user.id;
+                  return (
+                    <li key={e.user_id} className={`flex items-center gap-2 text-[12px] ${isMe ? 'text-primary font-semibold' : ''}`}>
+                      <span className="w-5 font-mono text-text-muted shrink-0">#{e.rank}</span>
+                      <span className="flex-1 text-text-primary truncate">{e.name}{isMe ? ' (you)' : ''}</span>
+                      <span className="font-mono text-text-secondary shrink-0">{e.study_hours}h</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
 
           <div className="bg-bg-panel border border-border-default rounded-2xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
@@ -180,38 +310,37 @@ const Rewards = () => {
   );
 };
 
-const RankLadder = ({ current }) => {
+const RankLadder = ({ currentRank }) => {
   const ranks = [
-    { name: "Aspirant", lvl: "1–5" },
-    { name: "Cadet", lvl: "6–15" },
-    { name: "Strategist", lvl: "16–25", current: true },
-    { name: "Officer", lvl: "26–40" },
-    { name: "Senior Officer", lvl: "41–60" },
-    { name: "Joint Secretary", lvl: "61–80" },
-    { name: "Cabinet Sec", lvl: "81+" }
+    { name: "Aspirant", pts: "0+" },
+    { name: "Cadet", pts: "50+" },
+    { name: "Strategist", pts: "200+" },
+    { name: "Officer", pts: "500+" },
+    { name: "Mentor", pts: "1000+" },
   ];
+  const currentIdx = ranks.findIndex(r => r.name === currentRank);
+
   return (
-    <div className="flex items-stretch min-w-[700px] py-4">
+    <div className="flex items-stretch min-w-[500px] py-4">
       {ranks.map((r, i) => {
-        const passed = i < 2;
-        const active = i === 2;
+        const passed = i < currentIdx;
+        const active = i === currentIdx;
         return (
           <div key={i} className="flex-1 relative">
-            {/* connector */}
             {i < ranks.length - 1 && (
               <div className={`absolute left-[60%] right-[-40%] top-[18px] h-px ${passed ? 'border-t border-primary' : 'border-t border-dashed border-border-default'}`} />
             )}
             <div className={`relative w-9 h-9 rounded-full flex items-center justify-center font-mono text-[11px] font-bold mx-auto border-2 ${
               passed ? "bg-primary border-primary text-white shadow-[0_0_12px_rgba(212,97,60,0.4)]" :
-              active ? "bg-bg-surface-dark border-bg-surface-dark text-text-primary shadow-md" :
+              active ? "bg-bg-surface-dark border-bg-surface-dark text-text-primary shadow-md ring-2 ring-primary ring-offset-1" :
               "bg-bg-panel border-border-default text-text-muted"
             }`}>
               {passed ? <Check size={14} strokeWidth={2.5} /> : i + 1}
             </div>
             <div className="text-center mt-3">
               <div className={`font-serif text-sm font-medium ${active ? 'text-primary' : passed ? 'text-text-primary' : 'text-text-muted'}`}>{r.name}</div>
-              <div className="font-mono text-[9.5px] text-text-muted mt-1 tracking-widest">LVL {r.lvl}</div>
-              {active && <div className="font-mono text-[10px] text-primary mt-1.5 font-semibold">YOU · LVL 23</div>}
+              <div className="font-mono text-[9.5px] text-text-muted mt-1 tracking-widest">{r.pts}</div>
+              {active && <div className="font-mono text-[10px] text-primary mt-1.5 font-semibold">YOU ARE HERE</div>}
             </div>
           </div>
         );

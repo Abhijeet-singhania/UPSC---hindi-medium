@@ -12,7 +12,7 @@ router = APIRouter()
 
 @router.post("/", response_model=QuestionResponse)
 def create_question(
-    question_data: QuestionCreate, 
+    question_data: QuestionCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -24,9 +24,8 @@ def create_question(
         is_anonymous=question_data.is_anonymous
     )
     db.add(question)
-    db.flush()  # To get the question ID for tags
-    
-    # Handle tags
+    db.flush()
+
     if question_data.tags:
         for tag_name in question_data.tags:
             tag = db.query(Tag).filter(Tag.name == tag_name).first()
@@ -34,11 +33,9 @@ def create_question(
                 tag = Tag(name=tag_name)
                 db.add(tag)
                 db.flush()
-            
-            # Associate tag with question
             qt = QuestionTag(question_id=question.id, tag_id=tag.id)
             db.add(qt)
-            
+
     db.commit()
     db.refresh(question)
     return question
@@ -46,19 +43,26 @@ def create_question(
 
 @router.get("/", response_model=List[QuestionResponse])
 def get_questions(
-    skip: int = 0, 
-    limit: int = 20, 
+    skip: int = 0,
+    limit: int = 20,
     tag: str = None,
     db: Session = Depends(get_db)
 ):
     """List questions with optional tag filter."""
     query = db.query(Question)
-    
+
     if tag:
         query = query.join(Question.tags).filter(Tag.name == tag)
-        
+
     questions = query.order_by(Question.created_at.desc()).offset(skip).limit(limit).all()
     return questions
+
+
+# /tags must come before /{question_id} to avoid route shadowing
+@router.get("/tags", response_model=List[TagResponse])
+def get_tags(db: Session = Depends(get_db)):
+    """List all available tags."""
+    return db.query(Tag).all()
 
 
 @router.get("/{question_id}", response_model=QuestionResponse)
@@ -68,9 +72,3 @@ def get_question(question_id: int, db: Session = Depends(get_db)):
     if not question:
         raise HTTPException(status_code=404, detail="Question not found")
     return question
-
-
-@router.get("/tags", response_model=List[TagResponse])
-def get_tags(db: Session = Depends(get_db)):
-    """List all available tags."""
-    return db.query(Tag).all()

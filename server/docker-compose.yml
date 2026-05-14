@@ -28,6 +28,8 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/upsc_hindi
       REDIS_URL: redis://redis:6379/0
+      # Creates priya@demo.drishti.dev / Demo123! (etc.) on first startup only
+      SEED_DEMO_DATA: "1"
     ports:
       - "8000:8000"
     depends_on:

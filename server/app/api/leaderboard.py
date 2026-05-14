@@ -5,6 +5,7 @@ from typing import List
 from app.db.database import get_db
 from app.db.models import User, SilentSession
 from app.services.redis_service import redis_service, LEADERBOARD_KEYS
+from app.api.users import get_current_user
 
 router = APIRouter()
 
@@ -105,12 +106,11 @@ def get_user_rankings(user_id: int, db: Session = Depends(get_db)):
 
 @router.post("/sync")
 def sync_leaderboards(
-    user_id: int = Query(..., description="Admin User ID"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Sync all leaderboards from database to Redis (Admin only)."""
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user or user.role.value not in ["admin", "moderator"]:
+    if current_user.role.value not in ["admin", "moderator"]:
         raise HTTPException(status_code=403, detail="Only admins can sync leaderboards")
     
     # Sync reputation leaderboard

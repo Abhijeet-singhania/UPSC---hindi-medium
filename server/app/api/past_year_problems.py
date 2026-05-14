@@ -11,6 +11,7 @@ from app.schemas.past_year_problem import (
     PastYearProblemResponse,
     PastYearProblemFiltersResponse,
 )
+from app.api.users import get_current_user
 
 router = APIRouter()
 
@@ -34,13 +35,9 @@ def _validate_option(correct_option: Optional[str]):
         raise HTTPException(status_code=400, detail="correct_option must be one of: A, B, C, D")
 
 
-def _ensure_admin(db: Session, user_id: int) -> User:
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+def _ensure_admin(user: User) -> None:
     if user.role not in [UserRole.ADMIN, UserRole.MODERATOR]:
         raise HTTPException(status_code=403, detail="Only admins can perform this action")
-    return user
 
 
 @router.get("/", response_model=List[PastYearProblemResponse])
@@ -147,11 +144,11 @@ def get_past_year_problem(problem_id: int, db: Session = Depends(get_db)):
 @router.post("/", response_model=PastYearProblemResponse)
 def create_past_year_problem(
     problem_data: PastYearProblemCreate,
-    user_id: int = Query(..., description="Admin User ID"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Create a new past year problem (Admin/Moderator only)."""
-    _ensure_admin(db, user_id)
+    _ensure_admin(current_user)
     _validate_option(problem_data.correct_option)
 
     problem = PastYearProblem(
@@ -171,7 +168,7 @@ def create_past_year_problem(
         correct_option=problem_data.correct_option.upper() if problem_data.correct_option else None,
         explanation=problem_data.explanation,
         language=problem_data.language,
-        created_by=user_id,
+        created_by=current_user.id,
     )
     db.add(problem)
     db.commit()
@@ -183,11 +180,11 @@ def create_past_year_problem(
 def update_past_year_problem(
     problem_id: int,
     problem_data: PastYearProblemUpdate,
-    user_id: int = Query(..., description="Admin User ID"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Update an existing past year problem (Admin/Moderator only)."""
-    _ensure_admin(db, user_id)
+    _ensure_admin(current_user)
     if problem_data.correct_option is not None:
         _validate_option(problem_data.correct_option)
 

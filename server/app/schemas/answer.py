@@ -15,6 +15,15 @@ class AnswerUpdate(BaseModel):
     content: Optional[str] = None
 
 
+class AnswerAuthorInfo(BaseModel):
+    id: int
+    name: Optional[str] = None
+    reputation: int = 0
+
+    class Config:
+        from_attributes = True
+
+
 class AnswerResponse(AnswerBase):
     id: int
     question_id: int
@@ -23,6 +32,7 @@ class AnswerResponse(AnswerBase):
     upvotes: int
     downvotes: int
     created_at: datetime
+    author: Optional[AnswerAuthorInfo] = None
 
     class Config:
         from_attributes = True

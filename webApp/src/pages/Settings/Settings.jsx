@@ -1,28 +1,59 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useTheme } from '../../context/ThemeContext';
-import { User, Sliders, Globe, Palette, Save } from 'lucide-react';
+import { User, Sliders, Globe, Palette, Save, Loader2, CheckCircle2 } from 'lucide-react';
+import { useApi } from '../../hooks/useApi';
+import { fetchProfile } from '../../store/slices/authSlice';
+
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 
 const Settings = () => {
   const { t, i18n } = useTranslation();
   const { theme, toggleTheme } = useTheme();
   const { user } = useSelector(state => state.auth);
-  
-  const [activeTab, setActiveTab] = useState('profile');
+  const dispatch = useDispatch();
 
-  // Local state for UI only (no functionality as per user request)
+  const [activeTab, setActiveTab] = useState('profile');
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState('');
+
   const [formData, setFormData] = useState({
-    fullName: user?.name || 'Arjun Sharma',
-    email: user?.email || 'arjun@example.com',
-    bio: user?.bio || 'Preparing for UPSC CSE 2026. Targeting IAS. History enthusiast.',
-    optionalSubject: user?.optional_subject || 'PSIR',
-    examStage: user?.exam_stage || 'Mains'
+    fullName: user?.name || '',
+    bio: user?.bio || '',
+    optionalSubject: user?.optional_subject || '',
+    examStage: user?.exam_stage || 'beginner',
   });
+
+  const { execute: updateProfile, isLoading: saving } = useApi(
+    `${API_BASE}/api/v1/users/me`
+  );
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaveSuccess(false);
+    setSaveError('');
+    try {
+      await updateProfile({
+        method: 'PUT',
+        body: {
+          name: formData.fullName,
+          bio: formData.bio,
+          optional_subject: formData.optionalSubject,
+          exam_stage: formData.examStage,
+        },
+      });
+      setSaveSuccess(true);
+      dispatch(fetchProfile());
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err) {
+      setSaveError(err.message || 'Failed to save. Please try again.');
+    }
   };
 
   const handleLanguageChange = (lang) => {
@@ -42,7 +73,7 @@ const Settings = () => {
       </div>
 
       <div className="flex flex-col md:flex-row gap-8 items-start">
-        
+
         {/* Settings Sidebar */}
         <div className="flex flex-col gap-2 w-full md:w-[240px] shrink-0">
           {tabs.map(tab => (
@@ -50,8 +81,8 @@ const Settings = () => {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-lg transition-colors cursor-pointer ${
-                activeTab === tab.id 
-                  ? 'bg-primary text-text-primary shadow-sm' 
+                activeTab === tab.id
+                  ? 'bg-primary text-text-primary shadow-sm'
                   : 'text-text-secondary hover:bg-bg-panel-hover hover:text-text-primary'
               }`}
             >
@@ -68,16 +99,16 @@ const Settings = () => {
         {/* Content Area */}
         <div className="flex-1">
           {activeTab === 'profile' && (
-            <div className="bg-bg-panel border border-border-default rounded-2xl shadow-sm overflow-hidden">
+            <form onSubmit={handleSave} className="bg-bg-panel border border-border-default rounded-2xl shadow-sm overflow-hidden">
               <div className="p-6 border-b border-border-default">
                 <h2 className="text-xl font-serif text-text-primary font-medium">{t('settings.profile')}</h2>
               </div>
               <div className="p-6 flex flex-col gap-6">
-                
+
                 <div className="flex flex-col gap-2">
                   <label className="text-sm font-medium text-text-primary">{t('settings.fullName')}</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     name="fullName"
                     value={formData.fullName}
                     onChange={handleChange}
@@ -87,19 +118,18 @@ const Settings = () => {
 
                 <div className="flex flex-col gap-2">
                   <label className="text-sm font-medium text-text-primary">{t('settings.email')}</label>
-                  <input 
-                    type="email" 
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
+                  <input
+                    type="email"
+                    value={user?.email || ''}
                     disabled
                     className="w-full bg-bg-surface-dark border border-border-muted rounded-lg px-4 py-2.5 text-text-muted cursor-not-allowed opacity-70"
                   />
+                  <p className="text-[11px] text-text-muted">Email cannot be changed.</p>
                 </div>
 
                 <div className="flex flex-col gap-2">
                   <label className="text-sm font-medium text-text-primary">{t('settings.bio')}</label>
-                  <textarea 
+                  <textarea
                     name="bio"
                     value={formData.bio}
                     onChange={handleChange}
@@ -111,8 +141,8 @@ const Settings = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="flex flex-col gap-2">
                     <label className="text-sm font-medium text-text-primary">{t('settings.optionalSubject')}</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       name="optionalSubject"
                       value={formData.optionalSubject}
                       onChange={handleChange}
@@ -121,34 +151,48 @@ const Settings = () => {
                   </div>
                   <div className="flex flex-col gap-2">
                     <label className="text-sm font-medium text-text-primary">{t('settings.examStage')}</label>
-                    <select 
+                    <select
                       name="examStage"
                       value={formData.examStage}
                       onChange={handleChange}
                       className="w-full bg-bg-surface border border-border-default rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-primary transition"
                     >
-                      <option value="Beginner">Beginner</option>
-                      <option value="Prelims">Prelims</option>
-                      <option value="Mains">Mains</option>
-                      <option value="Interview">Interview</option>
+                      <option value="beginner">Beginner</option>
+                      <option value="prelims">Prelims</option>
+                      <option value="mains">Mains</option>
+                      <option value="interview">Interview</option>
                     </select>
                   </div>
                 </div>
 
+                {saveError && (
+                  <p className="text-red-500 text-[13px]">{saveError}</p>
+                )}
+
+                {saveSuccess && (
+                  <div className="flex items-center gap-2 text-[#2B7A4B] text-[13px]">
+                    <CheckCircle2 size={16} /> Profile saved successfully.
+                  </div>
+                )}
+
                 <div className="pt-4 flex justify-end">
-                  <button className="bg-primary hover:bg-primary-hover text-white font-medium py-2 px-6 rounded-lg transition-colors flex items-center gap-2 cursor-pointer shadow-sm opacity-90">
-                    <Save size={16} />
-                    {t('settings.saveChanges')}
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="bg-primary hover:bg-primary-hover text-white font-medium py-2 px-6 rounded-lg transition-colors flex items-center gap-2 cursor-pointer shadow-sm disabled:opacity-60"
+                  >
+                    {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                    {saving ? 'Saving...' : t('settings.saveChanges')}
                   </button>
                 </div>
 
               </div>
-            </div>
+            </form>
           )}
 
           {activeTab === 'preferences' && (
             <div className="flex flex-col gap-6">
-              
+
               {/* Language Preferences */}
               <div className="bg-bg-panel border border-border-default rounded-2xl shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-border-default flex items-center gap-3">
@@ -158,22 +202,22 @@ const Settings = () => {
                 <div className="p-6">
                   <p className="text-sm text-text-secondary mb-6">{t('settings.languageSub')}</p>
                   <div className="flex flex-wrap gap-4">
-                    <button 
+                    <button
                       onClick={() => handleLanguageChange('en')}
                       className={`flex items-center gap-3 px-5 py-3 rounded-xl border transition-all cursor-pointer ${
-                        i18n.language === 'en' 
-                          ? 'bg-primary/10 border-primary text-primary shadow-sm' 
+                        i18n.language === 'en'
+                          ? 'bg-primary/10 border-primary text-primary shadow-sm'
                           : 'bg-bg-surface border-border-default text-text-secondary hover:border-text-muted hover:bg-bg-panel-hover'
                       }`}
                     >
                       <span className="font-medium text-base">{t('settings.english')}</span>
                       {i18n.language === 'en' && <div className="w-2 h-2 rounded-full bg-primary" />}
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleLanguageChange('hi')}
                       className={`flex items-center gap-3 px-5 py-3 rounded-xl border transition-all cursor-pointer ${
-                        i18n.language === 'hi' 
-                          ? 'bg-primary/10 border-primary text-primary shadow-sm' 
+                        i18n.language === 'hi'
+                          ? 'bg-primary/10 border-primary text-primary shadow-sm'
                           : 'bg-bg-surface border-border-default text-text-secondary hover:border-text-muted hover:bg-bg-panel-hover'
                       }`}
                     >
@@ -193,22 +237,22 @@ const Settings = () => {
                 <div className="p-6">
                   <p className="text-sm text-text-secondary mb-6">{t('settings.themeSub')}</p>
                   <div className="flex flex-wrap gap-4">
-                    <button 
+                    <button
                       onClick={() => theme !== 'light' && toggleTheme()}
                       className={`flex items-center gap-3 px-5 py-3 rounded-xl border transition-all cursor-pointer ${
-                        theme === 'light' 
-                          ? 'bg-primary/10 border-primary text-primary shadow-sm' 
+                        theme === 'light'
+                          ? 'bg-primary/10 border-primary text-primary shadow-sm'
                           : 'bg-bg-surface border-border-default text-text-secondary hover:border-text-muted hover:bg-bg-panel-hover'
                       }`}
                     >
                       <span className="font-medium text-base">{t('settings.lightMode')}</span>
                       {theme === 'light' && <div className="w-2 h-2 rounded-full bg-primary" />}
                     </button>
-                    <button 
+                    <button
                       onClick={() => theme !== 'dark' && toggleTheme()}
                       className={`flex items-center gap-3 px-5 py-3 rounded-xl border transition-all cursor-pointer ${
-                        theme === 'dark' 
-                          ? 'bg-primary/10 border-primary text-primary shadow-sm' 
+                        theme === 'dark'
+                          ? 'bg-primary/10 border-primary text-primary shadow-sm'
                           : 'bg-bg-surface border-border-default text-text-secondary hover:border-text-muted hover:bg-bg-panel-hover'
                       }`}
                     >
@@ -221,7 +265,6 @@ const Settings = () => {
 
             </div>
           )}
-
         </div>
       </div>
     </div>

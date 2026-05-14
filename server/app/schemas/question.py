@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Optional, List
 from datetime import datetime
 
@@ -36,8 +36,8 @@ class QuestionUpdate(BaseModel):
 
 class AuthorInfo(BaseModel):
     id: int
-    name: Optional[str]
-    reputation: int
+    name: Optional[str] = None
+    reputation: int = 0
 
     class Config:
         from_attributes = True
@@ -53,6 +53,14 @@ class QuestionResponse(QuestionBase):
     author: Optional[AuthorInfo] = None
     tags: List[str] = []
     answer_count: int = 0
+
+    @field_validator('tags', mode='before')
+    @classmethod
+    def extract_tag_names(cls, v):
+        """Handle ORM Tag objects or plain strings."""
+        if v and len(v) > 0 and hasattr(v[0], 'name'):
+            return [tag.name for tag in v]
+        return v or []
 
     class Config:
         from_attributes = True

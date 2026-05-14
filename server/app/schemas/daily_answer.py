@@ -12,6 +12,8 @@ class DailyQuestionCreate(BaseModel):
 
 
 class DailyQuestionUpdate(BaseModel):
+    model_config = {"protected_namespaces": ()}
+
     title: Optional[str] = None
     content: Optional[str] = None
     model_answer: Optional[str] = None
@@ -30,8 +32,7 @@ class DailyQuestionResponse(BaseModel):
     date: datetime
     submission_count: int = 0
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True, "protected_namespaces": ()}
 
 
 class DailyAnswerCreate(BaseModel):

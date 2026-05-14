@@ -5,6 +5,7 @@ from app.api import router as api_router
 from app.db.database import engine, SessionLocal
 from app.db import models
 from app.db.models import PastYearProblem, PastYearExamType
+from app.config import settings
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
@@ -87,16 +88,22 @@ def seed_past_year_problems():
 
 seed_past_year_problems()
 
+# Optional: create demo logins when SEED_DEMO_DATA=1 (enabled in docker-compose)
+from app.seeds.demo_data import seed_demo_data_if_enabled  # noqa: E402
+
+seed_demo_data_if_enabled()
+
 app = FastAPI(
     title="UPSC Hindi Peer Network",
     description="A peer-to-peer UPSC Hindi learning ecosystem",
     version="0.1.0"
 )
 
-# CORS Middleware
+# CORS — driven by ALLOWED_ORIGINS env var (set to specific origins in production)
+_origins = [o.strip() for o in settings.ALLOWED_ORIGINS.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, restrict this
+    allow_origins=_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

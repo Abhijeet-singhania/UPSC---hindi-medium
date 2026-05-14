@@ -10,10 +10,10 @@ import StudyContent from './pages/StudyContent/StudyContent';
 import PrelimsLab from './pages/PrelimsLab/PrelimsLab';
 import Community from './pages/Community/Community';
 import Wellbeing from './pages/Wellbeing/Wellbeing';
-import PastYearProblems from './pages/PastYearProblems/PastYearProblems';
 import AskAI from './pages/AskAI/AskAI';
 import Rewards from './pages/Rewards/Rewards';
 import Settings from './pages/Settings/Settings';
+import AnswerWriting from './pages/AnswerWriting/AnswerWriting';
 
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import { ThemeProvider } from './context/ThemeContext';
@@ -34,11 +34,12 @@ function App() {
               <Route path="/content" element={<StudyContent />} />
               <Route path="/affairs" element={<CurrentAffairs />} />
               <Route path="/prelims" element={<PrelimsLab />} />
-              <Route path="/past-year" element={<PastYearProblems />} />
+              <Route path="/past-year" element={<Navigate to="/prelims" replace />} />
               <Route path="/ask-ai" element={<AskAI />} />
               <Route path="/rewards" element={<Rewards />} />
               <Route path="/community" element={<Community />} />
               <Route path="/wellbeing" element={<Wellbeing />} />
+              <Route path="/answers" element={<AnswerWriting />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>

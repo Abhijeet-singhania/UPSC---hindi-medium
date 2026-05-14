@@ -114,11 +114,13 @@ const Auth = () => {
                 </button>
               </div>
 
-              <div>
-                <button type="button" onClick={handleMockLogin} className="flex w-full justify-center rounded-lg bg-bg-surface border border-border-muted py-2.5 px-4 text-sm font-semibold text-text-secondary shadow-sm hover:text-text-primary hover:border-border-strong focus:outline-none transition-colors cursor-pointer">
-                  Mock Login (Bypass API)
-                </button>
-              </div>
+              {import.meta.env.DEV && (
+                <div>
+                  <button type="button" onClick={handleMockLogin} className="flex w-full justify-center rounded-lg bg-bg-surface border border-border-muted py-2.5 px-4 text-sm font-semibold text-text-secondary shadow-sm hover:text-text-primary hover:border-border-strong focus:outline-none transition-colors cursor-pointer">
+                    Mock Login (Dev only)
+                  </button>
+                </div>
+              )}
 
               <div className="mt-6 text-center text-sm">
                 <span className="text-text-secondary">{t('auth.noAccount')} </span>

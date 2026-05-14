@@ -9,7 +9,6 @@ import {
   BookOpen,
   Newspaper,
   FlaskConical,
-  ScrollText,
   PenTool,
   Users,
   HeartPulse,
@@ -43,8 +42,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
     {
       title: t('sidebar.practice'),
       items: [
-        { id: 'prelims', label: t('sidebar.prelimsLab'), icon: <FlaskConical size={18} />, path: '/prelims' },
-        { id: 'pastYear', label: t('sidebar.pastYearProblems'), icon: <ScrollText size={18} />, path: '/past-year' },
+        { id: 'prelims', label: 'Practice Lab', icon: <FlaskConical size={18} />, path: '/prelims' },
         { id: 'answer', label: t('sidebar.answerWriting'), icon: <PenTool size={18} />, path: '/answers' },
       ]
     },
