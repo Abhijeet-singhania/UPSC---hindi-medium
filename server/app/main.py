@@ -1,5 +1,9 @@
+import time
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.exc import OperationalError
 
 from app.api import router as api_router
 from app.db.database import engine, SessionLocal
@@ -7,7 +11,30 @@ from app.db import models
 from app.db.models import PastYearProblem, PastYearExamType
 from app.config import settings
 
-# Create database tables
+logger = logging.getLogger(__name__)
+
+
+def _wait_for_db(retries: int = 15, delay: float = 2.0) -> None:
+    """Retry connecting to the database until it's ready."""
+    for attempt in range(1, retries + 1):
+        try:
+            with engine.connect():
+                logger.info("Database is ready.")
+                return
+        except OperationalError as exc:
+            if attempt == retries:
+                raise RuntimeError(
+                    f"Database not available after {retries} attempts."
+                ) from exc
+            logger.warning(
+                "Database not ready (attempt %d/%d). Retrying in %.0fs…",
+                attempt, retries, delay,
+            )
+            time.sleep(delay)
+
+
+# Wait for Postgres then create tables
+_wait_for_db()
 models.Base.metadata.create_all(bind=engine)
 
 

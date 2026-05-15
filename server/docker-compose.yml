@@ -13,6 +13,12 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d upsc_hindi"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   redis:
     image: redis:7-alpine
@@ -20,11 +26,16 @@ services:
     restart: always
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   api:
     build: .
     container_name: upsc_api
-    restart: always
+    restart: on-failure
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/upsc_hindi
       REDIS_URL: redis://redis:6379/0
@@ -33,8 +44,10 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   pgadmin:
     image: dpage/pgadmin4
