@@ -49,19 +49,39 @@ const SilentLibrary = () => {
     if (!token) return;
     try {
       const r = await fetch(`${API_BASE}/api/v1/silent-library/history/me?limit=5`, { headers: authHeaders });
-      if (r.ok) setSessionHistory(await r.json());
+      if (r.ok) {
+        const all = await r.json();
+        setSessionHistory(all.filter(s => s.end_time && s.duration_minutes > 0));
+      }
     } catch (_) {}
   }, [token]);
 
-  // Check if user already has an active session on mount
+  // Check if user already has an active session (resume on page reload)
+  const checkAndResumeSession = useCallback(async () => {
+    if (!token) return;
+    try {
+      const r = await fetch(`${API_BASE}/api/v1/silent-library/history/me?limit=1`, { headers: authHeaders });
+      if (!r.ok) return;
+      const sessions = await r.json();
+      if (sessions.length > 0 && !sessions[0].end_time) {
+        const startTime = new Date(sessions[0].start_time);
+        const elapsed = Math.max(0, Math.floor((Date.now() - startTime.getTime()) / 1000));
+        setIsInLibrary(true);
+        setSessionStart(startTime);
+        setSessionElapsed(elapsed);
+      }
+    } catch (_) {}
+  }, [token]);
+
   useEffect(() => {
     fetchActive();
     fetchStats();
     fetchHistory();
+    checkAndResumeSession();
     // Poll active users every 30s
     const poll = setInterval(fetchActive, 30000);
     return () => clearInterval(poll);
-  }, [fetchActive, fetchStats, fetchHistory]);
+  }, [fetchActive, fetchStats, fetchHistory, checkAndResumeSession]);
 
   // Elapsed timer
   useEffect(() => {
@@ -94,8 +114,12 @@ const SilentLibrary = () => {
         const d = await r.json().catch(() => ({}));
         throw new Error(d.detail || 'Failed to join');
       }
+      const data = await r.json();
+      const startTime = new Date(data.start_time);
+      const alreadyElapsed = Math.max(0, Math.floor((Date.now() - startTime.getTime()) / 1000));
       setIsInLibrary(true);
-      setSessionElapsed(0);
+      setSessionStart(startTime);
+      setSessionElapsed(alreadyElapsed);
       setLastEarned(null);
       fetchActive();
     } catch (e) {

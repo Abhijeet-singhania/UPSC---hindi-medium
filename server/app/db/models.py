@@ -80,6 +80,10 @@ class Question(Base):
     answers = relationship("Answer", back_populates="question")
     tags = relationship("Tag", secondary="question_tags", back_populates="questions")
 
+    @property
+    def answer_count(self):
+        return len(self.answers)
+
 
 class QuestionTag(Base):
     __tablename__ = "question_tags"

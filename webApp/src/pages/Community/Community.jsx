@@ -289,7 +289,13 @@ const Community = () => {
     }));
 
     try {
-      await voteOnAnswer({ pathParams: { answerId }, queryParams: { value: newValue } });
+      const result = await voteOnAnswer({ method: 'POST', pathParams: { answerId }, queryParams: { value: newValue } });
+      // Sync with server-confirmed counts
+      if (result && typeof result.upvotes === 'number') {
+        setLocalAnswers(prev => prev.map(a =>
+          a.id === answerId ? { ...a, upvotes: result.upvotes, downvotes: result.downvotes } : a
+        ));
+      }
     } catch (_) {
       // Revert on failure
       setUserVotes(prev => ({ ...prev, [answerId]: currentVote }));
