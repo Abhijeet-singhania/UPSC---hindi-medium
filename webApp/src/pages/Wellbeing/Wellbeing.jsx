@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import {
-  Play, Pause, BookOpen, Users, Clock, Zap, TrendingUp,
+  Play, Pause, BookOpen, Users, Clock, Zap,
   CheckCircle2, Coffee, FlameIcon, Activity, Loader2,
 } from 'lucide-react';
 
@@ -13,6 +13,7 @@ const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').
 const SilentLibrary = () => {
   const token = useSelector(state => state.auth?.token);
   const [isInLibrary, setIsInLibrary] = useState(false);
+  const [sessionStart, setSessionStart] = useState(null);
   const [sessionElapsed, setSessionElapsed] = useState(0);
   const [activeUsers, setActiveUsers] = useState(0);
   const [activeUserList, setActiveUserList] = useState([]);
@@ -181,7 +182,7 @@ const SilentLibrary = () => {
             <Users size={12} /> Currently studying
           </div>
           <div className="text-[28px] font-serif font-semibold">
-            {activeUsers + (isInLibrary ? 0 : 0)}
+            {activeUsers + (isInLibrary ? 1 : 0)}
           </div>
         </div>
         <div className="px-6 py-4 text-center">

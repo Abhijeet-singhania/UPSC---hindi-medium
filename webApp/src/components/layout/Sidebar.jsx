@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
 import {
   LayoutDashboard,
@@ -27,6 +27,11 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const { theme, toggleTheme } = useTheme();
+  const { user } = useSelector(state => state.auth);
+  const displayName = user?.name || user?.email?.split('@')[0] || 'Aspirant';
+  const initials = displayName.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+  const streakDays = user?.streak_days ?? 0;
+  const examInfo = [user?.exam_stage, user?.optional_subject].filter(Boolean).join(' • ') || 'UPSC Aspirant';
 
   const navGroups = [
     {
@@ -49,8 +54,8 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
     {
       title: t('sidebar.growth'),
       items: [
-        { id: 'rewards', label: t('sidebar.rewards'), icon: <Trophy size={18} />, path: '/rewards', badge: 'Lvl 23' },
-        { id: 'community', label: t('sidebar.community'), icon: <Users size={18} />, path: '/community', badge: 3 },
+        { id: 'rewards', label: t('sidebar.rewards'), icon: <Trophy size={18} />, path: '/rewards' },
+        { id: 'community', label: t('sidebar.community'), icon: <Users size={18} />, path: '/community' },
         { id: 'wellbeing', label: t('sidebar.wellbeing'), icon: <HeartPulse size={18} />, path: '/wellbeing' },
       ]
     }
@@ -84,11 +89,11 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
       </div>
 
       <div className={`flex items-center gap-3 border-y border-border-default mb-6 transition-all duration-300 ${isCollapsed ? 'p-6 justify-center' : 'p-6'}`}>
-        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center font-semibold text-text-primary text-[14px] shrink-0">AR</div>
+        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center font-semibold text-white text-[14px] shrink-0">{initials}</div>
         {!isCollapsed && (
-          <div className="whitespace-nowrap">
-            <p className="font-semibold text-text-primary text-[14px]">Arjun Sharma</p>
-            <span className="text-[11px] text-text-secondary">2nd Attempt • GS + PSIR</span>
+          <div className="whitespace-nowrap overflow-hidden">
+            <p className="font-semibold text-text-primary text-[14px] truncate max-w-[150px]">{displayName}</p>
+            <span className="text-[11px] text-text-secondary capitalize">{examInfo}</span>
           </div>
         )}
       </div>
@@ -115,15 +120,17 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
         ))}
       </nav>
 
-      <div className={`mt-auto mx-6 mb-6 bg-gradient-to-br from-bg-surface-dark to-bg-surface border border-border-default rounded-lg flex items-center gap-3 whitespace-nowrap ${isCollapsed ? 'mx-3 p-3 justify-center' : 'py-3 px-4'}`} title={isCollapsed ? "23 day streak" : ""}>
-        <Flame size={24} color="#D4613C" fill="#D4613C" />
-        {!isCollapsed && (
-          <div>
-            <p className="text-text-primary text-[13px] font-semibold">23 day streak</p>
-            <span className="text-[11px] text-text-secondary">Keep it up!</span>
-          </div>
-        )}
-      </div>
+      {streakDays > 0 && (
+        <div className={`mt-auto mx-6 mb-6 bg-gradient-to-br from-bg-surface-dark to-bg-surface border border-border-default rounded-lg flex items-center gap-3 whitespace-nowrap ${isCollapsed ? 'mx-3 p-3 justify-center' : 'py-3 px-4'}`} title={isCollapsed ? `${streakDays} day streak` : ''}>
+          <Flame size={24} color="#D4613C" fill="#D4613C" />
+          {!isCollapsed && (
+            <div>
+              <p className="text-text-primary text-[13px] font-semibold">{streakDays} day streak</p>
+              <span className="text-[11px] text-text-secondary">Keep it up!</span>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className={`mx-6 mb-6 flex flex-col gap-2 ${isCollapsed ? 'mx-3' : ''}`}>
         <NavLink 

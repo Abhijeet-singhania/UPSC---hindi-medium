@@ -819,16 +819,25 @@ const TestRunningView = ({ questions, answers, onSetAnswer, currentIdx, setCurre
           <div className="flex gap-2 flex-wrap mb-4">
             {q.year && <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded bg-[#fbefe9] text-primary">PYQ {q.year}</span>}
             {q.paper && <span className="text-[10px] font-bold uppercase px-2 py-1 rounded bg-bg-surface border border-border-default text-text-muted">{q.paper}</span>}
+            {!q.option_a && <span className="text-[10px] font-bold uppercase px-2 py-1 rounded bg-[#EBF5F0] text-[#2B7A4B]">Subjective</span>}
           </div>
 
           <p className="font-medium text-[16px] text-text-primary leading-[1.7] mb-6">{q.question_text}</p>
 
-          <MCQPanel
-            problem={q}
-            attempt={answers[q.id] ?? null}
-            onAttempt={val => onSetAnswer(q.id, val)}
-            testMode
-          />
+          {q.option_a ? (
+            <MCQPanel
+              problem={q}
+              attempt={answers[q.id] ?? null}
+              onAttempt={val => onSetAnswer(q.id, val)}
+              testMode
+            />
+          ) : (
+            <MainsPanel
+              problem={q}
+              attempt={answers[q.id] ?? null}
+              onAttempt={val => onSetAnswer(q.id, val)}
+            />
+          )}
         </div>
 
         {/* Navigation */}

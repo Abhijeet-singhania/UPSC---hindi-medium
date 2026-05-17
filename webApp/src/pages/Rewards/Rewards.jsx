@@ -377,13 +377,13 @@ const BadgeCard = ({ b }) => {
       
       <div className="mt-2 pt-2 border-t border-dashed border-border-default flex justify-between items-center">
         <span className="font-mono text-[9px] tracking-widest font-semibold uppercase" style={rarityTextStyle}>{b.rarity}</span>
-        {!earned && b.progress && <span className="font-mono text-[10px] text-text-muted">{b.progress}/{b.total}</span>}
+        {!earned && b.total != null && <span className="font-mono text-[10px] text-text-muted">{b.progress ?? 0}/{b.total}</span>}
         {earned && <Check size={12} strokeWidth={2.5} className="text-text-primary opacity-60"/>}
       </div>
       
-      {!earned && b.progress && (
+      {!earned && b.total != null && (
         <div className="h-[3px] bg-border-default rounded-full mt-1">
-          <div className="h-full rounded-full transition-all duration-1000" style={progressBarStyle} />
+          <div className="h-full rounded-full transition-all duration-1000" style={{ ...progressBarStyle, width: `${Math.min(((b.progress ?? 0) / b.total) * 100, 100)}%` }} />
         </div>
       )}
     </div>

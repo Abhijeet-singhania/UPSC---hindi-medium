@@ -215,6 +215,7 @@ const Community = () => {
   const [showAskModal, setShowAskModal] = useState(false);
   const [answerText, setAnswerText] = useState('');
   const [answerError, setAnswerError] = useState('');
+  const [acceptError, setAcceptError] = useState('');
   // Optimistic vote state: { [answerId]: 1 | -1 | 0 }
   const [userVotes, setUserVotes] = useState({});
   // Local answers with optimistic counts
@@ -304,11 +305,15 @@ const Community = () => {
   };
 
   const handleAccept = async (answerId) => {
+    if (!user) { setAcceptError('Please log in to accept an answer.'); return; }
+    setAcceptError('');
     try {
       await acceptAnswerCall({ pathParams: { answerId }, method: 'POST' });
       loadAnswers({ pathParams: { questionId: selectedQuestion.id } }).catch(() => {});
       fetchQuestions();
-    } catch (_) {}
+    } catch (e) {
+      setAcceptError(e?.message || 'Could not accept answer. Only the question author can accept.');
+    }
   };
 
   // Sync localAnswers whenever server data refreshes
@@ -413,7 +418,7 @@ const Community = () => {
                       key={q.id}
                       question={q}
                       isSelected={selectedQuestion?.id === q.id}
-                      onSelect={setSelectedQuestion}
+                      onSelect={q => { setSelectedQuestion(q); setAcceptError(''); }}
                     />
                   ))}
                 </div>
@@ -470,6 +475,11 @@ const Community = () => {
 
                       {/* Answers list */}
                       <div>
+                        {acceptError && (
+                          <div className="mb-3 px-4 py-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-[12px]">
+                            {acceptError}
+                          </div>
+                        )}
                         <div className="text-[12px] text-text-muted mb-3 font-semibold uppercase tracking-wider">
                           {answers.length} {answers.length === 1 ? 'Answer' : 'Answers'}
                         </div>

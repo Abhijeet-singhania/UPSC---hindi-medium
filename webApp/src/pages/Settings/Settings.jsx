@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTheme } from '../../context/ThemeContext';
@@ -28,6 +28,18 @@ const Settings = () => {
   const { execute: updateProfile, isLoading: saving } = useApi(
     `${API_BASE}/api/v1/users/me`
   );
+
+  // Sync form when user profile loads (e.g. after fetchProfile resolves post-login)
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        fullName: user.name || '',
+        bio: user.bio || '',
+        optionalSubject: user.optional_subject || '',
+        examStage: user.exam_stage || 'beginner',
+      });
+    }
+  }, [user?.id]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

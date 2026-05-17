@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, Circle, Loader2, Trophy, Flame } from 'lucide-react';
 import { useApi } from '../../hooks/useApi';
 
@@ -8,6 +9,7 @@ const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').
 
 const Dashboard = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { user } = useSelector(state => state.auth);
   const userId = user?.id;
 
@@ -59,10 +61,14 @@ const Dashboard = () => {
           <h1 className="text-[32px] font-serif mb-2">{displayName}, let's get to work.</h1>
           <p className="text-text-secondary text-[14px] mb-6">{t('dashboard.greetingSub')}</p>
           <div className="flex gap-4">
-            <button className="bg-primary hover:bg-primary-hover text-text-primary flex items-center justify-center py-2 px-4 rounded-md text-[13px] font-medium transition-colors border-none cursor-pointer">
+            <button
+              onClick={() => navigate('/roadmap')}
+              className="bg-primary hover:bg-primary-hover text-text-primary flex items-center justify-center py-2 px-4 rounded-md text-[13px] font-medium transition-colors border-none cursor-pointer">
               {t('dashboard.todaysPlanBtn')}
             </button>
-            <button className="bg-transparent border border-border-strong text-text-primary py-2 px-4 rounded-md text-[13px] cursor-pointer hover:bg-white/5 transition-colors">
+            <button
+              onClick={() => navigate('/affairs')}
+              className="bg-transparent border border-border-strong text-text-primary py-2 px-4 rounded-md text-[13px] cursor-pointer hover:bg-white/5 transition-colors">
               {t('dashboard.todaysCABtn')}
             </button>
           </div>

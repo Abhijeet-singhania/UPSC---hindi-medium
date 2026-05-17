@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CheckCircle2, ChevronRight, ChevronDown } from 'lucide-react';
+import { CheckCircle2, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 
 const Roadmap = () => {
   const { t } = useTranslation();
+  const [showNextWeek, setShowNextWeek] = useState(false);
 
   return (
     <div className="flex flex-col gap-6">
@@ -17,14 +18,14 @@ const Roadmap = () => {
            <div className="bg-bg-panel border border-border-default p-5 rounded-xl flex flex-col min-h-[140px] shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
               <span className="text-[10px] tracking-[1px] font-semibold uppercase mb-3 text-[#2B7A4B]">{t('roadmap.phase1')}</span>
               <h4 className="font-serif font-semibold text-[16px] text-text-primary">{t('roadmap.phase1Title')}</h4>
-              <div className="mt-auto text-[13px] text-text-muted">Jun - Aug 2024</div>
+              <div className="mt-auto text-[13px] text-text-muted">Jun - Aug 2025</div>
               <div className="h-[6px] bg-border-default rounded-full mt-2 w-full"><div className="h-full rounded-full bg-[#2B7A4B]" style={{width: '100%'}}></div></div>
            </div>
            
            <div className="bg-[#fbefe9] border border-primary p-5 rounded-xl flex flex-col min-h-[140px] shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
               <span className="text-[10px] tracking-[1px] font-semibold uppercase mb-3 text-primary">{t('roadmap.phase2')}</span>
               <h4 className="font-serif font-semibold text-[16px] text-text-primary">{t('roadmap.phase2Title')}</h4>
-              <div className="mt-auto text-[13px] text-text-muted">Sep 2024 - Jan 2025</div>
+              <div className="mt-auto text-[13px] text-text-muted">Sep 2025 - Jan 2026</div>
               <div className="h-[6px] bg-border-default rounded-full mt-2 w-full"><div className="h-full rounded-full bg-primary" style={{width: '64%'}}></div></div>
               <div className="text-[11px] text-primary font-semibold mt-2 tracking-wide">→ Week 14 of 22</div>
            </div>
@@ -32,14 +33,14 @@ const Roadmap = () => {
            <div className="bg-bg-panel border border-border-default p-5 rounded-xl flex flex-col min-h-[140px] shadow-[0_1px_2px_rgba(0,0,0,0.05)] opacity-60">
               <span className="text-[10px] tracking-[1px] font-semibold uppercase mb-3 text-text-muted">{t('roadmap.phase3')}</span>
               <h4 className="font-serif font-semibold text-[16px] text-text-primary">{t('roadmap.phase3Title')}</h4>
-              <div className="mt-auto text-[13px] text-text-muted">Feb - Apr 2025</div>
+              <div className="mt-auto text-[13px] text-text-muted">Feb - Apr 2026</div>
               <div className="h-[6px] bg-border-default rounded-full mt-2 w-full"></div>
            </div>
 
            <div className="bg-bg-panel border border-border-default p-5 rounded-xl flex flex-col min-h-[140px] shadow-[0_1px_2px_rgba(0,0,0,0.05)] opacity-60">
               <span className="text-[10px] tracking-[1px] font-semibold uppercase mb-3 text-text-muted">{t('roadmap.phase4')}</span>
               <h4 className="font-serif font-semibold text-[16px] text-text-primary">{t('roadmap.phase4Title')}</h4>
-              <div className="mt-auto text-[13px] text-text-muted">May 2025</div>
+              <div className="mt-auto text-[13px] text-text-muted">May 2026</div>
               <div className="h-[6px] bg-border-default rounded-full mt-2 w-full"></div>
            </div>
          </div>
@@ -52,7 +53,7 @@ const Roadmap = () => {
             <h3 className="font-serif text-[18px] font-semibold mb-1">{t('roadmap.week')} 14 — {t('roadmap.thisWeek')}</h3>
             <span className="text-text-muted text-[13px]">GS3: Economy Deep Dive + IR Prelims Practice</span>
           </div>
-          <span className="text-text-muted text-[13px] flex items-center gap-1 cursor-pointer">{t('roadmap.daysDone')} <ChevronDown size={14}/></span>
+          <span className="text-text-muted text-[13px] flex items-center gap-1">3/5 {t('roadmap.daysDone')}</span>
         </div>
         
         <div className="w-full overflow-x-auto">
@@ -150,10 +151,37 @@ const Roadmap = () => {
             </tbody>
           </table>
         </div>
-        <div className="flex justify-between items-center py-4 px-6 bg-bg-panel-hover border-t border-border-default text-[14px] font-medium text-text-primary">
-           <span>{t('roadmap.thisWeek')} 15 — {t('roadmap.nextWeek')}</span>
-           <span className="text-text-muted text-[13px] flex items-center gap-1 cursor-pointer">{t('roadmap.upcoming')} <ChevronDown size={14}/></span>
-        </div>
+        <button
+          onClick={() => setShowNextWeek(v => !v)}
+          className="w-full flex justify-between items-center py-4 px-6 bg-bg-panel-hover border-t border-border-default text-[14px] font-medium text-text-primary hover:bg-bg-surface transition cursor-pointer"
+        >
+          <span>{t('roadmap.week')} 15 — {t('roadmap.nextWeek')}</span>
+          <span className="text-text-muted text-[13px] flex items-center gap-1">
+            {t('roadmap.upcoming')} {showNextWeek ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}
+          </span>
+        </button>
+        {showNextWeek && (
+          <div className="px-6 pb-4 border-t border-border-default">
+            <table className="w-full border-collapse mt-3">
+              <tbody>
+                <tr className="border-b border-border-default">
+                  <td className="py-3 px-2 text-[13px] text-text-primary w-16">{t('roadmap.mon')}</td>
+                  <td className="py-3 px-2 text-[13px] text-text-primary"><strong className="block font-medium">Trade Policy &amp; WTO</strong><div className="text-[11px] text-text-muted">GS3 Economy</div></td>
+                  <td className="py-3 px-2 text-[13px] text-text-primary"><strong className="block font-medium">30 MCQs — Economy</strong><div className="text-[11px] text-text-muted">Adaptive set</div></td>
+                  <td className="py-3 px-2 text-[13px] text-text-primary"><strong className="block font-medium">CA + Flashcards</strong></td>
+                  <td className="py-3 px-2"><span className="inline-flex px-2.5 py-1 rounded-md text-[11px] font-medium bg-transparent border border-border-default text-text-muted">{t('roadmap.upcoming')}</span></td>
+                </tr>
+                <tr className="border-b border-border-default">
+                  <td className="py-3 px-2 text-[13px] text-text-primary">{t('roadmap.tue')}</td>
+                  <td className="py-3 px-2 text-[13px] text-text-primary"><strong className="block font-medium">Infrastructure &amp; PPP</strong><div className="text-[11px] text-text-muted">GS3 Economy</div></td>
+                  <td className="py-3 px-2 text-[13px] text-text-primary"><strong className="block font-medium">Answer Writing — GS3</strong></td>
+                  <td className="py-3 px-2 text-[13px] text-text-primary"><strong className="block font-medium">CA + Flashcards</strong></td>
+                  <td className="py-3 px-2"><span className="inline-flex px-2.5 py-1 rounded-md text-[11px] font-medium bg-transparent border border-border-default text-text-muted">{t('roadmap.upcoming')}</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Syllabus Coverage Map */}
