@@ -207,7 +207,7 @@ const AskModal = ({ onClose, onSubmit, submitting }) => {
 
 const Community = () => {
   const { t } = useTranslation();
-  const { user } = useSelector(state => state.auth);
+  const { user, token } = useSelector(state => state.auth);
 
   const [activeTab, setActiveTab] = useState('feed');
   const [activeTag, setActiveTag] = useState('');
@@ -233,9 +233,6 @@ const Community = () => {
 
   const { execute: postAnswer, isLoading: postingAnswer } =
     useApi(`${API_BASE}/api/v1/answers`);
-
-  const { execute: voteOnAnswer } =
-    useApi(`${API_BASE}/api/v1/answers/:answerId/vote`);
 
   const { data: leaderboardData, execute: loadLeaderboard } =
     useApi(`${API_BASE}/api/v1/leaderboard/reputation`);
@@ -275,9 +272,10 @@ const Community = () => {
   };
 
   const handleVote = async (answerId, newValue) => {
+    if (!token) return; // must be logged in
     const currentVote = userVotes[answerId] ?? 0;
 
-    // Optimistic UI update
+    // Optimistic UI update immediately
     setUserVotes(prev => ({ ...prev, [answerId]: newValue }));
     setLocalAnswers(prev => prev.map(a => {
       if (a.id !== answerId) return a;
@@ -290,15 +288,21 @@ const Community = () => {
     }));
 
     try {
-      const result = await voteOnAnswer({ method: 'POST', pathParams: { answerId }, queryParams: { value: newValue } });
-      // Sync with server-confirmed counts
-      if (result && typeof result.upvotes === 'number') {
+      // Use direct fetch to avoid stale-closure issues with useApi
+      const res = await fetch(
+        `${API_BASE}/api/v1/answers/${answerId}/vote?value=${newValue}`,
+        { method: 'POST', headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const result = await res.json();
+      // Confirm with server-authoritative counts
+      if (typeof result.upvotes === 'number') {
         setLocalAnswers(prev => prev.map(a =>
           a.id === answerId ? { ...a, upvotes: result.upvotes, downvotes: result.downvotes } : a
         ));
       }
     } catch (_) {
-      // Revert on failure
+      // Revert optimistic update on failure
       setUserVotes(prev => ({ ...prev, [answerId]: currentVote }));
       loadAnswers({ pathParams: { questionId: selectedQuestion.id } }).catch(() => {});
     }

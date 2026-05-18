@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { PenLine, PinIcon, Zap } from 'lucide-react';
 
 const StudyContent = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   
   // Simple state for accordion logic in sidebar
   const [expandedSection, setExpandedSection] = useState('gs3');
@@ -142,9 +144,21 @@ const StudyContent = () => {
            
            {/* Action Buttons */}
            <div className="flex gap-4 pt-8 border-t border-border-default mt-8">
-             <button className="bg-primary hover:bg-primary-hover border-none text-text-primary flex items-center gap-2 py-2 px-4 rounded-md text-[13px] font-medium transition-colors cursor-pointer"><PenLine size={16} /> {t('studyContent.btnWriteAns')}</button>
-             <button className="bg-bg-panel border border-border-default py-2 px-4 rounded-md text-[13px] font-medium text-text-primary flex items-center gap-2 cursor-pointer hover:bg-bg-panel-hover transition-colors">✧ {t('studyContent.btnMcq')}</button>
-             <button className="bg-bg-panel border border-border-default py-2 px-4 rounded-md text-[13px] font-medium text-text-primary flex items-center gap-2 cursor-pointer hover:bg-bg-panel-hover transition-colors"><Zap size={16} color="#D4613C" /> {t('studyContent.btnFlashcard')}</button>
+             <button
+               onClick={() => navigate('/answers')}
+               className="bg-primary hover:bg-primary-hover border-none text-text-primary flex items-center gap-2 py-2 px-4 rounded-md text-[13px] font-medium transition-colors cursor-pointer">
+               <PenLine size={16} /> {t('studyContent.btnWriteAns')}
+             </button>
+             <button
+               onClick={() => navigate('/prelims')}
+               className="bg-bg-panel border border-border-default py-2 px-4 rounded-md text-[13px] font-medium text-text-primary flex items-center gap-2 cursor-pointer hover:bg-bg-panel-hover transition-colors">
+               ✧ {t('studyContent.btnMcq')}
+             </button>
+             <button
+               onClick={() => navigate('/prelims')}
+               className="bg-bg-panel border border-border-default py-2 px-4 rounded-md text-[13px] font-medium text-text-primary flex items-center gap-2 cursor-pointer hover:bg-bg-panel-hover transition-colors">
+               <Zap size={16} color="#D4613C" /> {t('studyContent.btnFlashcard')}
+             </button>
            </div>
         </div>
       </div>

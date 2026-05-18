@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -10,7 +10,7 @@ const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').
 const Dashboard = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user } = useSelector(state => state.auth);
+  const { user, token } = useSelector(state => state.auth);
   const userId = user?.id;
 
   const {
@@ -40,13 +40,48 @@ const Dashboard = () => {
   const studyMinutes = userStats?.total_study_minutes ?? 0;
   const studyHours = Math.round(studyMinutes / 60);
 
-  // Heatmap: deterministic based on userId seed — not random per render
-  const heatmapData = useMemo(() => {
-    const seed = userId || 1;
-    return Array.from({ length: 7 }, (_, r) =>
-      Array.from({ length: 8 }, (_, c) => ((seed * (r + 1) * (c + 3)) % 5) + 1)
-    );
-  }, [userId]);
+  // Heatmap built from real Silent Library sessions
+  const [heatmapData, setHeatmapData] = useState(
+    Array.from({ length: 7 }, () => Array(8).fill(1))
+  );
+
+  useEffect(() => {
+    if (!token) return;
+    fetch(`${API_BASE}/api/v1/silent-library/history/me?limit=200`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.ok ? r.json() : [])
+      .then(sessions => {
+        // Map date string → total study minutes that day
+        const dateMap = {};
+        for (const s of sessions) {
+          if (!s.start_time || !s.duration_minutes) continue;
+          const dateStr = s.start_time.substring(0, 10);
+          dateMap[dateStr] = (dateMap[dateStr] || 0) + s.duration_minutes;
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const currentDow = (today.getDay() + 6) % 7; // 0=Mon … 6=Sun
+        const mondayThisWeek = new Date(today);
+        mondayThisWeek.setDate(today.getDate() - currentDow);
+
+        const grid = Array.from({ length: 7 }, () => Array(8).fill(1));
+        for (let c = 0; c < 8; c++) {
+          const weekMonday = new Date(mondayThisWeek);
+          weekMonday.setDate(mondayThisWeek.getDate() - (7 - c) * 7);
+          for (let r = 0; r < 7; r++) {
+            const date = new Date(weekMonday);
+            date.setDate(weekMonday.getDate() + r);
+            if (date > today) continue; // future cell stays at level 1
+            const mins = dateMap[date.toISOString().substring(0, 10)] || 0;
+            grid[r][c] = mins === 0 ? 1 : mins <= 30 ? 2 : mins <= 60 ? 3 : mins <= 120 ? 4 : 5;
+          }
+        }
+        setHeatmapData(grid);
+      })
+      .catch(() => {});
+  }, [userId, token]);
 
   const bgMap = { 1: 'bg-[#fbefe9]', 2: 'bg-[#efa98d]', 3: 'bg-primary', 4: 'bg-[#a84728]', 5: 'bg-[#6d2c16]' };
 
