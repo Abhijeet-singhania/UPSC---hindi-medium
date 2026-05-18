@@ -289,7 +289,7 @@ const Community = () => {
     }));
 
     try {
-      await voteOnAnswer({ pathParams: { answerId }, queryParams: { value: newValue } });
+      await voteOnAnswer({ pathParams: { answerId }, queryParams: { value: newValue }, method: 'POST' });
     } catch (_) {
       // Revert on failure
       setUserVotes(prev => ({ ...prev, [answerId]: currentVote }));

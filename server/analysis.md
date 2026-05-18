@@ -82,6 +82,10 @@ Built on SQLAlchemy with the following key models:
 ## 7. Current Steps Done (Context for Future Iterations)
 - **JWT Authentication Flow**: The `Mock Auth` using `device_id` was replaced with secure JWT-based email/password authentication via `auth_service.py`. Endpoints now validate access using the `get_current_user` dependency.
 - **PYQ Integration**: Completed endpoints for the Past Year Problems.
+- **Community & Voting API Integration**: Added optimistic like/unlike mechanics with visual vote state support.
+- **Wellbeing & Silent Library Enhancements**: Introduced full Silent Library features including join/leave sessions, live elapsed timer, active-users list, XP-per-minute, and session history via API. Upgraded Pomodoro timer with circular SVG progress ring.
+- **Rewards System Implementation**: Implemented live reputation & study-time leaderboards fetched from API. Real ranks driven by user reputation and dynamic badges with real progress (streak, reputation thresholds).
+- **Expanded Seed Data & Database Improvements**: Added 24 PYQs across various subjects, 3 new community Q&A threads, more SilentSession records, and established MVP phases with Alembic migrations and CORS configuration.
 
 ## 8. Observations & Potential Improvements
 - **Asset Management:** Add support for image/PDF uploads for handwritten Daily Answers.

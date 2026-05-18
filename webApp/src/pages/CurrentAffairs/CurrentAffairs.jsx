@@ -69,11 +69,11 @@ const CurrentAffairs = () => {
         <div className="bg-bg-panel border border-border-default rounded-xl p-6 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
           <div className="flex justify-between items-start mb-2">
             <h3 className="font-serif text-[18px] font-semibold text-text-primary">{t('currentAffairs.news1Title')}</h3>
-            <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-[#fbefe9] text-primary shrink-0 uppercase">GS3</span>
+            <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-primary/10 text-primary shrink-0 uppercase">GS3</span>
           </div>
           <p className="text-[14px] leading-[1.6] text-text-primary mb-4">{t('currentAffairs.news1Desc')}</p>
           
-          <div className="bg-[#FDF9F5] border-l-2 border-l-primary p-3 px-4 rounded mb-4">
+          <div className="bg-primary/5 border-l-2 border-l-primary p-3 px-4 rounded mb-4">
             <div className="text-[10px] text-primary font-semibold tracking-[1px] uppercase mb-1 flex items-center gap-1">
               <Link2 size={12} /> {t('currentAffairs.connectDots')}
             </div>
@@ -83,11 +83,11 @@ const CurrentAffairs = () => {
           </div>
           
           <div className="flex gap-2 flex-wrap">
-             <span className="text-[11px] bg-[#f4f4f4] text-text-muted px-2 py-1 rounded">Monetary Policy</span>
-             <span className="text-[11px] bg-[#f4f4f4] text-text-muted px-2 py-1 rounded">RBI</span>
-             <span className="text-[11px] bg-[#f4f4f4] text-text-muted px-2 py-1 rounded">Inflation</span>
-             <span className="text-[11px] bg-[#f4f4f4] text-text-muted px-2 py-1 rounded">MPC</span>
-             <span className="text-[11px] bg-[#fbefe9] text-primary px-2 py-1 rounded font-medium">PYQ 2019</span>
+             <span className="text-[11px] bg-bg-surface border border-border-default text-text-muted px-2 py-1 rounded">Monetary Policy</span>
+             <span className="text-[11px] bg-bg-surface border border-border-default text-text-muted px-2 py-1 rounded">RBI</span>
+             <span className="text-[11px] bg-bg-surface border border-border-default text-text-muted px-2 py-1 rounded">Inflation</span>
+             <span className="text-[11px] bg-bg-surface border border-border-default text-text-muted px-2 py-1 rounded">MPC</span>
+             <span className="text-[11px] bg-primary/10 text-primary px-2 py-1 rounded font-medium">PYQ 2019</span>
           </div>
         </div>
 
@@ -95,11 +95,11 @@ const CurrentAffairs = () => {
         <div className="bg-bg-panel border border-border-default rounded-xl p-6 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
           <div className="flex justify-between items-start mb-2">
             <h3 className="font-serif text-[18px] font-semibold text-text-primary">{t('currentAffairs.news2Title')}</h3>
-            <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-[#e6f3eb] text-[#2B7A4B] shrink-0 uppercase">GS2</span>
+            <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-green-500/10 text-green-600 dark:text-green-400 shrink-0 uppercase">GS2</span>
           </div>
           <p className="text-[14px] leading-[1.6] text-text-primary mb-4">{t('currentAffairs.news2Desc')}</p>
           
-          <div className="bg-[#FDF9F5] border-l-2 border-l-primary p-3 px-4 rounded mb-4">
+          <div className="bg-primary/5 border-l-2 border-l-primary p-3 px-4 rounded mb-4">
             <div className="text-[10px] text-primary font-semibold tracking-[1px] uppercase mb-1 flex items-center gap-1">
               <Link2 size={12} /> {t('currentAffairs.connectDots')}
             </div>
@@ -109,10 +109,10 @@ const CurrentAffairs = () => {
           </div>
           
           <div className="flex gap-2 flex-wrap">
-             <span className="text-[11px] bg-[#f4f4f4] text-text-muted px-2 py-1 rounded">India-Maldives</span>
-             <span className="text-[11px] bg-[#f4f4f4] text-text-muted px-2 py-1 rounded">Neighbourhood Policy</span>
-             <span className="text-[11px] bg-[#f4f4f4] text-text-muted px-2 py-1 rounded">IOR</span>
-             <span className="text-[11px] bg-[#fbefe9] text-primary px-2 py-1 rounded font-medium">PYQ 2023</span>
+             <span className="text-[11px] bg-bg-surface border border-border-default text-text-muted px-2 py-1 rounded">India-Maldives</span>
+             <span className="text-[11px] bg-bg-surface border border-border-default text-text-muted px-2 py-1 rounded">Neighbourhood Policy</span>
+             <span className="text-[11px] bg-bg-surface border border-border-default text-text-muted px-2 py-1 rounded">IOR</span>
+             <span className="text-[11px] bg-primary/10 text-primary px-2 py-1 rounded font-medium">PYQ 2023</span>
           </div>
         </div>
 
@@ -120,11 +120,11 @@ const CurrentAffairs = () => {
         <div className="bg-bg-panel border border-border-default rounded-xl p-6 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
           <div className="flex justify-between items-start mb-2">
             <h3 className="font-serif text-[18px] font-semibold text-text-primary">{t('currentAffairs.news3Title')}</h3>
-            <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-[#fbf6d9] text-[#a18115] shrink-0 uppercase">GS1+GS3</span>
+            <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 shrink-0 uppercase">GS1+GS3</span>
           </div>
           <p className="text-[14px] leading-[1.6] text-text-primary mb-4">{t('currentAffairs.news3Desc')}</p>
           
-          <div className="bg-[#FDF9F5] border-l-2 border-l-primary p-3 px-4 rounded mb-4">
+          <div className="bg-primary/5 border-l-2 border-l-primary p-3 px-4 rounded mb-4">
             <div className="text-[10px] text-primary font-semibold tracking-[1px] uppercase mb-1 flex items-center gap-1">
               <Link2 size={12} /> {t('currentAffairs.connectDots')}
             </div>
@@ -134,9 +134,9 @@ const CurrentAffairs = () => {
           </div>
           
           <div className="flex gap-2 flex-wrap">
-             <span className="text-[11px] bg-[#f4f4f4] text-text-muted px-2 py-1 rounded">Forest Rights Act</span>
-             <span className="text-[11px] bg-[#f4f4f4] text-text-muted px-2 py-1 rounded">Tribal Rights</span>
-             <span className="text-[11px] bg-[#f4f4f4] text-text-muted px-2 py-1 rounded">Supreme Court</span>
+             <span className="text-[11px] bg-bg-surface border border-border-default text-text-muted px-2 py-1 rounded">Forest Rights Act</span>
+             <span className="text-[11px] bg-bg-surface border border-border-default text-text-muted px-2 py-1 rounded">Tribal Rights</span>
+             <span className="text-[11px] bg-bg-surface border border-border-default text-text-muted px-2 py-1 rounded">Supreme Court</span>
           </div>
         </div>
       </div>

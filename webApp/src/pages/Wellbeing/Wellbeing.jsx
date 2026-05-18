@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import {
   Play, Pause, BookOpen, Users, Clock, Zap, TrendingUp,
   CheckCircle2, Coffee, FlameIcon, Activity, Loader2,
+  Volume2, VolumeX, Music, SkipBack, SkipForward, ListMusic, Plus, Trash2,
 } from 'lucide-react';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
@@ -269,6 +270,16 @@ const PomodoroTimer = () => {
   const [isActive, setIsActive] = useState(false);
   const [isBreak, setIsBreak] = useState(false);
   const [completedSessions, setCompletedSessions] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   useEffect(() => {
     let interval = null;
@@ -277,23 +288,61 @@ const PomodoroTimer = () => {
     } else if (isActive && timeLeft === 0) {
       setIsActive(false);
       if (!isBreak) setCompletedSessions(s => s + 1);
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
     }
     return () => clearInterval(interval);
   }, [isActive, timeLeft, isBreak]);
 
+  const handleToggleActive = () => {
+    if (!isActive) {
+      if (containerRef.current && !document.fullscreenElement) {
+        containerRef.current.requestFullscreen().catch(() => {});
+      }
+    } else {
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+    setIsActive(!isActive);
+  };
+
   const formatTime = (s) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
-  const setSession = (mins, breakMode) => { setIsActive(false); setIsBreak(breakMode); setTimeLeft(mins * 60); };
+  
+  const setSession = (mins, breakMode) => {
+    setIsActive(false);
+    setIsBreak(breakMode);
+    setTimeLeft(mins * 60);
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
+  
   const pct = isBreak ? (timeLeft / (5 * 60)) * 100 : (timeLeft / (25 * 60)) * 100;
 
   return (
-    <div className="bg-bg-surface-dark text-text-primary rounded-2xl p-8 flex flex-col items-center justify-center">
+    <div ref={containerRef} className="bg-bg-surface-dark text-text-primary rounded-2xl p-8 flex flex-col items-center justify-center relative min-h-[300px]">
+      <style>
+        {`
+          @keyframes groovy-glow {
+            0% { filter: drop-shadow(0 0 4px currentColor); transform: scale(1); }
+            50% { filter: drop-shadow(0 0 20px currentColor); transform: scale(1.05) rotate(5deg); }
+            100% { filter: drop-shadow(0 0 4px currentColor); transform: scale(1); }
+          }
+          .animate-groovy {
+            animation: groovy-glow 3s ease-in-out infinite;
+            transform-origin: center;
+          }
+        `}
+      </style>
       <div className="text-[10px] tracking-[3px] uppercase text-text-muted mb-4">
         {isBreak ? 'BREAK SESSION' : t('wellbeing.focusTitle')}
         {completedSessions > 0 && <span className="ml-3 text-primary">● {completedSessions} done</span>}
       </div>
 
       {/* Circular timer */}
-      <div className="relative w-36 h-36 mb-6">
+      <div className="relative w-48 h-48 mb-8 mt-2">
         <svg className="w-full h-full -rotate-90" viewBox="0 0 144 144">
           <circle cx="72" cy="72" r="60" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8" />
           <circle
@@ -302,38 +351,45 @@ const PomodoroTimer = () => {
             strokeWidth="8" strokeLinecap="round"
             strokeDasharray={`${2 * Math.PI * 60}`}
             strokeDashoffset={`${2 * Math.PI * 60 * (1 - pct / 100)}`}
-            className="transition-all duration-1000"
+            className={`transition-all duration-1000 ${isActive ? 'animate-groovy text-current' : 'text-current'}`}
+            style={{ color: isBreak ? '#2B7A4B' : 'var(--color-primary)' }}
           />
         </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className="text-[32px] font-mono font-semibold leading-none">{formatTime(timeLeft)}</div>
-          <div className="text-[10px] text-text-muted mt-1">{isBreak ? 'BREAK' : 'FOCUS'}</div>
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <div className="text-[40px] font-mono font-semibold leading-none">{formatTime(timeLeft)}</div>
+          <div className="text-[11px] text-text-muted mt-2 tracking-[2px]">{isBreak ? 'BREAK' : 'FOCUS'}</div>
         </div>
       </div>
 
-      <div className="flex justify-center gap-3">
+      <div className="flex justify-center gap-4">
         <button
-          className="bg-white/5 border border-white/10 text-text-secondary px-5 py-2.5 rounded-lg text-[12px] cursor-pointer hover:bg-white/15 hover:text-text-primary transition"
+          className="bg-white/5 border border-white/10 text-text-secondary px-6 py-3 rounded-lg text-[13px] cursor-pointer hover:bg-white/15 hover:text-text-primary transition"
           onClick={() => setSession(25, false)}
         >
           {t('wellbeing.focus25')}
         </button>
         <button
-          className={`px-7 py-2.5 rounded-lg text-[14px] font-medium flex items-center gap-2 cursor-pointer transition ${
-            isBreak ? 'bg-[#2B7A4B] hover:bg-[#3a9e64]' : 'bg-primary hover:bg-primary-hover'
+          className={`px-8 py-3 rounded-lg text-[15px] font-medium flex items-center gap-2 cursor-pointer transition shadow-lg ${
+            isBreak ? 'bg-[#2B7A4B] hover:bg-[#3a9e64] shadow-[#2B7A4B]/20' : 'bg-primary hover:bg-primary-hover shadow-primary/20'
           } text-white`}
-          onClick={() => setIsActive(a => !a)}
+          onClick={handleToggleActive}
         >
-          {isActive ? <Pause size={15} fill="white" /> : <Play size={15} fill="white" />}
+          {isActive ? <Pause size={18} fill="white" /> : <Play size={18} fill="white" />}
           {isActive ? 'Pause' : t('wellbeing.focusStart')}
         </button>
         <button
-          className="bg-white/5 border border-white/10 text-text-secondary px-5 py-2.5 rounded-lg text-[12px] cursor-pointer hover:bg-white/15 hover:text-text-primary transition"
+          className="bg-white/5 border border-white/10 text-text-secondary px-6 py-3 rounded-lg text-[13px] cursor-pointer hover:bg-white/15 hover:text-text-primary transition"
           onClick={() => setSession(5, true)}
         >
           {t('wellbeing.focusBreak')}
         </button>
       </div>
+
+      {isFullscreen && (
+        <div className="w-[340px] absolute left-12 top-1/2 -translate-y-1/2">
+          <MusicPlayer />
+        </div>
+      )}
     </div>
   );
 };
@@ -368,6 +424,203 @@ const StudyStatsCard = ({ stats }) => {
           <FlameIcon size={14} /> {stats.streak_days}-day streak! Keep it going.
         </div>
       )}
+    </div>
+  );
+};
+
+// ─── Music Player ─────────────────────────────────────────────────────────────
+
+const MUSIC_TRACKS = [
+  { id: 'lofi', name: 'Lo-Fi Chill', url: 'https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3' },
+  { id: 'rain', name: 'Rain & Thunder', url: 'https://cdn.pixabay.com/audio/2021/08/09/audio_dc39bde80a.mp3' },
+  { id: 'nature', name: 'Forest Birds', url: 'https://cdn.pixabay.com/audio/2021/08/09/audio_82e3f5d54f.mp3' },
+];
+
+const MusicPlayer = () => {
+  const [tracks, setTracks] = useState(MUSIC_TRACKS);
+  const [customUrl, setCustomUrl] = useState('');
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTrack, setCurrentTrack] = useState(0);
+  const [volume, setVolume] = useState(0.5);
+  const [showPlaylist, setShowPlaylist] = useState(false);
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume;
+    }
+  }, [volume]);
+
+  const togglePlay = () => {
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play().catch(() => setIsPlaying(false));
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const handleNext = () => {
+    const nextIdx = (currentTrack + 1) % tracks.length;
+    setCurrentTrack(nextIdx);
+    setIsPlaying(true);
+    setTimeout(() => {
+      audioRef.current?.play().catch(() => setIsPlaying(false));
+    }, 50);
+  };
+
+  const handlePrev = () => {
+    const prevIdx = (currentTrack - 1 + tracks.length) % tracks.length;
+    setCurrentTrack(prevIdx);
+    setIsPlaying(true);
+    setTimeout(() => {
+      audioRef.current?.play().catch(() => setIsPlaying(false));
+    }, 50);
+  };
+
+  const addCustomTrack = (e) => {
+    e.preventDefault();
+    if (!customUrl.trim()) return;
+    const newTrack = { id: 'custom-' + Date.now(), name: 'Custom URL', url: customUrl.trim() };
+    const newTracks = [...tracks, newTrack];
+    setTracks(newTracks);
+    setCurrentTrack(newTracks.length - 1);
+    setCustomUrl('');
+    setIsPlaying(true);
+    setTimeout(() => {
+      audioRef.current?.play().catch(() => setIsPlaying(false));
+    }, 50);
+  };
+
+  const handleDeleteTrack = (idx, e) => {
+    e.stopPropagation();
+    const newTracks = tracks.filter((_, i) => i !== idx);
+    setTracks(newTracks);
+    if (idx === currentTrack) {
+      const nextIdx = Math.max(0, idx - 1);
+      setCurrentTrack(nextIdx);
+      if (isPlaying && newTracks.length > 0) {
+        setTimeout(() => {
+          audioRef.current?.play().catch(() => setIsPlaying(false));
+        }, 50);
+      } else if (newTracks.length === 0) {
+        setIsPlaying(false);
+      }
+    } else if (idx < currentTrack) {
+      setCurrentTrack(currentTrack - 1);
+    }
+  };
+
+  return (
+    <div className="bg-bg-panel border border-border-default rounded-2xl p-6 shadow-sm">
+      <div className="flex items-center justify-between mb-4">
+        <button 
+          onClick={() => setShowPlaylist(!showPlaylist)}
+          className="text-text-muted hover:text-primary transition flex items-center gap-2 text-[12px] uppercase font-bold tracking-widest cursor-pointer"
+        >
+          <ListMusic size={15} /> Playlist
+        </button>
+        <div className="text-[11px] text-text-muted font-medium bg-bg-surface px-2 py-1 rounded-md border border-border-default max-w-[150px] truncate" title={tracks[currentTrack].name}>
+          {tracks[currentTrack].name}
+        </div>
+      </div>
+      
+      <audio 
+        ref={audioRef} 
+        src={tracks[currentTrack].url} 
+        loop 
+        onPlay={() => setIsPlaying(true)} 
+        onPause={() => setIsPlaying(false)}
+      />
+
+      <div className="flex flex-col gap-4">
+        {/* Track Selection */}
+        {showPlaylist && (
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto pr-1">
+              {tracks.map((track, idx) => (
+                <div
+                  key={track.id}
+                  onClick={() => {
+                    setCurrentTrack(idx);
+                    setIsPlaying(true);
+                    setTimeout(() => {
+                      audioRef.current?.play().catch(() => setIsPlaying(false));
+                    }, 50);
+                  }}
+                  className={`px-3 py-2 rounded-lg text-[12px] font-medium transition cursor-pointer flex justify-between items-center group ${
+                    currentTrack === idx 
+                      ? 'bg-primary/10 text-primary border border-primary/30' 
+                      : 'bg-bg-surface border-border-default text-text-muted hover:text-text-primary border'
+                  }`}
+                >
+                  <span className="truncate max-w-[200px] flex-1 text-left">{track.name}</span>
+                  <div className="flex items-center gap-2">
+                    {currentTrack === idx && isPlaying && <Music size={12} className="animate-pulse shrink-0" />}
+                    {track.id.startsWith('custom-') && (
+                      <button
+                        onClick={(e) => handleDeleteTrack(idx, e)}
+                        className="opacity-0 group-hover:opacity-100 text-text-muted hover:text-red-500 transition cursor-pointer"
+                        title="Delete track"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {/* Add custom URL form */}
+            <form onSubmit={addCustomTrack} className="flex items-center gap-2 mt-1">
+              <input 
+                type="url" 
+                placeholder="Paste audio URL..." 
+                value={customUrl}
+                onChange={(e) => setCustomUrl(e.target.value)}
+                className="flex-1 bg-bg-surface border border-border-default rounded-lg px-3 py-2 text-[11px] text-text-primary outline-none focus:border-primary transition"
+                required
+              />
+              <button 
+                type="submit" 
+                className="bg-bg-surface border border-border-default hover:border-primary hover:text-primary text-text-secondary w-8 h-8 rounded-lg flex items-center justify-center transition cursor-pointer shrink-0"
+                title="Add Track"
+              >
+                <Plus size={14} />
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* Controls */}
+        <div className="flex items-center gap-4 mt-2">
+          <div className="flex items-center gap-2">
+            <button onClick={handlePrev} className="w-8 h-8 rounded-full flex items-center justify-center text-text-secondary hover:text-primary transition cursor-pointer hover:bg-bg-surface">
+              <SkipBack size={16} fill="currentColor" />
+            </button>
+            <button 
+              onClick={togglePlay}
+              className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white cursor-pointer hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all shrink-0"
+            >
+              {isPlaying ? <Pause size={18} fill="white" /> : <Play size={18} fill="white" className="ml-1" />}
+            </button>
+            <button onClick={handleNext} className="w-8 h-8 rounded-full flex items-center justify-center text-text-secondary hover:text-primary transition cursor-pointer hover:bg-bg-surface">
+              <SkipForward size={16} fill="currentColor" />
+            </button>
+          </div>
+          
+          <div className="flex-1 flex items-center gap-3 bg-bg-surface px-4 py-3 rounded-xl border border-border-default">
+            {volume === 0 ? <VolumeX size={16} className="text-text-muted shrink-0" /> : <Volume2 size={16} className="text-text-muted shrink-0" />}
+            <input 
+              type="range" 
+              min="0" max="1" step="0.01" 
+              value={volume}
+              onChange={(e) => setVolume(parseFloat(e.target.value))}
+              className="w-full h-1.5 bg-border-default rounded-full appearance-none cursor-pointer"
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

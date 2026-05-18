@@ -42,8 +42,30 @@ The web application is known as **Drishti** (Drishti UPSC CSE Platform), designe
 - **Global Theme Architecture**: Swept the entire repository to purge hardcoded inline hex colors, replacing them with semantic Tailwind utility classes (e.g., `bg-bg-panel`, `text-text-primary`). Designed a full Light Mode and Dark Mode palette in `index.css` alongside a functional UI Theme Switcher.
 - **Redux Auth Integration**: A robust login flow has been implemented that interfaces with the backend `/api/v1/users/login`, stores the JWT access token, and leverages `ProtectedRoute` to restrict access to authenticated areas.
 - **PYQ Integration**: The Past Year Questions frontend interface has been integrated to consume the new backend PYQ endpoints.
+- **Community & Well-being Updates**: Added optimistic like/unlike mechanics for the community module. Fully integrated the Silent Library with join/leave sessions, live elapsed timers, active-users list, XP-per-minute tracking, and session history via API. Upgraded the Pomodoro timer with a groovy SVG animation, native full-screen mode, and a built-in customizable Music Player (supports dynamic custom URLs) that appears during full-screen focus sessions.
+- **Rewards System Frontend**: Implemented live reputation and study-time leaderboards powered by the API. Introduced dynamic badges showing real progress and a rank ladder based on user reputation.
+- **Bug Fixes**: Resolved 405 Method Not Allowed errors on voting endpoints by strictly enforcing `POST` requests in the API hook. Scrubbed hardcoded light-mode hex colors from the Current Affairs module, replacing them with semantic Tailwind classes for seamless Dark Mode compatibility.
 
 ## 6. Potential Action Items
 - Abstract reusable metric cards and checklist items from `Dashboard.jsx` into globally accessible subcomponents.
 - Integrate `useApi` globally to start hydrating mocked components inside `Dashboard.jsx`.
 - Expand test coverage for Redux slices and component logic.
+
+## 7. Developer & User Guides
+
+### How to Extract Direct .mp3 CDN URLs (e.g., from Pixabay)
+To add a custom track to the Music Player, you need a direct `.mp3` URL. If you want to use a track from Pixabay, follow these steps using your browser's Developer Tools:
+
+**1. Open Developer Tools (Network Tab)**
+- Go to the Pixabay page (e.g., `https://pixabay.com/music/lofi-chill-519877/`).
+- Right-click anywhere on the page and select **"Inspect"** (or press `Ctrl + Shift + I` / `F12` on Windows).
+- In the Developer Tools panel that opens up, click on the **"Network"** tab.
+- Right below the Network tab, you will see a filter menu. Click on **"Media"**.
+
+**2. Capture the Audio URL**
+- Go back to the web page (with the Network tab still open) and click the **Play** button to start playing the song.
+- The moment the song starts buffering, a new entry will pop up in your Network tab. It will usually have `.mp3` in the name.
+- Right-click that new file entry in the Network tab.
+- Select **Copy -> Copy URL** (or "Copy link address").
+
+That copied link is the raw `https://cdn.pixabay.com/audio/...mp3` link! You can now paste that exact URL into the Custom Track input in the application, hit the `+` button, and it will play perfectly.

@@ -80,7 +80,7 @@ const AnswerWriting = () => {
 
   const handleVote = async (answerId) => {
     try {
-      await voteAnswer({ pathParams: { answerId }, queryParams: { value: 1 } });
+      await voteAnswer({ pathParams: { answerId }, queryParams: { value: 1 }, method: 'POST' });
       fetchAnswers({ pathParams: { questionId: selectedQuestion.id } }).catch(() => {});
     } catch (_) {}
   };
