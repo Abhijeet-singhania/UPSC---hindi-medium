@@ -1231,9 +1231,6 @@ const PracticeLab = () => {
       .catch(() => {});
   }, [token]);
 
-  // Keep doSubmitRef always pointing to latest doSubmitTest
-  useEffect(() => { doSubmitRef.current = doSubmitTest; }, [doSubmitTest]);
-
   // Timer countdown
   useEffect(() => {
     if (testPhase !== 'running' || timeLeft == null) return;
@@ -1300,6 +1297,10 @@ const PracticeLab = () => {
     setElapsedSecs(Math.max(0, total - rem));
     setTestPhase('results');
   }, [timeLeft, totalTestSecs]);
+
+  // Keep doSubmitRef current so violation handlers always call the latest version
+  // (must be declared after doSubmitTest to avoid TDZ error)
+  useEffect(() => { doSubmitRef.current = doSubmitTest; }, [doSubmitTest]);
 
   // ── Direct fetch for test questions (avoids useApi stale-data issues) ────────
   const handleStart = useCallback(async () => {
