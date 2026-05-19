@@ -26,6 +26,12 @@ const SilentLibrary = () => {
   const [error, setError] = useState('');
   const timerRef = useRef(null);
 
+  // Refs so event-handler closures always see latest values without re-subscribing
+  const isInLibraryRef = useRef(false);
+  const tokenRef = useRef(token);
+  useEffect(() => { isInLibraryRef.current = isInLibrary; }, [isInLibrary]);
+  useEffect(() => { tokenRef.current = token; }, [token]);
+
   const authHeaders = { Authorization: `Bearer ${token}` };
 
   const fetchActive = useCallback(async () => {
@@ -84,6 +90,32 @@ const SilentLibrary = () => {
     const poll = setInterval(fetchActive, 30000);
     return () => clearInterval(poll);
   }, [fetchActive, fetchStats, fetchHistory, checkAndResumeSession]);
+
+  // ── Auto-leave: browser/tab hidden (visibilitychange) ──────────────────────
+  useEffect(() => {
+    if (!isInLibrary) return;
+    const onHide = () => { if (document.hidden) leaveLibrary(); };
+    document.addEventListener('visibilitychange', onHide);
+    return () => document.removeEventListener('visibilitychange', onHide);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isInLibrary]); // intentionally omit leaveLibrary to avoid re-subscribing every render
+
+  // ── Auto-leave: page close / navigate away (keepalive so request survives) ──
+  useEffect(() => {
+    const leaveOnUnload = () => {
+      if (!isInLibraryRef.current || !tokenRef.current) return;
+      fetch(`${API_BASE}/api/v1/silent-library/leave`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tokenRef.current}` },
+        keepalive: true,
+      });
+    };
+    window.addEventListener('beforeunload', leaveOnUnload);
+    return () => {
+      window.removeEventListener('beforeunload', leaveOnUnload);
+      leaveOnUnload(); // also fires when component unmounts (React Router navigation)
+    };
+  }, []); // empty deps — uses refs, so this never needs to resubscribe
 
   // Elapsed timer
   useEffect(() => {

@@ -459,11 +459,15 @@ const Community = () => {
                         <h4 className="font-medium text-[14px] text-text-primary mb-3">Your Answer</h4>
                         <textarea
                           value={answerText}
-                          onChange={e => setAnswerText(e.target.value)}
+                          onChange={e => setAnswerText(e.target.value.slice(0, 2000))}
                           rows={4}
+                          maxLength={2000}
                           placeholder="Write a clear, structured answer..."
                           className="w-full bg-bg-surface border border-border-default rounded-lg px-4 py-3 text-[13px] text-text-primary focus:outline-none focus:border-primary transition resize-none"
                         />
+                        <div className={`text-[11px] text-right mt-1 font-mono ${answerText.length >= 1900 ? 'text-red-500' : 'text-text-muted'}`}>
+                          {answerText.length} / 2000
+                        </div>
                         {answerError && <p className="text-red-500 text-[12px] mt-2">{answerError}</p>}
                         <div className="flex justify-end mt-3">
                           <button

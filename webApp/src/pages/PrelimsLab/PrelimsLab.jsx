@@ -6,7 +6,7 @@ import {
   CheckCircle2, XCircle, MessageCircle, Loader2, PenLine, RotateCcw,
   Trophy, Timer, Award, AlertCircle, PlayCircle, Clock, TrendingUp,
   FlaskConical, ScrollText, ChevronDown, AlertTriangle, Target, Zap,
-  RefreshCw
+  RefreshCw, Maximize2, ShieldAlert
 } from 'lucide-react';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
@@ -169,14 +169,19 @@ const MCQPanel = ({ problem, attempt, onAttempt, testMode = false }) => {
 };
 
 // ─── MainsPanel ───────────────────────────────────────────────────────────────
-const MainsPanel = ({ problem, attempt, onAttempt }) => {
+const MainsPanel = ({ problem, attempt, onAttempt, testMode = false }) => {
   const limit = problem.word_limit || 250;
   const text = attempt?.text ?? '';
   const submitted = attempt?.submitted ?? false;
   const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
   const over = wordCount > limit;
 
-  if (submitted) {
+  const blockClipboard = (e) => {
+    e.preventDefault();
+    // no-op: silently block copy/paste/cut in test mode
+  };
+
+  if (submitted && !testMode) {
     return (
       <div className="flex flex-col gap-3">
         <div className="bg-[#EBF5F0] border border-[#2B7A4B]/30 rounded-lg p-4 text-[13px] text-[#2B7A4B] flex items-center gap-2">
@@ -199,24 +204,36 @@ const MainsPanel = ({ problem, attempt, onAttempt }) => {
 
   return (
     <div className="flex flex-col gap-3">
+      {testMode && (
+        <div className="flex items-center gap-2 text-[11px] text-text-muted bg-bg-surface border border-border-default rounded-lg px-3 py-2">
+          <ShieldAlert size={13} className="text-primary shrink-0" />
+          Copy, paste and cut are disabled during the test. Type your answer below.
+        </div>
+      )}
       <textarea
         value={text}
         onChange={e => onAttempt({ text: e.target.value, submitted: false })}
-        rows={8}
+        rows={testMode ? 10 : 8}
         placeholder={`Write your answer here… (aim for ~${limit} words)`}
         className="w-full bg-bg-surface border border-border-default rounded-lg px-3 py-2.5 text-[13px] text-text-primary placeholder-text-muted focus:outline-none focus:border-primary transition resize-y leading-relaxed"
+        onCopy={testMode ? blockClipboard : undefined}
+        onPaste={testMode ? blockClipboard : undefined}
+        onCut={testMode ? blockClipboard : undefined}
+        onContextMenu={testMode ? blockClipboard : undefined}
       />
       <div className="flex items-center justify-between">
         <span className={`text-[12px] font-mono ${over ? 'text-red-500' : 'text-text-muted'}`}>
           {wordCount} / {limit} words{over ? ' — over limit' : ''}
         </span>
-        <button
-          onClick={() => text.trim() && onAttempt({ text, submitted: true })}
-          disabled={!text.trim()}
-          className="bg-primary hover:bg-primary-hover text-white py-2 px-5 rounded-lg text-[13px] font-medium flex items-center gap-2 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          <PenLine size={14} /> Save answer
-        </button>
+        {!testMode && (
+          <button
+            onClick={() => text.trim() && onAttempt({ text, submitted: true })}
+            disabled={!text.trim()}
+            className="bg-primary hover:bg-primary-hover text-white py-2 px-5 rounded-lg text-[13px] font-medium flex items-center gap-2 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <PenLine size={14} /> Save answer
+          </button>
+        )}
       </div>
     </div>
   );
@@ -770,7 +787,7 @@ const TestConfigView = ({ filterData, config, setConfig, onStart, isLoading, sta
 };
 
 // ─── TestRunningView ──────────────────────────────────────────────────────────
-const TestRunningView = ({ questions, answers, onSetAnswer, currentIdx, setCurrentIdx, timeLeft, totalSecs, onSubmit }) => {
+const TestRunningView = ({ questions, answers, onSetAnswer, currentIdx, setCurrentIdx, timeLeft, totalSecs, onSubmit, violationBanner, violationCount, maxViolations }) => {
   const [showConfirm, setShowConfirm] = useState(false);
   const q = questions[currentIdx];
   if (!q) return null;
@@ -814,6 +831,17 @@ const TestRunningView = ({ questions, answers, onSetAnswer, currentIdx, setCurre
           />
         </div>
 
+        {/* Violation banner */}
+        {violationBanner && (
+          <div className="mb-3 flex items-start gap-3 bg-red-50 border border-red-300 text-red-700 rounded-xl px-4 py-3 text-[13px] font-medium animate-pulse">
+            <ShieldAlert size={16} className="shrink-0 mt-0.5" />
+            <span>
+              {violationBanner}
+              {' '}<span className="font-bold">({violationCount}/{maxViolations} warnings — test auto-submits at {maxViolations})</span>
+            </span>
+          </div>
+        )}
+
         {/* Question card */}
         <div className="bg-bg-panel border border-border-default rounded-xl p-6 mb-4">
           <div className="flex gap-2 flex-wrap mb-4">
@@ -836,6 +864,7 @@ const TestRunningView = ({ questions, answers, onSetAnswer, currentIdx, setCurre
               problem={q}
               attempt={answers[q.id] ?? null}
               onAttempt={val => onSetAnswer(q.id, val)}
+              testMode
             />
           )}
         </div>
@@ -1185,6 +1214,13 @@ const PracticeLab = () => {
   const [startError, setStartError] = useState('');
   const timerRef = useRef(null);
 
+  // Violation / fullscreen state
+  const [violationCount, setViolationCount] = useState(0);
+  const [violationBanner, setViolationBanner] = useState('');
+  const MAX_VIOLATIONS = 3;
+  const bannerTimerRef = useRef(null);
+  const doSubmitRef = useRef(null);
+
   // Load filter data once
   useEffect(() => {
     fetch(`${API_BASE}/api/v1/past-year-problems/filters?language=en`, {
@@ -1195,6 +1231,9 @@ const PracticeLab = () => {
       .catch(() => {});
   }, [token]);
 
+  // Keep doSubmitRef always pointing to latest doSubmitTest
+  useEffect(() => { doSubmitRef.current = doSubmitTest; }, [doSubmitTest]);
+
   // Timer countdown
   useEffect(() => {
     if (testPhase !== 'running' || timeLeft == null) return;
@@ -1202,6 +1241,57 @@ const PracticeLab = () => {
     timerRef.current = setTimeout(() => setTimeLeft(t => t - 1), 1000);
     return () => clearTimeout(timerRef.current);
   }, [timeLeft, testPhase]);
+
+  // Fullscreen + focus violation monitoring
+  useEffect(() => {
+    if (testPhase !== 'running') return;
+
+    // Enter fullscreen
+    document.documentElement.requestFullscreen?.().catch(() => {});
+
+    const issueWarning = (msg) => {
+      clearTimeout(bannerTimerRef.current);
+      setViolationBanner(msg);
+      setViolationCount(prev => {
+        const next = prev + 1;
+        if (next >= MAX_VIOLATIONS) {
+          doSubmitRef.current?.();
+        } else {
+          bannerTimerRef.current = setTimeout(() => setViolationBanner(''), 6000);
+        }
+        return next;
+      });
+    };
+
+    const onVisibility = () => {
+      if (document.hidden) issueWarning('Tab switch or window focus lost detected!');
+    };
+
+    const onFullscreen = () => {
+      if (!document.fullscreenElement) {
+        // Immediately try to re-enter
+        document.documentElement.requestFullscreen?.().catch(() => {});
+        issueWarning('Full screen was exited! Please stay in full screen during the test.');
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisibility);
+    document.addEventListener('fullscreenchange', onFullscreen);
+
+    return () => {
+      clearTimeout(bannerTimerRef.current);
+      document.removeEventListener('visibilitychange', onVisibility);
+      document.removeEventListener('fullscreenchange', onFullscreen);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [testPhase]); // intentionally omit doSubmitTest — we use the ref instead
+
+  // Exit fullscreen when test ends
+  useEffect(() => {
+    if (testPhase !== 'running' && document.fullscreenElement) {
+      document.exitFullscreen?.().catch(() => {});
+    }
+  }, [testPhase]);
 
   const doSubmitTest = useCallback((remainingOverride = null) => {
     clearTimeout(timerRef.current);
@@ -1248,6 +1338,8 @@ const PracticeLab = () => {
       setTotalTestSecs(totalSecs);
       setTimeLeft(totalSecs);
       setElapsedSecs(null);
+      setViolationCount(0);
+      setViolationBanner('');
       setTestPhase('running');
     } catch {
       setStartError('Failed to load questions. Please check your server connection and try again.');
@@ -1328,6 +1420,9 @@ const PracticeLab = () => {
           timeLeft={timeLeft}
           totalSecs={totalTestSecs}
           onSubmit={doSubmitTest}
+          violationBanner={violationBanner}
+          violationCount={violationCount}
+          maxViolations={MAX_VIOLATIONS}
         />
       )}
 
