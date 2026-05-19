@@ -17,10 +17,12 @@ import AnswerWriting from './pages/AnswerWriting/AnswerWriting';
 
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import { ThemeProvider } from './context/ThemeContext';
+import { UIProvider } from './context/UIContext';
 
 function App() {
   return (
     <ThemeProvider>
+      <UIProvider>
       <Router>
         <Routes>
           <Route path="/" element={<Welcome />} />
@@ -46,6 +48,7 @@ function App() {
           </Route>
         </Routes>
       </Router>
+      </UIProvider>
     </ThemeProvider>
   );
 }

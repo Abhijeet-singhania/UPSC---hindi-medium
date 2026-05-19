@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { useUI } from '../../context/UIContext';
 import {
   Search, FileText, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight,
   CheckCircle2, XCircle, MessageCircle, Loader2, PenLine, RotateCcw,
@@ -1197,6 +1198,7 @@ const TestResultsView = ({ questions, answers, elapsedSecs, totalSecs, config, o
 // ─── Main PracticeLab ─────────────────────────────────────────────────────────
 const PracticeLab = () => {
   const token = useSelector(state => state.auth?.token);
+  const { setTestMode } = useUI();
 
   const [activeTab, setActiveTab] = useState('browse');
   const [testPhase, setTestPhase] = useState('config'); // 'config' | 'running' | 'results'
@@ -1289,6 +1291,13 @@ const PracticeLab = () => {
       document.exitFullscreen?.().catch(() => {});
     }
   }, [testPhase]);
+
+  // Hide sidebar/topbar during test; restore on unmount or test end
+  useEffect(() => {
+    const running = testPhase === 'running';
+    setTestMode(running);
+    return () => setTestMode(false);
+  }, [testPhase, setTestMode]);
 
   const doSubmitTest = useCallback((remainingOverride = null) => {
     clearTimeout(timerRef.current);
