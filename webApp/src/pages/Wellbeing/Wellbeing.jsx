@@ -9,24 +9,25 @@ import {
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 
-// ─── Silent Library ──────────────────────────────────────────────────────────
+// ─── Focus Room (Silent Library + Pomodoro, merged) ──────────────────────────
 
-const SilentLibrary = () => {
+const FocusRoom = () => {
+  const { t } = useTranslation();
   const token = useSelector(state => state.auth?.token);
+
+  // ── Silent Library state ────────────────────────────────────────────────────
   const [isInLibrary, setIsInLibrary] = useState(false);
   const [sessionStart, setSessionStart] = useState(null);
   const [sessionElapsed, setSessionElapsed] = useState(0);
   const [activeUsers, setActiveUsers] = useState(0);
   const [activeUserList, setActiveUserList] = useState([]);
-  const [studyStats, setStudyStats] = useState(null);
   const [sessionHistory, setSessionHistory] = useState([]);
   const [isJoining, setIsJoining] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
   const [lastEarned, setLastEarned] = useState(null);
-  const [error, setError] = useState('');
-  const timerRef = useRef(null);
+  const [libError, setLibError] = useState('');
+  const sessionTimerRef = useRef(null);
 
-  // Refs so event-handler closures always see latest values without re-subscribing
   const isInLibraryRef = useRef(false);
   const tokenRef = useRef(token);
   useEffect(() => { isInLibraryRef.current = isInLibrary; }, [isInLibrary]);
@@ -34,37 +35,29 @@ const SilentLibrary = () => {
 
   const authHeaders = { Authorization: `Bearer ${token}` };
 
+  // ── Pomodoro state ──────────────────────────────────────────────────────────
+  const [pomTime, setPomTime] = useState(25 * 60);
+  const [pomActive, setPomActive] = useState(false);
+  const [isBreak, setIsBreak] = useState(false);
+  const [completedPomos, setCompletedPomos] = useState(0);
+  const pomBaseRef = useRef(25 * 60);
+
+  // ── Silent Library API helpers ──────────────────────────────────────────────
   const fetchActive = useCallback(async () => {
     try {
       const r = await fetch(`${API_BASE}/api/v1/silent-library/active`);
-      if (r.ok) {
-        const d = await r.json();
-        setActiveUsers(d.count ?? 0);
-        setActiveUserList(d.users ?? []);
-      }
+      if (r.ok) { const d = await r.json(); setActiveUsers(d.count ?? 0); setActiveUserList(d.users ?? []); }
     } catch (_) {}
   }, []);
-
-  const fetchStats = useCallback(async () => {
-    if (!token) return;
-    try {
-      const r = await fetch(`${API_BASE}/api/v1/silent-library/stats/me`, { headers: authHeaders });
-      if (r.ok) setStudyStats(await r.json());
-    } catch (_) {}
-  }, [token]);
 
   const fetchHistory = useCallback(async () => {
     if (!token) return;
     try {
       const r = await fetch(`${API_BASE}/api/v1/silent-library/history/me?limit=5`, { headers: authHeaders });
-      if (r.ok) {
-        const all = await r.json();
-        setSessionHistory(all.filter(s => s.end_time && s.duration_minutes > 0));
-      }
+      if (r.ok) { const all = await r.json(); setSessionHistory(all.filter(s => s.end_time && s.duration_minutes > 0)); }
     } catch (_) {}
   }, [token]);
 
-  // Check if user already has an active session (resume on page reload)
   const checkAndResumeSession = useCallback(async () => {
     if (!token) return;
     try {
@@ -74,379 +67,267 @@ const SilentLibrary = () => {
       if (sessions.length > 0 && !sessions[0].end_time) {
         const startTime = new Date(sessions[0].start_time);
         const elapsed = Math.max(0, Math.floor((Date.now() - startTime.getTime()) / 1000));
-        setIsInLibrary(true);
-        setSessionStart(startTime);
-        setSessionElapsed(elapsed);
+        setIsInLibrary(true); setSessionStart(startTime); setSessionElapsed(elapsed);
       }
     } catch (_) {}
   }, [token]);
 
   useEffect(() => {
-    fetchActive();
-    fetchStats();
-    fetchHistory();
-    checkAndResumeSession();
-    // Poll active users every 30s
+    fetchActive(); fetchHistory(); checkAndResumeSession();
     const poll = setInterval(fetchActive, 30000);
     return () => clearInterval(poll);
-  }, [fetchActive, fetchStats, fetchHistory, checkAndResumeSession]);
+  }, [fetchActive, fetchHistory, checkAndResumeSession]);
 
-  // ── Auto-leave: browser/tab hidden (visibilitychange) ──────────────────────
+  // Auto-leave on tab hide
   useEffect(() => {
     if (!isInLibrary) return;
     const onHide = () => { if (document.hidden) leaveLibrary(); };
     document.addEventListener('visibilitychange', onHide);
     return () => document.removeEventListener('visibilitychange', onHide);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isInLibrary]); // intentionally omit leaveLibrary to avoid re-subscribing every render
+  }, [isInLibrary]);
 
-  // ── Auto-leave: page close / navigate away (keepalive so request survives) ──
+  // Auto-leave on page close / React Router navigation
   useEffect(() => {
     const leaveOnUnload = () => {
       if (!isInLibraryRef.current || !tokenRef.current) return;
-      fetch(`${API_BASE}/api/v1/silent-library/leave`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${tokenRef.current}` },
-        keepalive: true,
-      });
+      fetch(`${API_BASE}/api/v1/silent-library/leave`, { method: 'POST', headers: { Authorization: `Bearer ${tokenRef.current}` }, keepalive: true });
     };
     window.addEventListener('beforeunload', leaveOnUnload);
-    return () => {
-      window.removeEventListener('beforeunload', leaveOnUnload);
-      leaveOnUnload(); // also fires when component unmounts (React Router navigation)
-    };
-  }, []); // empty deps — uses refs, so this never needs to resubscribe
+    return () => { window.removeEventListener('beforeunload', leaveOnUnload); leaveOnUnload(); };
+  }, []);
 
-  // Elapsed timer
+  // Session elapsed timer
   useEffect(() => {
-    if (isInLibrary) {
-      timerRef.current = setInterval(() => setSessionElapsed(s => s + 1), 1000);
-    } else {
-      clearInterval(timerRef.current);
-    }
-    return () => clearInterval(timerRef.current);
+    if (isInLibrary) { sessionTimerRef.current = setInterval(() => setSessionElapsed(s => s + 1), 1000); }
+    else { clearInterval(sessionTimerRef.current); }
+    return () => clearInterval(sessionTimerRef.current);
   }, [isInLibrary]);
 
-  const formatElapsed = (secs) => {
-    const h = Math.floor(secs / 3600);
-    const m = Math.floor((secs % 3600) / 60);
-    const s = secs % 60;
+  // Pomodoro countdown
+  useEffect(() => {
+    if (!pomActive) return;
+    if (pomTime <= 0) {
+      setPomActive(false);
+      if (!isBreak) setCompletedPomos(c => c + 1);
+      return;
+    }
+    const t = setTimeout(() => setPomTime(s => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [pomActive, pomTime, isBreak]);
+
+  const joinLibrary = async () => {
+    if (!token) { setLibError('Please log in to join.'); return; }
+    setLibError(''); setIsJoining(true);
+    try {
+      const r = await fetch(`${API_BASE}/api/v1/silent-library/join`, { method: 'POST', headers: authHeaders });
+      if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.detail || 'Failed to join'); }
+      const data = await r.json();
+      const startTime = new Date(data.start_time);
+      setIsInLibrary(true); setSessionStart(startTime);
+      setSessionElapsed(Math.max(0, Math.floor((Date.now() - startTime.getTime()) / 1000)));
+      setLastEarned(null); fetchActive();
+    } catch (e) { setLibError(e.message); } finally { setIsJoining(false); }
+  };
+
+  const leaveLibrary = async () => {
+    setLibError(''); setIsLeaving(true);
+    try {
+      const r = await fetch(`${API_BASE}/api/v1/silent-library/leave`, { method: 'POST', headers: authHeaders });
+      if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.detail || 'Failed to leave'); }
+      const data = await r.json();
+      setIsInLibrary(false);
+      setLastEarned({ minutes: data.duration_minutes, points: data.duration_minutes * 2 });
+      setSessionElapsed(0); fetchActive(); fetchHistory();
+    } catch (e) { setLibError(e.message); } finally { setIsLeaving(false); }
+  };
+
+  const setPomSession = (mins, breakMode) => {
+    setPomActive(false); setIsBreak(breakMode);
+    pomBaseRef.current = mins * 60; setPomTime(mins * 60);
+  };
+
+  const formatSecs = (secs) => {
+    const h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60), s = secs % 60;
     if (h > 0) return `${h}h ${m.toString().padStart(2, '0')}m`;
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const joinLibrary = async () => {
-    if (!token) { setError('Please log in to join the Silent Library.'); return; }
-    setError('');
-    setIsJoining(true);
-    try {
-      const r = await fetch(`${API_BASE}/api/v1/silent-library/join`, {
-        method: 'POST',
-        headers: authHeaders,
-      });
-      if (!r.ok) {
-        const d = await r.json().catch(() => ({}));
-        throw new Error(d.detail || 'Failed to join');
-      }
-      const data = await r.json();
-      const startTime = new Date(data.start_time);
-      const alreadyElapsed = Math.max(0, Math.floor((Date.now() - startTime.getTime()) / 1000));
-      setIsInLibrary(true);
-      setSessionStart(startTime);
-      setSessionElapsed(alreadyElapsed);
-      setLastEarned(null);
-      fetchActive();
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setIsJoining(false);
-    }
-  };
-
-  const leaveLibrary = async () => {
-    setError('');
-    setIsLeaving(true);
-    try {
-      const r = await fetch(`${API_BASE}/api/v1/silent-library/leave`, {
-        method: 'POST',
-        headers: authHeaders,
-      });
-      if (!r.ok) {
-        const d = await r.json().catch(() => ({}));
-        throw new Error(d.detail || 'Failed to leave');
-      }
-      const data = await r.json();
-      setIsInLibrary(false);
-      setLastEarned({ minutes: data.duration_minutes, points: data.duration_minutes * 2 });
-      setSessionElapsed(0);
-      fetchActive();
-      fetchStats();
-      fetchHistory();
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setIsLeaving(false);
-    }
-  };
-
   const xpPerMinute = 2;
   const projectedXP = Math.floor(sessionElapsed / 60) * xpPerMinute;
+  const pomPct = (pomTime / pomBaseRef.current) * 100;
+  const pomColor = isBreak ? '#2B7A4B' : 'var(--color-primary)';
+  const circumference = 2 * Math.PI * 56;
 
   return (
     <div className="bg-bg-surface-dark text-text-primary rounded-2xl overflow-hidden shadow-lg">
-      {/* Header */}
-      <div className="relative px-8 pt-8 pb-6 flex flex-col items-center text-center overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.08] bg-[radial-gradient(600px_300px_at_50%_0%,_var(--color-primary),_transparent_70%)]" />
+      {/* ── Header ── */}
+      <div className="relative px-8 pt-7 pb-5 flex items-center justify-between overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.07] bg-[radial-gradient(600px_200px_at_0%_50%,_var(--color-primary),_transparent_70%)]" />
         <div className="relative">
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <BookOpen size={20} className="text-primary" />
-            <span className="text-[10px] tracking-[3px] uppercase font-bold text-primary">Silent Library</span>
+          <div className="flex items-center gap-2 mb-1">
+            <BookOpen size={17} className="text-primary" />
+            <span className="text-[10px] tracking-[3px] uppercase font-bold text-primary">Focus Room</span>
           </div>
-          <h3 className="font-serif text-[26px] font-semibold mb-2">Deep Work Room</h3>
-          <p className="text-text-muted text-[13px] max-w-md">
-            Study in focused silence with fellow aspirants. Every minute earns you <strong className="text-primary">{xpPerMinute} XP</strong>.
-          </p>
+          <h3 className="font-serif text-[22px] font-semibold">Silent Library + Pomodoro</h3>
+          <p className="text-text-muted text-[12px] mt-0.5">Join the library to earn XP · use Pomodoro to stay on track</p>
         </div>
-      </div>
-
-      <div className="grid grid-cols-3 divide-x divide-white/10 border-t border-white/10">
-        <div className="px-6 py-4 text-center">
-          <div className="flex items-center justify-center gap-1.5 text-text-muted text-[11px] mb-1">
-            <Users size={12} /> Currently studying
+        {/* Stats row inline */}
+        <div className="relative flex items-center gap-6 text-center">
+          <div>
+            <div className="flex items-center gap-1 text-text-muted text-[10px] justify-center mb-0.5"><Users size={11} /> Studying</div>
+            <div className="text-[22px] font-serif font-semibold">{activeUsers + (isInLibrary ? 1 : 0)}</div>
           </div>
-          <div className="text-[28px] font-serif font-semibold">
-            {activeUsers + (isInLibrary ? 1 : 0)}
+          <div className="w-px h-8 bg-white/10" />
+          <div>
+            <div className="flex items-center gap-1 text-text-muted text-[10px] justify-center mb-0.5"><Clock size={11} /> Session</div>
+            <div className="text-[22px] font-serif font-mono font-semibold">{isInLibrary ? formatSecs(sessionElapsed) : '—'}</div>
           </div>
-        </div>
-        <div className="px-6 py-4 text-center">
-          <div className="flex items-center justify-center gap-1.5 text-text-muted text-[11px] mb-1">
-            <Clock size={12} /> Your session
-          </div>
-          <div className="text-[28px] font-serif font-semibold font-mono">
-            {isInLibrary ? formatElapsed(sessionElapsed) : '—'}
-          </div>
-        </div>
-        <div className="px-6 py-4 text-center">
-          <div className="flex items-center justify-center gap-1.5 text-text-muted text-[11px] mb-1">
-            <Zap size={12} /> XP this session
-          </div>
-          <div className="text-[28px] font-serif font-semibold text-primary">
-            {isInLibrary ? `+${projectedXP}` : '—'}
+          <div className="w-px h-8 bg-white/10" />
+          <div>
+            <div className="flex items-center gap-1 text-text-muted text-[10px] justify-center mb-0.5"><Zap size={11} /> XP</div>
+            <div className="text-[22px] font-serif font-semibold text-primary">{isInLibrary ? `+${projectedXP}` : '—'}</div>
           </div>
         </div>
       </div>
 
-      <div className="px-8 py-6 flex flex-col items-center gap-4">
-        {lastEarned && (
-          <div className="bg-[#EBF5F0]/20 border border-[#2B7A4B]/40 rounded-xl px-6 py-3 text-center">
-            <div className="text-[#6BCB97] text-sm font-semibold">
-              Session complete! {lastEarned.minutes} min → <span className="text-primary">+{lastEarned.points} XP</span>
+      {/* ── Main body: two columns ── */}
+      <div className="grid grid-cols-[1fr_1px_1fr] border-t border-white/10">
+
+        {/* Left: Pomodoro */}
+        <div className="px-8 py-7 flex flex-col items-center gap-5">
+          <div className="text-[10px] tracking-[3px] uppercase text-text-muted flex items-center gap-2">
+            {isBreak ? 'BREAK' : t('wellbeing.focusTitle')}
+            {completedPomos > 0 && <span className="text-primary font-semibold">● {completedPomos} done</span>}
+          </div>
+
+          {/* Ring */}
+          <div className="relative w-44 h-44">
+            <style>{`
+              @keyframes pom-pulse {
+                0%,100% { filter: drop-shadow(0 0 4px ${pomColor}); }
+                50% { filter: drop-shadow(0 0 16px ${pomColor}); }
+              }
+              .pom-active { animation: pom-pulse 2s ease-in-out infinite; }
+            `}</style>
+            <svg className="w-full h-full -rotate-90" viewBox="0 0 128 128">
+              <circle cx="64" cy="64" r="56" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="7" />
+              <circle
+                cx="64" cy="64" r="56" fill="none"
+                stroke={pomColor} strokeWidth="7" strokeLinecap="round"
+                strokeDasharray={circumference}
+                strokeDashoffset={circumference * (1 - pomPct / 100)}
+                className={`transition-all duration-1000 ${pomActive ? 'pom-active' : ''}`}
+                style={{ color: pomColor }}
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <div className="text-[36px] font-mono font-semibold leading-none">{formatSecs(pomTime)}</div>
+              <div className="text-[10px] text-text-muted mt-1.5 tracking-[2px]">{isBreak ? 'BREAK' : 'FOCUS'}</div>
             </div>
           </div>
-        )}
 
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-2 text-red-400 text-[13px]">
-            {error}
-          </div>
-        )}
-
-        {!isInLibrary ? (
-          <button
-            onClick={joinLibrary}
-            disabled={isJoining}
-            className="bg-primary hover:bg-primary-hover text-white px-10 py-3.5 rounded-xl font-semibold text-[15px] flex items-center gap-3 transition cursor-pointer disabled:opacity-60 shadow-lg shadow-primary/20"
-          >
-            {isJoining ? <Loader2 size={18} className="animate-spin" /> : <Play size={18} fill="white" />}
-            {isJoining ? 'Joining...' : 'Join Silent Library'}
-          </button>
-        ) : (
-          <div className="flex flex-col items-center gap-3 w-full max-w-xs">
-            <div className="w-full bg-white/5 rounded-xl p-4 text-center border border-white/10">
-              <div className="text-text-muted text-[11px] mb-1 uppercase tracking-widest">In session</div>
-              <div className="font-mono text-[38px] font-semibold leading-none">{formatElapsed(sessionElapsed)}</div>
-              {sessionElapsed > 0 && (
-                <div className="text-primary text-[12px] mt-2">+{projectedXP} XP earned so far</div>
-              )}
-            </div>
+          {/* Controls */}
+          <div className="flex items-center gap-3">
+            <button onClick={() => setPomSession(25, false)}
+              className="bg-white/5 border border-white/10 text-text-secondary px-4 py-2 rounded-lg text-[12px] cursor-pointer hover:bg-white/15 hover:text-text-primary transition">
+              {t('wellbeing.focus25')}
+            </button>
             <button
-              onClick={leaveLibrary}
-              disabled={isLeaving}
-              className="bg-white/10 hover:bg-white/20 border border-white/20 text-text-primary px-8 py-2.5 rounded-lg font-medium text-[13px] flex items-center gap-2 transition cursor-pointer disabled:opacity-60"
+              onClick={() => setPomActive(a => !a)}
+              className={`px-6 py-2.5 rounded-lg text-[14px] font-medium flex items-center gap-2 cursor-pointer transition shadow-lg ${
+                isBreak ? 'bg-[#2B7A4B] hover:bg-[#3a9e64] shadow-[#2B7A4B]/20' : 'bg-primary hover:bg-primary-hover shadow-primary/20'
+              } text-white`}
             >
-              {isLeaving ? <Loader2 size={14} className="animate-spin" /> : <Pause size={14} />}
-              {isLeaving ? 'Leaving...' : 'End Session & Collect XP'}
+              {pomActive ? <Pause size={16} fill="white" /> : <Play size={16} fill="white" />}
+              {pomActive ? 'Pause' : t('wellbeing.focusStart')}
+            </button>
+            <button onClick={() => setPomSession(5, true)}
+              className="bg-white/5 border border-white/10 text-text-secondary px-4 py-2 rounded-lg text-[12px] cursor-pointer hover:bg-white/15 hover:text-text-primary transition">
+              {t('wellbeing.focusBreak')}
             </button>
           </div>
-        )}
+        </div>
 
-        {/* Active users list */}
-        {activeUserList.length > 0 && (
-          <div className="w-full mt-2">
-            <div className="text-[10px] text-text-muted uppercase tracking-widest mb-2 text-center">
-              Who's studying right now
-            </div>
-            <div className="flex flex-wrap justify-center gap-2">
-              {activeUserList.slice(0, 8).map((u, i) => (
-                <div key={i} className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full px-3 py-1">
-                  <div className="w-4 h-4 rounded-full bg-primary/30 flex items-center justify-center text-[9px] font-bold text-primary">
-                    {(u.name || 'U').substring(0, 1).toUpperCase()}
-                  </div>
-                  <span className="text-[11px] text-text-secondary">{u.name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+        {/* Divider */}
+        <div className="bg-white/10" />
 
-      {/* Study history */}
-      {sessionHistory.length > 0 && (
-        <div className="border-t border-white/10 px-8 py-5">
-          <div className="text-[10px] text-text-muted uppercase tracking-widest mb-3">Recent sessions</div>
-          <div className="flex flex-col gap-2">
-            {sessionHistory.map((s, i) => (
-              <div key={i} className="flex items-center justify-between text-[12px]">
-                <span className="text-text-muted">{new Date(s.start_time).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
-                <span className="text-text-primary font-medium">{s.duration_minutes} min</span>
-                <span className="text-primary">+{(s.duration_minutes || 0) * 2} XP</span>
+        {/* Right: Library controls */}
+        <div className="px-8 py-7 flex flex-col gap-4">
+          <div className="text-[10px] tracking-[3px] uppercase text-text-muted mb-1">Library Session</div>
+
+          {lastEarned && (
+            <div className="bg-[#EBF5F0]/15 border border-[#2B7A4B]/40 rounded-xl px-4 py-2.5 text-center">
+              <div className="text-[#6BCB97] text-[13px] font-semibold">
+                Session complete! {lastEarned.minutes} min → <span className="text-primary">+{lastEarned.points} XP</span>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
+            </div>
+          )}
 
-// ─── Pomodoro Timer ───────────────────────────────────────────────────────────
+          {libError && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2 text-red-400 text-[12px]">{libError}</div>
+          )}
 
-const PomodoroTimer = () => {
-  const { t } = useTranslation();
-  const [timeLeft, setTimeLeft] = useState(25 * 60);
-  const [isActive, setIsActive] = useState(false);
-  const [isBreak, setIsBreak] = useState(false);
-  const [completedSessions, setCompletedSessions] = useState(0);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const containerRef = useRef(null);
+          {!isInLibrary ? (
+            <button onClick={joinLibrary} disabled={isJoining}
+              className="bg-primary hover:bg-primary-hover text-white px-6 py-3 rounded-xl font-semibold text-[14px] flex items-center justify-center gap-2.5 transition cursor-pointer disabled:opacity-60 shadow-lg shadow-primary/20 w-full">
+              {isJoining ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} fill="white" />}
+              {isJoining ? 'Joining...' : 'Join Silent Library'}
+            </button>
+          ) : (
+            <div className="flex flex-col gap-3">
+              <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+                <div className="text-text-muted text-[10px] mb-1 uppercase tracking-widest">In session</div>
+                <div className="font-mono text-[34px] font-semibold leading-none">{formatSecs(sessionElapsed)}</div>
+                {sessionElapsed > 0 && <div className="text-primary text-[11px] mt-1.5">+{projectedXP} XP so far</div>}
+              </div>
+              <button onClick={leaveLibrary} disabled={isLeaving}
+                className="bg-white/10 hover:bg-white/20 border border-white/20 text-text-primary px-6 py-2.5 rounded-lg font-medium text-[13px] flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-60 w-full">
+                {isLeaving ? <Loader2 size={14} className="animate-spin" /> : <Pause size={14} />}
+                {isLeaving ? 'Leaving...' : 'End Session & Collect XP'}
+              </button>
+            </div>
+          )}
 
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
+          {/* Who's studying */}
+          {activeUserList.length > 0 && (
+            <div className="mt-1">
+              <div className="text-[10px] text-text-muted uppercase tracking-widest mb-2">Studying right now</div>
+              <div className="flex flex-wrap gap-1.5">
+                {activeUserList.slice(0, 6).map((u, i) => (
+                  <div key={i} className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full px-2.5 py-1">
+                    <div className="w-3.5 h-3.5 rounded-full bg-primary/30 flex items-center justify-center text-[8px] font-bold text-primary">
+                      {(u.name || 'U')[0].toUpperCase()}
+                    </div>
+                    <span className="text-[11px] text-text-secondary">{u.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
-  useEffect(() => {
-    let interval = null;
-    if (isActive && timeLeft > 0) {
-      interval = setInterval(() => setTimeLeft(t => t - 1), 1000);
-    } else if (isActive && timeLeft === 0) {
-      setIsActive(false);
-      if (!isBreak) setCompletedSessions(s => s + 1);
-      if (document.fullscreenElement) {
-        document.exitFullscreen().catch(() => {});
-      }
-    }
-    return () => clearInterval(interval);
-  }, [isActive, timeLeft, isBreak]);
-
-  const handleToggleActive = () => {
-    if (!isActive) {
-      if (containerRef.current && !document.fullscreenElement) {
-        containerRef.current.requestFullscreen().catch(() => {});
-      }
-    } else {
-      if (document.fullscreenElement) {
-        document.exitFullscreen().catch(() => {});
-      }
-    }
-    setIsActive(!isActive);
-  };
-
-  const formatTime = (s) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
-  
-  const setSession = (mins, breakMode) => {
-    setIsActive(false);
-    setIsBreak(breakMode);
-    setTimeLeft(mins * 60);
-    if (document.fullscreenElement) {
-      document.exitFullscreen().catch(() => {});
-    }
-  };
-  
-  const pct = isBreak ? (timeLeft / (5 * 60)) * 100 : (timeLeft / (25 * 60)) * 100;
-
-  return (
-    <div ref={containerRef} className="bg-bg-surface-dark text-text-primary rounded-2xl p-8 flex flex-col items-center justify-center relative min-h-[300px]">
-      <style>
-        {`
-          @keyframes groovy-glow {
-            0% { filter: drop-shadow(0 0 4px currentColor); transform: scale(1); }
-            50% { filter: drop-shadow(0 0 20px currentColor); transform: scale(1.05) rotate(5deg); }
-            100% { filter: drop-shadow(0 0 4px currentColor); transform: scale(1); }
-          }
-          .animate-groovy {
-            animation: groovy-glow 3s ease-in-out infinite;
-            transform-origin: center;
-          }
-        `}
-      </style>
-      <div className="text-[10px] tracking-[3px] uppercase text-text-muted mb-4">
-        {isBreak ? 'BREAK SESSION' : t('wellbeing.focusTitle')}
-        {completedSessions > 0 && <span className="ml-3 text-primary">● {completedSessions} done</span>}
-      </div>
-
-      {/* Circular timer */}
-      <div className="relative w-48 h-48 mb-8 mt-2">
-        <svg className="w-full h-full -rotate-90" viewBox="0 0 144 144">
-          <circle cx="72" cy="72" r="60" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8" />
-          <circle
-            cx="72" cy="72" r="60" fill="none"
-            stroke={isBreak ? '#2B7A4B' : 'var(--color-primary)'}
-            strokeWidth="8" strokeLinecap="round"
-            strokeDasharray={`${2 * Math.PI * 60}`}
-            strokeDashoffset={`${2 * Math.PI * 60 * (1 - pct / 100)}`}
-            className={`transition-all duration-1000 ${isActive ? 'animate-groovy text-current' : 'text-current'}`}
-            style={{ color: isBreak ? '#2B7A4B' : 'var(--color-primary)' }}
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <div className="text-[40px] font-mono font-semibold leading-none">{formatTime(timeLeft)}</div>
-          <div className="text-[11px] text-text-muted mt-2 tracking-[2px]">{isBreak ? 'BREAK' : 'FOCUS'}</div>
+          {/* Recent sessions */}
+          {sessionHistory.length > 0 && (
+            <div className="mt-auto pt-3 border-t border-white/10">
+              <div className="text-[10px] text-text-muted uppercase tracking-widest mb-2">Recent sessions</div>
+              <div className="flex flex-col gap-1.5">
+                {sessionHistory.slice(0, 3).map((s, i) => (
+                  <div key={i} className="flex items-center justify-between text-[12px]">
+                    <span className="text-text-muted">{new Date(s.start_time).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
+                    <span className="text-text-primary font-medium">{s.duration_minutes} min</span>
+                    <span className="text-primary font-medium">+{(s.duration_minutes || 0) * 2} XP</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="flex justify-center gap-4">
-        <button
-          className="bg-white/5 border border-white/10 text-text-secondary px-6 py-3 rounded-lg text-[13px] cursor-pointer hover:bg-white/15 hover:text-text-primary transition"
-          onClick={() => setSession(25, false)}
-        >
-          {t('wellbeing.focus25')}
-        </button>
-        <button
-          className={`px-8 py-3 rounded-lg text-[15px] font-medium flex items-center gap-2 cursor-pointer transition shadow-lg ${
-            isBreak ? 'bg-[#2B7A4B] hover:bg-[#3a9e64] shadow-[#2B7A4B]/20' : 'bg-primary hover:bg-primary-hover shadow-primary/20'
-          } text-white`}
-          onClick={handleToggleActive}
-        >
-          {isActive ? <Pause size={18} fill="white" /> : <Play size={18} fill="white" />}
-          {isActive ? 'Pause' : t('wellbeing.focusStart')}
-        </button>
-        <button
-          className="bg-white/5 border border-white/10 text-text-secondary px-6 py-3 rounded-lg text-[13px] cursor-pointer hover:bg-white/15 hover:text-text-primary transition"
-          onClick={() => setSession(5, true)}
-        >
-          {t('wellbeing.focusBreak')}
-        </button>
+      {/* ── Music Player (always visible) ── */}
+      <div className="border-t border-white/10 px-8 py-4">
+        <MusicPlayer compact />
       </div>
-
-      {isFullscreen && (
-        <div className="w-[340px] absolute left-12 top-1/2 -translate-y-1/2">
-          <MusicPlayer />
-        </div>
-      )}
     </div>
   );
 };
@@ -493,7 +374,7 @@ const MUSIC_TRACKS = [
   { id: 'nature', name: 'Forest Birds', url: 'https://cdn.pixabay.com/audio/2021/08/09/audio_82e3f5d54f.mp3' },
 ];
 
-const MusicPlayer = () => {
+const MusicPlayer = ({ compact = false }) => {
   const [tracks, setTracks] = useState(MUSIC_TRACKS);
   const [customUrl, setCustomUrl] = useState('');
   const [isPlaying, setIsPlaying] = useState(false);
@@ -569,8 +450,8 @@ const MusicPlayer = () => {
   };
 
   return (
-    <div className="bg-bg-panel border border-border-default rounded-2xl p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
+    <div className={compact ? '' : 'bg-bg-panel border border-border-default rounded-2xl p-6 shadow-sm'}>
+      <div className="flex items-center justify-between mb-3">
         <button 
           onClick={() => setShowPlaylist(!showPlaylist)}
           className="text-text-muted hover:text-primary transition flex items-center gap-2 text-[12px] uppercase font-bold tracking-widest cursor-pointer"
@@ -717,12 +598,12 @@ const Wellbeing = () => {
         <p className="text-text-muted text-[13px] mt-1">{t('wellbeing.desc')}</p>
       </div>
 
-      {/* Silent Library — full width, most prominent */}
-      <SilentLibrary />
+      {/* Focus Room — Silent Library + Pomodoro merged */}
+      <FocusRoom />
 
       {/* Second row */}
       <div className="flex gap-6 items-start">
-        {/* Left: Mood + Pomodoro */}
+        {/* Left: Mood */}
         <div className="flex-[1.3] flex flex-col gap-6">
           {/* Mood Tracker */}
           <div className="bg-bg-panel border border-border-default rounded-2xl p-6 shadow-sm">
@@ -750,8 +631,6 @@ const Wellbeing = () => {
             <div className={`p-4 rounded-lg font-medium text-[13px] ${bg} ${text}`}>{msg}</div>
           </div>
 
-          {/* Pomodoro */}
-          <PomodoroTimer />
         </div>
 
         {/* Right: Stats + Wellbeing tips */}
