@@ -53,6 +53,7 @@ class QuestionResponse(QuestionBase):
     author: Optional[AuthorInfo] = None
     tags: List[str] = []
     answer_count: int = 0
+    user_vote: int = 0
 
     @field_validator('tags', mode='before')
     @classmethod

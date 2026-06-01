@@ -1,0 +1,197 @@
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  UPSC HINDI PEER NETWORK — GAMIFICATION & POINTS SYSTEM
+  Source of truth: server/app/constants.py + individual API files
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+═══════════════════════════════════════════════════════════════════════
+1. HOW POINTS (XP / REPUTATION) ARE EARNED
+═══════════════════════════════════════════════════════════════════════
+
+  ACTIVITY                             XP EARNED   NOTES
+  ─────────────────────────────────────────────────────────────────────
+  Submit a daily writing answer        +10 XP      Once per question.
+                                                   Awarded on first
+                                                   submission only.
+
+  Post a question in Community         +2 XP       Once per question.
+
+  Answer a question in Community       +5 XP       Awarded on submit.
+
+  Receive an upvote on your answer     +10 XP      Awarded when someone
+    (community or daily answer)                    upvotes your content.
+                                                   Reversed if upvote
+                                                   is removed (-10 XP).
+
+  Your community answer is marked      +25 XP      Awarded when a
+    "Best Answer" by question owner               moderator/admin marks
+                                                   your answer as best.
+
+  Your answer is marked "Doubt         +15 XP      Awarded when a
+    Solved"                                        moderator marks your
+                                                   community answer as
+                                                   solving the doubt.
+
+  Complete a Silent Library session    +1 XP/min   Awarded on session
+    (study session)                               end. 30 min = 30 XP.
+                                                   No cap per session.
+
+  Complete a Prelims Mock Test         +1 to       Formula:
+    (MCQ scoring)                      +50 XP      round(percentage / 2)
+                                                   e.g. 80% → 40 XP
+                                                        50% → 25 XP
+                                                        0%  →  1 XP
+                                                   Minimum always 1 XP.
+
+  ─────────────────────────────────────────────────────────────────────
+  NOTE: Mains (Subjective) mock tests do NOT award XP —
+        they are practice-only with no MCQ scoring.
+  ─────────────────────────────────────────────────────────────────────
+
+
+═══════════════════════════════════════════════════════════════════════
+2. XP ACCUMULATION → RANKS (THE LADDER)
+═══════════════════════════════════════════════════════════════════════
+
+  XP THRESHOLD   LEVEL NAME    RANK TITLE        COSMETICS UNLOCKED
+  ─────────────────────────────────────────────────────────────────────
+  0+             Beginner      Aspirant           Inkwell theme
+  50+            Learner       Cadet              Saffron theme
+  200+           Contributor   Strategist         Mission theme
+  500+           Scholar       Officer            Cloister theme
+  1000+          Mentor        Senior Officer     Cabinet theme
+                                                  Service theme
+
+  • Rank up is automatic — no action needed.
+  • The rank title appears next to your name across the UI.
+  • Cosmetic themes (dashboard colour skins) unlock at each rank.
+    None are sold; all are earned through study.
+
+  Role auto-promotion:
+    At 200 XP (Contributor level), your account role is silently
+    upgraded from USER → CONTRIBUTOR. This allows you to:
+    • Mark your own questions as "solved"
+    • Additional moderation features (future)
+
+
+═══════════════════════════════════════════════════════════════════════
+3. STREAK SYSTEM
+═══════════════════════════════════════════════════════════════════════
+
+  • A "study day" is counted when you complete at least one Silent
+    Library session on that calendar day (IST).
+  • Consecutive study days increment your streak counter.
+  • Missing a day resets the streak to 1 (not 0) on the next session.
+  • Streak is displayed on your profile and the Rewards page.
+  • The streak does NOT directly award XP — it unlocks the Streak 30
+    badge (see Section 4).
+
+
+═══════════════════════════════════════════════════════════════════════
+4. BADGES (TROPHY ROOM)  — 6 total
+═══════════════════════════════════════════════════════════════════════
+
+  BADGE         RARITY      HOW TO EARN
+  ─────────────────────────────────────────────────────────────────────
+  First Blood   COMMON      Submit your first answer — either a daily
+                            writing answer OR a community answer.
+                            Progress: earned/not earned.
+
+  Night Owl     RARE        Complete at least one Silent Library
+                            session (any duration).
+                            Progress: earned/not earned.
+
+  Streak 30     EPIC        Maintain a 30-day consecutive study
+                            streak (30 days of Silent Library sessions,
+                            one per day, no gap).
+                            Progress shown as: X/30 days.
+
+  Flawless      LEGENDARY   Score 100% on a mock test that has
+                            at least 50 questions (Prelims MCQ only).
+                            Progress: 0/1.
+
+  Scholar       EPIC        Accumulate 500+ XP total.
+                            Progress shown as: X/500 XP.
+
+  Cabinet       MYTHIC      Accumulate 1000+ XP total (reach the
+                            "Mentor / Senior Officer" rank).
+                            Progress shown as: X/1000 XP.
+
+  ─────────────────────────────────────────────────────────────────────
+  Badges are computed live from your actual activity data.
+  There is no separate "badges" table — they reflect your real stats.
+
+
+═══════════════════════════════════════════════════════════════════════
+5. LEADERBOARDS
+═══════════════════════════════════════════════════════════════════════
+
+  • Reputation Leaderboard  — total XP, all-time, shown on Rewards page.
+  • Study Time (Daily)      — minutes studied today.
+  • Study Time (Weekly)     — minutes studied this week.
+  • Study Time (All-time)   — total minutes ever studied.
+
+  Leaderboards are backed by Redis sorted sets.
+  On a full content wipe (wipe_content.py --confirm), all leaderboard
+  data is cleared alongside user reputations.
+
+
+═══════════════════════════════════════════════════════════════════════
+6. QUICK REFERENCE — MAX EARNABLE XP PER SESSION TYPE
+═══════════════════════════════════════════════════════════════════════
+
+  Silent Library (1 hour)     → 60 XP
+  Mock test (100% accuracy)   → 50 XP
+  Daily answer + upvotes      → 10 XP (submit) + 10/upvote received
+  Post + answer community Q   → 2 XP (post) + 5 XP (answer)
+  Best answer marked          → 25 XP (one-time, per answer)
+
+  Path to Mentor (1000 XP) rough example
+  ─────────────────────────────────────────────────────────────────────
+    10 daily answers            → 100 XP
+    50 mins/day × 14 days       → 700 XP
+    3 mock tests at 80%         →  120 XP
+    ─────────────────────────────
+    Total                       → ~920 XP  (in ~2 weeks of real usage)
+
+
+═══════════════════════════════════════════════════════════════════════
+7. WHAT DOES NOT EARN POINTS
+═══════════════════════════════════════════════════════════════════════
+
+  • Reading current affairs (no XP)
+  • Browsing PYQs (no XP)
+  • Logging in / visiting pages (no XP)
+  • Receiving a downvote (no XP change — downvotes only affect
+    the answer's upvote count display, not reputation)
+  • Mains subjective mock tests (no XP, practice only)
+
+
+═══════════════════════════════════════════════════════════════════════
+8. IMPORTANT NOTES FOR ADMIN
+═══════════════════════════════════════════════════════════════════════
+
+  • Running `python wipe_content.py --confirm` now also resets
+    all user XP (reputation) and streak_days to 0, and clears
+    silent_sessions. This ensures leaderboard + badges start clean.
+
+  • The `--keep-pyq` flag preserves past_year_problems during a wipe.
+
+  • To see a user's full XP history:
+      GET /api/v1/users/me/reputation/history
+    Returns last 20 reputation log entries with reason codes.
+
+  • Reason codes in logs:
+      "answer"            community answer submitted
+      "question"          community question posted
+      "upvote"            upvote received on content
+      "upvote_revoked"    upvote was removed
+      "best_answer"       answer marked best
+      "doubt_solved"      answer marked as solving doubt
+      "daily_submission"  daily writing answer submitted
+      "study"             silent library session ended
+      "mock_test"         mock test completed
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Last updated: May 2026
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

@@ -23,11 +23,11 @@ docker compose up --build
 API will be available at `http://localhost:8000`
 Interactive docs: `http://localhost:8000/docs`
 
-## Demo seed data (local testing)
+## Content seeding (demo vs. production)
 
-With `docker compose up`, the API service sets **`SEED_DEMO_DATA=1`**, so on **first startup** (empty DB) it automatically creates demo accounts. No manual `python seed_demo_data.py` is required for Docker.
+By default `SEED_DEMO_DATA=0` and `SEED_STARTER_PYQ` is unset — the database starts clean with zero sample content.
 
-After the first successful seed you should see a log line: `[SEED_DEMO_DATA] Creating demo accounts …`
+To create demo accounts on first run (local testing only), set `SEED_DEMO_DATA=1` in `docker-compose.yml` or `.env`.
 
 | Email | Password | Role |
 |-------|----------|------|
@@ -35,23 +35,44 @@ After the first successful seed you should see a log line: `[SEED_DEMO_DATA] Cre
 | `priya@demo.drishti.dev` | `Demo123!` | Contributor |
 | `rahul@demo.drishti.dev` | `Demo123!` | User |
 
-If you started the stack **before** this auto-seed existed, the DB may have no demo users: **restart the API container** (`docker compose restart api`) or run the CLI once from your machine (same `DATABASE_URL` as in `.env.example` but host `localhost` instead of `db`):
+To seed a small set of sample PYQ questions, set `SEED_STARTER_PYQ=1`.
+
+## Wiping sample content (keep user accounts)
+
+Run once after you no longer need demo data:
 
 ```bash
-cd server
-source venv/bin/activate
-export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/upsc_hindi
-export REDIS_URL=redis://localhost:6379/0
-python seed_demo_data.py
+# From inside the server/ directory (with DB + Redis running):
+docker compose exec api python wipe_content.py           # dry run — shows counts
+docker compose exec api python wipe_content.py --confirm # actually deletes
+
+# Also wipe silent library sessions:
+docker compose exec api python wipe_content.py --confirm --include-sessions
 ```
 
-To wipe only demo rows and re-seed:
+Then restart the API: `docker compose restart api`
 
-```bash
-python seed_demo_data.py --force
+> **Nuclear option:** `docker compose down -v` wipes the entire Postgres volume (you lose all users too).
+
+## Admin account setup
+
+After wiping, promote your own account to admin via psql if needed:
+
+```sql
+UPDATE users SET role = 'admin' WHERE email = 'your@email.com';
 ```
 
-Turn off auto-seed in production: set `SEED_DEMO_DATA=0` (or remove it) for the `api` service in `docker-compose.yml`.
+## MVP Verification Checklist
+
+After wipe + restart, verify the full flow:
+
+1. **Clean slate** — DB has users but zero CA/PYQ/daily Q/community content.
+2. **CA ingest & publish** — Admin → Jobs → Trigger Ingestion → wait ~30s → Admin → Current Affairs → Drafts → Publish one → visit `/affairs` → item appears → click title → detail page opens.
+3. **Daily question rotation** — Admin → Daily Questions → New Question (date = today) → Admin → Jobs → Rotate → navigate to `/answers` → new question title visible.
+4. **Dashboard live** — `/dashboard` shows real CA items, today's question teaser, and clickable plan tasks.
+5. **Community** — Post a question, write an answer, upvote.
+6. **Wellbeing** — Join silent library, study 2 min, leave → stats increment. Switch tab during session → warning banner (no auto-leave).
+7. **Prelims** — Browse PYQ you added; start a Prelims mock test; complete → XP awarded.
 
 ## Quick Start (Local with venv)
 

@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from app.db.database import SessionLocal
 from app.db.models import (
     Answer,
+    CurrentAffair,
     DailyAnswer,
     DailyQuestion,
     ExamStage,
@@ -22,6 +23,7 @@ from app.db.models import (
     PastYearProblem,
     Question,
     QuestionTag,
+    QuizQuestion,
     ReputationLog,
     Report,
     SilentSession,
@@ -128,6 +130,7 @@ def seed_demo_data(db: Session) -> None:
         exam_stage=ExamStage.MAINS,
         optional_subject="PSIR",
         role=UserRole.ADMIN,
+        preferred_language="hi",
         reputation=1240,
         streak_days=18,
         last_study_date=date.today(),
@@ -141,6 +144,7 @@ def seed_demo_data(db: Session) -> None:
         exam_stage=ExamStage.PRELIMS,
         optional_subject="Sociology",
         role=UserRole.CONTRIBUTOR,
+        preferred_language="hi",
         reputation=620,
         streak_days=11,
         last_study_date=date.today() - timedelta(days=1),
@@ -153,6 +157,7 @@ def seed_demo_data(db: Session) -> None:
         bio="Economy weak area — practising PYQs daily.",
         exam_stage=ExamStage.BEGINNER,
         role=UserRole.USER,
+        preferred_language="en",
         reputation=195,
         streak_days=5,
         last_study_date=date.today() - timedelta(days=2),
@@ -637,6 +642,671 @@ def seed_demo_data(db: Session) -> None:
             is_accepted=False, upvotes=9, downvotes=0,
         ),
     ])
+    db.flush()
+
+    # ── Current Affairs (7 published items across GS papers) ─────────────────
+    today = date.today()
+    ca_items = [
+        CurrentAffair(
+            title="RBI cuts repo rate by 25 bps to 6.0% — signals accommodative stance",
+            summary=(
+                "The Reserve Bank of India's MPC unanimously voted to reduce the repo rate by 25 basis points "
+                "to 6.0%, the second consecutive cut in 2026. Governor cited easing inflation and sluggish "
+                "private investment as key drivers. CRR remains unchanged at 4%."
+            ),
+            detailed_notes=(
+                "Key UPSC angles:\n"
+                "1. Monetary Policy Committee (MPC) — composition (3 RBI + 3 Govt nominees), voting mechanism.\n"
+                "2. Repo rate vs Reverse Repo vs SLR vs CRR — distinguish clearly.\n"
+                "3. Transmission lag — why rate cuts take 3-6 months to affect borrowing costs.\n"
+                "4. Inflation targeting framework (FRBM 2016) — 4% ± 2% target on CPI-Combined.\n"
+                "Way forward: Effective monetary transmission requires banking sector health, reducing NPAs."
+            ),
+            syllabus_links="GS3: Indian Economy — Money and Banking; GS3: Monetary Policy",
+            source_name="RBI Press Release",
+            source_url="https://www.rbi.org.in",
+            gs_paper="GS3",
+            subject_tags="Monetary Policy,RBI,Repo Rate,MPC,Inflation,Economy",
+            published_date=today,
+            is_published=True,
+            created_by=admin.id,
+        ),
+        CurrentAffair(
+            title="India and China complete disengagement at Depsang and Demchok",
+            summary=(
+                "India and China have formally completed military disengagement at the last two friction points "
+                "— Depsang plains and Demchok in Eastern Ladakh — ending a four-year standoff following the "
+                "Galwan clash of June 2020. Patrolling rights have been restored to pre-April 2020 positions."
+            ),
+            detailed_notes=(
+                "Key UPSC angles:\n"
+                "1. Line of Actual Control (LAC) — no demarcated boundary unlike Line of Control (LoC) with Pakistan.\n"
+                "2. India-China border history: McMahon Line (1914), Panchsheel Agreement (1954), 1962 war, Simla Convention.\n"
+                "3. Recent: Galwan Valley clash (June 2020), Pangong Tso disengagement (Feb 2021), Buffer zones.\n"
+                "4. WION, NDTV Friction Points Map — Depsang, Demchok, Hot Springs, Gogra Post.\n"
+                "5. Significance: India-China trade ~$118 billion; decoupling vs engagement debate.\n"
+                "Criticism: 'Restoration of status quo ante' vs 'new normal' — buffer zones remain."
+            ),
+            syllabus_links="GS2: India and its Neighbourhood; GS2: Bilateral Relations; GS2: Effect of Policies of Developed Countries",
+            source_name="The Hindu",
+            source_url="https://www.thehindu.com",
+            gs_paper="GS2",
+            subject_tags="India-China,LAC,Border Dispute,Depsang,Foreign Policy",
+            published_date=today - timedelta(days=1),
+            is_published=True,
+            created_by=admin.id,
+        ),
+        CurrentAffair(
+            title="Supreme Court upholds PMLA provisions — reaffirms ED's arrest powers",
+            summary=(
+                "A three-judge bench of the Supreme Court upheld key provisions of the Prevention of Money "
+                "Laundering Act (PMLA) 2002, including the Enforcement Directorate's power of arrest without "
+                "a magistrate's warrant. The bench relied on the Vijay Madanlal Choudhary (2022) precedent."
+            ),
+            detailed_notes=(
+                "Key UPSC angles:\n"
+                "1. PMLA 2002 — origin, FATF recommendations, Schedule of offences.\n"
+                "2. Enforcement Directorate — under Finance Ministry; not under CBI; dual mandate (PMLA + FEMA).\n"
+                "3. Bail provisions under PMLA — 'twin conditions' (S.45); burden of proof on accused.\n"
+                "4. Constitutional challenge — Articles 14, 20(3) (self-incrimination), 21.\n"
+                "5. Landmark cases: Nikesh Tarachand Shah (2018), Vijay Madanlal Choudhary (2022).\n"
+                "Concerns: Civil liberties groups argue PMLA gives excessive power to prosecution."
+            ),
+            syllabus_links="GS2: Statutory Bodies; GS2: Judiciary; GS3: Money Laundering and Organised Crime",
+            source_name="Indian Express",
+            source_url="https://indianexpress.com",
+            gs_paper="GS2",
+            subject_tags="PMLA,ED,Supreme Court,Money Laundering,Judiciary,Civil Liberties",
+            published_date=today - timedelta(days=1),
+            is_published=True,
+            created_by=admin.id,
+        ),
+        CurrentAffair(
+            title="India records 52°C in Rajasthan — IMD issues red alert for 12 states",
+            summary=(
+                "India's northwest recorded its highest temperature of 2026 at 52.3°C in Barmer, Rajasthan. "
+                "IMD issued red alerts across 12 states. The National Disaster Management Authority (NDMA) "
+                "activated Heat Action Plans in affected districts, with specific protocols for farm workers."
+            ),
+            detailed_notes=(
+                "Key UPSC angles:\n"
+                "1. Heat Action Plans — Ahmedabad model (2013) — first city-level heat plan in South Asia.\n"
+                "2. NDMA guidelines — color-coded alerts, cooling centres, school closures.\n"
+                "3. Urban Heat Island effect — dark surfaces, reduced green cover, lack of water bodies.\n"
+                "4. Climate change linkage — IPCC AR6: South Asia most vulnerable; wet-bulb temperature concept.\n"
+                "5. Occupational safety — unorganised sector workers, BOCW Act, migrant labour.\n"
+                "6. Compare: Heat dome events in Canada (2021), Europe (2022).\n"
+                "GS4 angle: Government's duty of care vs individual responsibility in public health emergencies."
+            ),
+            syllabus_links=(
+                "GS1: Climatology; GS3: Disaster Management; GS3: Environmental Pollution; "
+                "GS2: Health; GS4: Ethics in Public Administration"
+            ),
+            source_name="IMD Bulletin",
+            gs_paper="GS1+GS3",
+            subject_tags="Heatwave,Climate Change,Disaster Management,IMD,NDMA,Urban Heat Island",
+            published_date=today - timedelta(days=2),
+            is_published=True,
+            created_by=admin.id,
+        ),
+        CurrentAffair(
+            title="SEBI tightens IPO norms for SME platforms — raises minimum application size",
+            summary=(
+                "SEBI's board approved sweeping reforms for the SME IPO segment, raising the minimum application "
+                "amount from ₹1 lakh to ₹2 lakh and mandating a 3-year operating profit track record. The move "
+                "follows concerns about price manipulation in the SME exchange segment."
+            ),
+            detailed_notes=(
+                "Key UPSC angles:\n"
+                "1. SEBI — statutory body under SEBI Act 1992; three-fold mandate (investor protection, market development, regulation).\n"
+                "2. SME IPO vs mainboard IPO — BSE SME / NSE Emerge platforms; lower disclosure norms historically.\n"
+                "3. Investor protection — grievance redressal (SCORES portal), demat accounts, ASBA mechanism.\n"
+                "4. Price manipulation — pump and dump, circular trading; SEBI enforcement powers.\n"
+                "5. Capital market reforms trajectory: Bhave Committee → Bajaj Committee → SEBI 2024-25 reforms.\n"
+                "Note: Contrast SEBI (securities) vs RBI (banking) vs IRDAI (insurance) — sectoral regulators."
+            ),
+            syllabus_links="GS3: Indian Economy — Capital Market; GS3: Regulatory Bodies; GS2: Statutory Bodies",
+            source_name="SEBI Press Release",
+            gs_paper="GS3",
+            subject_tags="SEBI,IPO,SME,Capital Market,Investor Protection,Stock Exchange",
+            published_date=today - timedelta(days=2),
+            is_published=True,
+            created_by=admin.id,
+        ),
+        CurrentAffair(
+            title="NEP 2020 — government releases 5-year implementation report",
+            summary=(
+                "The Ministry of Education released a comprehensive report on National Education Policy 2020 "
+                "implementation. Key achievements: mother-tongue medium in 22,000 schools, PM SHRI schools "
+                "operational, and 30% increase in vocational enrollment at secondary level."
+            ),
+            detailed_notes=(
+                "Key UPSC angles:\n"
+                "1. NEP 2020 — replaces NPE 1986; vision: 'holistic, multidisciplinary, flexible' education.\n"
+                "2. Structural change: 10+2 → 5+3+3+4 (Foundational, Preparatory, Middle, Secondary).\n"
+                "3. Key features: mother tongue instruction till Std 5, no hard science/arts stream divide, "
+                "4-year UG with multiple exit points, Academic Bank of Credits (ABC).\n"
+                "4. PM SHRI schools — PM Schools for Rising India; central benchmark schools.\n"
+                "5. Gross Enrolment Ratio (GER) targets: 50% by 2035 in higher education (currently ~28%).\n"
+                "6. PARAKH — National Assessment body replacing board exam monopoly.\n"
+                "Criticism: Implementation uneven across states; teacher training gap; language barrier for regional languages."
+            ),
+            syllabus_links="GS2: Social Justice — Education; GS2: Government Policies and Interventions",
+            source_name="Ministry of Education",
+            gs_paper="GS2",
+            subject_tags="NEP 2020,Education Policy,PM SHRI,GER,Mother Tongue,Social Justice",
+            published_date=today - timedelta(days=3),
+            is_published=True,
+            created_by=admin.id,
+        ),
+        CurrentAffair(
+            title="India formally joins Artemis Accords — ISRO to partner on lunar missions",
+            summary=(
+                "India signed the NASA-led Artemis Accords, committing to norms for responsible space exploration "
+                "including transparency, interoperability, and avoiding harmful interference. ISRO and NASA will "
+                "collaborate on a joint crewed mission to the International Space Station by 2027."
+            ),
+            detailed_notes=(
+                "Key UPSC angles:\n"
+                "1. Artemis Accords (2020) — US-led, non-binding; principle of peaceful use of space.\n"
+                "2. Outer Space Treaty (1967) — space as 'province of all mankind'; no national appropriation.\n"
+                "3. ISRO milestones: Chandrayaan-3 (2023 south pole landing), Aditya-L1, Gaganyaan (crewed mission).\n"
+                "4. IN-SPACe — India's regulator for private space sector (2020); enable NewSpace India Ltd (NSIL).\n"
+                "5. ISRO vs private: Skyroot Aerospace, Agnikul Cosmos — India's SpaceX equivalents.\n"
+                "6. Geopolitical: US-led vs China-Russia lunar cooperation — competing space governance frameworks."
+            ),
+            syllabus_links="GS3: Science & Technology — Space; GS2: International Relations; GS3: Indigenisation of Technology",
+            source_name="MEA Press Release",
+            gs_paper="GS3",
+            subject_tags="Artemis Accords,ISRO,NASA,Space Policy,Outer Space Treaty,Lunar Mission",
+            published_date=today - timedelta(days=3),
+            is_published=True,
+            created_by=admin.id,
+        ),
+    ]
+    db.add_all(ca_items)
+    db.flush()
+
+    # ── Daily Question queue (14 questions — 2 weeks rotation) ────────────────
+    # First one is already active (the federalism question above is dq).
+    # These are queued (is_active=False) for the scheduler to rotate through.
+    daily_queue = [
+        DailyQuestion(
+            title="RBI's monetary policy tools and inflation management (15 marks, GS3)",
+            content=(
+                "Examine how the Reserve Bank of India uses monetary policy instruments to manage inflation. "
+                "In light of the recent repo rate cuts, critically analyse the effectiveness of monetary "
+                "transmission in India."
+            ),
+            subject="GS3 — Indian Economy",
+            word_limit=250, marks=15,
+            model_answer=(
+                "Intro: RBI's mandate — price stability + growth. "
+                "Body: Instruments — Repo, Reverse Repo, CRR, SLR, OMOs, MSF; "
+                "Transmission channels — credit, asset prices, exchange rate; "
+                "India-specific challenges — banking sector NPAs, informal sector, rural credit gaps. "
+                "Conclusion: Coordination with fiscal policy; financial inclusion for better transmission."
+            ),
+            is_active=False, posted_by=admin.id,
+            date=now + timedelta(days=1),
+        ),
+        DailyQuestion(
+            title="India-China border management and bilateral relations (15 marks, GS2)",
+            content=(
+                "Following the Galwan disengagement, assess the current state of India-China bilateral "
+                "relations. What structural factors create tensions along the LAC despite periodic "
+                "diplomatic engagements?"
+            ),
+            subject="GS2 — International Relations",
+            word_limit=250, marks=15,
+            model_answer=(
+                "Intro: Significance of India-China relationship — largest neighbours by population. "
+                "Body: Positive dimensions — trade (~$118 bn), cultural ties, multilateral platforms (SCO, BRICS); "
+                "Tensions — LAC ambiguity, no formal boundary treaty, China's infrastructure near LAC, string of pearls; "
+                "Post-Galwan — decoupling in FDI, app bans, supply chain diversification. "
+                "Conclusion: Normalisation needed but trust deficit remains; 'walking and talking simultaneously'."
+            ),
+            is_active=False, posted_by=admin.id,
+            date=now + timedelta(days=2),
+        ),
+        DailyQuestion(
+            title="Prevention of Money Laundering Act — civil liberties vs enforcement (10 marks, GS2)",
+            content=(
+                "The PMLA 2002 has been both praised as an anti-corruption tool and criticised as violating "
+                "civil liberties. Critically examine the constitutional validity and impact of PMLA's "
+                "stringent bail and attachment provisions."
+            ),
+            subject="GS2 — Governance; Judiciary",
+            word_limit=150, marks=10,
+            model_answer=(
+                "Intro: PMLA 2002 — FATF recommendations; Schedule of predicate offences. "
+                "Upheld by SC: Vijay Madanlal Choudhary (2022) — twin conditions for bail constitutional. "
+                "Concerns: reverse burden of proof, prolonged incarceration, misuse; "
+                "Compare UK Proceeds of Crime Act — more balanced safeguards. "
+                "Conclusion: Strengthen ED accountability; fast-track courts for PMLA trials."
+            ),
+            is_active=False, posted_by=admin.id,
+            date=now + timedelta(days=3),
+        ),
+        DailyQuestion(
+            title="Urban heat islands and climate adaptation (10 marks, GS3)",
+            content=(
+                "Urban Heat Islands (UHIs) amplify the impact of heatwaves in Indian cities. "
+                "Analyse the causes and suggest comprehensive mitigation measures with examples from "
+                "Indian cities."
+            ),
+            subject="GS3 — Environment; GS1 — Climatology",
+            word_limit=150, marks=10,
+            model_answer=(
+                "Intro: UHI — urban areas 2-5°C warmer than rural surroundings. "
+                "Causes: Dark impervious surfaces, lack of green cover, anthropogenic heat (AC, vehicles). "
+                "Mitigation: Green roofs (Singapore model), cool pavements, urban forests, water bodies; "
+                "Ahmedabad Heat Action Plan; Chennai Cooling Strategy. "
+                "Conclusion: Integrate UHI mapping in master plans; climate-resilient zoning laws."
+            ),
+            is_active=False, posted_by=admin.id,
+            date=now + timedelta(days=4),
+        ),
+        DailyQuestion(
+            title="National Education Policy 2020 — transformative potential and challenges (15 marks, GS2)",
+            content=(
+                "NEP 2020 promises the most comprehensive overhaul of India's education system since independence. "
+                "Critically examine its key provisions and the challenges in implementation, particularly "
+                "at the school education level."
+            ),
+            subject="GS2 — Social Justice; Education",
+            word_limit=250, marks=15,
+            model_answer=(
+                "Intro: NEP 2020 — replacing NPE 1986 after 34 years; vision of 'holistic education'. "
+                "Key provisions: 5+3+3+4 structure, mother-tongue instruction, vocational integration, "
+                "PARAKH, Academic Bank of Credits. "
+                "Challenges: Teacher training deficit, state-centre coordination (Education in Concurrent List), "
+                "language politics, digital divide, funding (6% GDP target unreached). "
+                "Conclusion: Bottom-up implementation; empower local school governance bodies."
+            ),
+            is_active=False, posted_by=admin.id,
+            date=now + timedelta(days=5),
+        ),
+        DailyQuestion(
+            title="Space diplomacy and India's role in shaping global space governance (10 marks, GS2)",
+            content=(
+                "With India joining the Artemis Accords and making strides in space exploration, "
+                "critically analyse India's space diplomacy strategy and its implications for global "
+                "space governance."
+            ),
+            subject="GS2 — International Relations; GS3 — Science & Technology",
+            word_limit=150, marks=10,
+            model_answer=(
+                "Intro: Outer Space Treaty (1967) — foundational; increasingly strained by new actors. "
+                "India's space diplomacy: Artemis Accords (US-led), BRICS space cooperation, SAARC satellite; "
+                "ISRO's commercial services — Antrix; NewSpace India Ltd. "
+                "Governance gap: No binding framework on space debris, lunar resource extraction; "
+                "Moon Agreement (1979) — India not a signatory. "
+                "Conclusion: India to champion 'Space for All' narrative; push for UN COPUOS reform."
+            ),
+            is_active=False, posted_by=admin.id,
+            date=now + timedelta(days=6),
+        ),
+        DailyQuestion(
+            title="Gig economy workers and social security — a policy challenge (15 marks, GS2)",
+            content=(
+                "The Code on Social Security 2020 includes provisions for gig and platform workers, "
+                "but implementation remains limited. Critically examine the challenges of extending "
+                "social security to this segment of India's workforce."
+            ),
+            subject="GS2 — Social Justice; Labour",
+            word_limit=250, marks=15,
+            model_answer=(
+                "Intro: Gig economy — 7.7 mn workers (NITI Aayog 2022); expected 23.5 mn by 2030. "
+                "Code on Social Security 2020: first legislative recognition; Aggregator's contribution to welfare fund. "
+                "Challenges: Classification (employee vs independent contractor), enforcement, data portability, "
+                "multiple platform workers. International models: UK SC ruling on Uber (2021); EU Platform Work Directive (2024). "
+                "Conclusion: Portable benefits model (like US 'Portable Benefits'); strengthen ESIC-equivalent for gig workers."
+            ),
+            is_active=False, posted_by=admin.id,
+            date=now + timedelta(days=7),
+        ),
+        DailyQuestion(
+            title="Judicial overreach vs judicial activism — a fine line (10 marks, GS2)",
+            content=(
+                "Indian courts have frequently intervened in policy matters citing fundamental rights. "
+                "Where does judicial activism end and judicial overreach begin? Discuss with recent examples."
+            ),
+            subject="GS2 — Judiciary; Governance",
+            word_limit=150, marks=10,
+            model_answer=(
+                "Intro: Judicial activism — court fills legislative vacuum to protect rights; born from Golaknath, "
+                "Kesavananda Bharati, Minerva Mills. "
+                "Activism examples: Right to food (PUCL v Union of India), forest conservation orders. "
+                "Overreach concerns: Courts directing policy on Cauvery water, Delhi pollution — executive functions. "
+                "Doctrine: Separation of powers; Polycentric issues (courts ill-equipped for resource allocation). "
+                "Conclusion: Structural injunctions with compliance monitoring; dialogue model over command-and-control."
+            ),
+            is_active=False, posted_by=admin.id,
+            date=now + timedelta(days=8),
+        ),
+        DailyQuestion(
+            title="Internal displacement and climate refugees — India's obligations (10 marks, GS2)",
+            content=(
+                "Climate change is expected to displace 216 million people internally by 2050 (World Bank). "
+                "Examine India's preparedness and obligations towards climate-induced internal displacement."
+            ),
+            subject="GS2 — International Relations; GS1 — Disaster; GS3 — Environment",
+            word_limit=150, marks=10,
+            model_answer=(
+                "Intro: UNHCR — 'climate refugees' not recognised under 1951 Refugee Convention. "
+                "India's vulnerability: Coastal Odisha/West Bengal, Assam floods, Himalayan glacial melt. "
+                "Guiding Principles on Internal Displacement (1998) — non-binding; India follows National Disaster "
+                "Management Plan. "
+                "Gaps: No domestic IDPs policy; Char-dwellers of Assam, Sundarbans erosion. "
+                "Conclusion: Enact National Displacement Policy; integrate climate risk in urban planning."
+            ),
+            is_active=False, posted_by=admin.id,
+            date=now + timedelta(days=9),
+        ),
+        DailyQuestion(
+            title="India's critical minerals strategy (15 marks, GS3)",
+            content=(
+                "Critical minerals are central to India's energy transition and national security. "
+                "Critically examine India's critical minerals policy framework and the challenges "
+                "in securing a diversified supply chain."
+            ),
+            subject="GS3 — Economy; Energy; Security",
+            word_limit=250, marks=15,
+            model_answer=(
+                "Intro: Critical minerals — lithium, cobalt, nickel, REEs; essential for EVs, solar, defence. "
+                "India's strategy: KABIL (Khanij Bidesh India Ltd) for overseas acquisition; "
+                "30 critical minerals identified (KPMG/Ministry report 2023); Amendment to MMDR Act 2021. "
+                "Challenges: Import dependency (China: 70% REE refining), deep-sea mining tech gap, "
+                "environmental concerns in domestic mining. "
+                "International: India-Australia Critical Minerals Partnership; Mineral Security Partnership (US-led). "
+                "Conclusion: Build domestic processing capacity; circular economy for e-waste recovery."
+            ),
+            is_active=False, posted_by=admin.id,
+            date=now + timedelta(days=10),
+        ),
+        DailyQuestion(
+            title="Decentralisation and Panchayati Raj — 73rd Amendment 30 years on (15 marks, GS2)",
+            content=(
+                "Thirty years after the 73rd Constitutional Amendment, genuine democratic decentralisation "
+                "remains elusive in most Indian states. Critically examine the structural and political "
+                "barriers to effective Panchayati Raj."
+            ),
+            subject="GS2 — Polity; Governance",
+            word_limit=250, marks=15,
+            model_answer=(
+                "Intro: 73rd Amendment 1992 — 3-tier PRIs; Schedule XI (29 subjects); SFC, SEC. "
+                "Progress: Elections regularised, SC/ST/Women reservation (33-50%), capacity building. "
+                "Barriers: 'Mafia' capture of gram panchayats; parallel bodies (MGNREGS, JJM bypassing PRIs); "
+                "inadequate devolution of the 3Fs (Funds, Functions, Functionaries); state government reluctance. "
+                "Global comparison: Brazil's participatory budgeting; Kerala decentralisation model. "
+                "Conclusion: Strengthen SFC recommendations compliance; Gram Sabha empowerment; "
+                "direct fund transfer to GPs."
+            ),
+            is_active=False, posted_by=admin.id,
+            date=now + timedelta(days=11),
+        ),
+        DailyQuestion(
+            title="Essay: Technology is a great leveller — but only if we choose it to be (250 words)",
+            content=(
+                "Write an essay on the theme: 'Technology is a great leveller — but only if we choose it to be.' "
+                "You may approach this from economic, social, or political dimensions."
+            ),
+            subject="Essay",
+            word_limit=250, marks=25,
+            model_answer=(
+                "Structure guide: "
+                "Para 1 (Hook): Example — JAM Trinity democratising financial services for 500 mn unbanked. "
+                "Para 2 (Argument for): UPI levelling payments; MOOCs levelling education; telemedicine levelling healthcare. "
+                "Para 3 (Counter): Digital divide (45% internet penetration in rural India); AI bias; platform monopolies. "
+                "Para 4 (Resolution): Technology is a tool — outcomes depend on policy, regulation, and political will. "
+                "Conclusion: Amartya Sen's Capability Approach — technology must expand real freedoms, not just access."
+            ),
+            is_active=False, posted_by=admin.id,
+            date=now + timedelta(days=12),
+        ),
+        DailyQuestion(
+            title="Water security and inter-state river disputes (15 marks, GS2)",
+            content=(
+                "Inter-state river disputes have become increasingly contentious in India. Critically examine "
+                "the legal and institutional framework for resolving such disputes and suggest reforms."
+            ),
+            subject="GS2 — Polity; Federalism",
+            word_limit=250, marks=15,
+            model_answer=(
+                "Intro: India's river basins cross multiple states; water in State List (Entry 17). "
+                "Framework: ISWD Act 1956 — tribunals; Cauvery, Krishna, Ravi-Beas, Narmada Tribunals. "
+                "Problems: Prolonged delays (Cauvery tribunal — 26 years); non-implementation of awards; "
+                "no enforcement mechanism; political use of water disputes. "
+                "Reform: Parliamentary river board under Union List; NWDA coordination; Interlinking of Rivers (pros/cons). "
+                "Global models: Mekong River Commission; Indus Waters Treaty (despite tensions). "
+                "Conclusion: Depoliticise water — treat as national commons; strengthen River Basin Authorities."
+            ),
+            is_active=False, posted_by=admin.id,
+            date=now + timedelta(days=13),
+        ),
+    ]
+    db.add_all(daily_queue)
+    db.flush()
+
+    # ── Quiz Questions bank (10 approved MCQs, linked where possible to CA) ──
+    ca_rbi = ca_items[0]   # RBI repo rate
+    ca_heat = ca_items[3]  # Heatwave
+    ca_nep = ca_items[5]   # NEP
+
+    quiz_qs = [
+        QuizQuestion(
+            subject="Economy",
+            topic="Monetary Policy",
+            difficulty="medium",
+            question_text="When the RBI reduces the repo rate, what is the most direct immediate impact?",
+            option_a="Government's fiscal deficit automatically reduces",
+            option_b="Commercial banks' cost of short-term borrowing from RBI decreases",
+            option_c="Foreign exchange reserves of India increase",
+            option_d="Inflation automatically falls to the 4% target",
+            correct_option="B",
+            explanation=(
+                "Repo rate is the rate at which RBI lends overnight funds to commercial banks. "
+                "A reduction directly lowers banks' borrowing cost, which they may (with a lag) pass on "
+                "as lower lending rates. Inflation reduction is an eventual outcome, not immediate."
+            ),
+            source="RBI Annual Report",
+            current_affair_id=ca_rbi.id,
+            language="en",
+            is_approved=True,
+            created_by=admin.id,
+        ),
+        QuizQuestion(
+            subject="Economy",
+            topic="Banking",
+            difficulty="easy",
+            question_text="Cash Reserve Ratio (CRR) is the fraction of a bank's NDTL maintained as:",
+            option_a="Cash in the bank's own vaults",
+            option_b="Investment in government securities",
+            option_c="Cash deposits with the Reserve Bank of India",
+            option_d="Foreign currency reserves with EXIM Bank",
+            correct_option="C",
+            explanation=(
+                "CRR is the mandatory percentage of Net Demand and Time Liabilities (NDTL) that commercial banks "
+                "must keep as deposits with the RBI. It is a key liquidity management and monetary policy tool."
+            ),
+            source="NCERT Macroeconomics Ch.3",
+            language="en",
+            is_approved=True,
+            created_by=admin.id,
+        ),
+        QuizQuestion(
+            subject="Polity",
+            topic="Parliament",
+            difficulty="medium",
+            question_text=(
+                "Which of the following statements about Zero Hour in the Indian Parliament is CORRECT?"
+            ),
+            option_a="It is explicitly mentioned in the Constitution under Article 118",
+            option_b="It occurs before Question Hour every sitting day",
+            option_c="It is an informal convention allowing urgent matters without prior notice",
+            option_d="It is limited to exactly 60 minutes by Parliamentary rules",
+            correct_option="C",
+            explanation=(
+                "Zero Hour is not mentioned in the Constitution or Rules of Procedure. "
+                "It is an informal convention that starts around 12 noon (after Question Hour ends) "
+                "where members can raise urgent matters of public importance without advance notice."
+            ),
+            source="Introduction to the Constitution of India — D.D. Basu",
+            language="en",
+            is_approved=True,
+            created_by=admin.id,
+        ),
+        QuizQuestion(
+            subject="Environment",
+            topic="Climate & Disaster",
+            difficulty="medium",
+            question_text=(
+                "Urban Heat Islands (UHIs) are caused primarily by which combination of factors?"
+            ),
+            option_a="Increased vegetation and reduced concrete surfaces",
+            option_b="Albedo effect of snow and ice in polar cities",
+            option_c="Dark impervious surfaces, reduced vegetation, and anthropogenic heat",
+            option_d="High altitude and low humidity exclusively",
+            correct_option="C",
+            explanation=(
+                "UHIs result from dark-coloured impervious surfaces (roads, buildings) absorbing more solar radiation, "
+                "removal of vegetation (which provides evaporative cooling), and heat released by vehicles, "
+                "air conditioners, and industries."
+            ),
+            source="IPCC AR6 Working Group II",
+            current_affair_id=ca_heat.id,
+            language="en",
+            is_approved=True,
+            created_by=admin.id,
+        ),
+        QuizQuestion(
+            subject="Environment",
+            topic="International Agreements",
+            difficulty="easy",
+            question_text="Nationally Determined Contributions (NDCs) are submitted by countries under which agreement?",
+            option_a="Kyoto Protocol (1997)",
+            option_b="Montreal Protocol (1987)",
+            option_c="Paris Agreement (2015)",
+            option_d="Stockholm Convention (2001)",
+            correct_option="C",
+            explanation=(
+                "NDCs are the climate pledges submitted by each signatory to the Paris Agreement (2015). "
+                "They are 'nationally determined' — each country sets its own targets, unlike the Kyoto Protocol "
+                "which had binding top-down targets for developed nations."
+            ),
+            source="UNFCCC",
+            language="en",
+            is_approved=True,
+            created_by=admin.id,
+        ),
+        QuizQuestion(
+            subject="Polity",
+            topic="Fundamental Rights",
+            difficulty="easy",
+            question_text="Article 21A of the Constitution guarantees which Fundamental Right?",
+            option_a="Right to life and personal liberty",
+            option_b="Right to free and compulsory education for children aged 6–14",
+            option_c="Right against arbitrary arrest",
+            option_d="Right to constitutional remedies",
+            correct_option="B",
+            explanation=(
+                "Article 21A was inserted by the 86th Constitutional Amendment (2002). It provides the right "
+                "to free and compulsory education for all children between 6 and 14 years as a Fundamental Right. "
+                "This led to the RTE Act 2009."
+            ),
+            source="Constitution of India",
+            language="en",
+            is_approved=True,
+            created_by=admin.id,
+        ),
+        QuizQuestion(
+            subject="Economy",
+            topic="International Trade",
+            difficulty="medium",
+            question_text=(
+                "In WTO terminology, 'Most Favoured Nation (MFN)' treatment means a member country must:"
+            ),
+            option_a="Give the lowest tariff rate only to its most important trading partners",
+            option_b="Extend any trade advantage given to one member to all other WTO members equally",
+            option_c="Eliminate all tariffs with countries that sign MFN agreements",
+            option_d="Allow free movement of workers from all member nations",
+            correct_option="B",
+            explanation=(
+                "MFN is a cornerstone WTO principle under GATT Article I. If a member gives a trade advantage "
+                "(like a reduced tariff) to any one member, it must immediately extend the same advantage "
+                "to ALL other WTO members. India-Pakistan: India revoked MFN status to Pakistan in 2019."
+            ),
+            source="WTO Agreement",
+            language="en",
+            is_approved=True,
+            created_by=admin.id,
+        ),
+        QuizQuestion(
+            subject="Science & Technology",
+            topic="Space",
+            difficulty="easy",
+            question_text="Chandrayaan-3 made India the first country to successfully land a spacecraft near the Moon's:",
+            option_a="Equatorial region",
+            option_b="North pole",
+            option_c="South pole",
+            option_d="Far side (dark side)",
+            correct_option="C",
+            explanation=(
+                "Chandrayaan-3's Vikram lander touched down near the lunar south pole on 23 August 2023, "
+                "making India the first country to achieve a soft landing in that region. The south pole is "
+                "scientifically important for potential water ice in permanently shadowed craters."
+            ),
+            source="ISRO",
+            language="en",
+            is_approved=True,
+            created_by=admin.id,
+        ),
+        QuizQuestion(
+            subject="Governance",
+            topic="Education Policy",
+            difficulty="medium",
+            question_text="Which structural change did NEP 2020 introduce to replace the existing 10+2 school system?",
+            option_a="8+2+2 (Elementary, Secondary, Senior Secondary)",
+            option_b="5+3+3+4 (Foundational, Preparatory, Middle, Secondary)",
+            option_c="6+3+3 (Primary, Upper Primary, Secondary)",
+            option_d="4+4+4 (Lower, Middle, Upper school)",
+            correct_option="B",
+            explanation=(
+                "NEP 2020 introduced the 5+3+3+4 structure: "
+                "Foundational (age 3-8, including 3 years preschool + Std 1-2), "
+                "Preparatory (Std 3-5), Middle (Std 6-8), and Secondary (Std 9-12). "
+                "This aligns with cognitive development stages."
+            ),
+            source="NEP 2020 Document, Ministry of Education",
+            current_affair_id=ca_nep.id,
+            language="en",
+            is_approved=True,
+            created_by=admin.id,
+        ),
+        QuizQuestion(
+            subject="History",
+            topic="Modern India",
+            difficulty="easy",
+            question_text="The Lucknow Pact of 1916 was significant because it represented:",
+            option_a="Agreement between Congress and the British Government on constitutional reforms",
+            option_b="Unity between the Indian National Congress and the Muslim League",
+            option_c="Merger of Bal Gangadhar Tilak's and Gopal Krishna Gokhale's factions",
+            option_d="First demand for complete independence (Purna Swaraj) from British rule",
+            correct_option="B",
+            explanation=(
+                "The Lucknow Pact (December 1916) was an agreement between the Indian National Congress "
+                "(led by Tilak) and the All-India Muslim League (led by Jinnah). It agreed on separate "
+                "electorates for Muslims and joint demands for constitutional reforms from the British. "
+                "It represented a high point of Hindu-Muslim political unity."
+            ),
+            source="NCERT Modern India Ch.11",
+            language="en",
+            is_approved=True,
+            created_by=admin.id,
+        ),
+    ]
+    db.add_all(quiz_qs)
     db.flush()
 
     # ── Reputation logs to make the leaderboard interesting ───────────────────

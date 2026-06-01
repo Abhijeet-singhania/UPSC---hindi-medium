@@ -9,6 +9,7 @@ class UserBase(BaseModel):
     bio: Optional[str] = None
     exam_stage: Optional[str] = "beginner"
     optional_subject: Optional[str] = None
+    preferred_language: Optional[str] = "hi"  # hi | en
 
 
 class UserCreate(UserBase):

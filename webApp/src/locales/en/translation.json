@@ -387,7 +387,23 @@
     "optionalSubjectLabel": "Optional Subject (Optional)",
     "optionalSubjectPlaceholder": "e.g. PSIR, Sociology",
     "passwordsMismatch": "Passwords do not match",
-    "stageBeginner": "Beginner"
+    "stageBeginner": "Beginner",
+    "languageLabel": "App language",
+    "languageSub": "Choose Hindi or English for the entire application.",
+    "authorizing": "Signing in…",
+    "processing": "Processing…"
+  },
+  "common": {
+    "admin": "Admin",
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "allPapers": "All Papers",
+    "emailCannotChange": "Email cannot be changed.",
+    "profileSaved": "Profile saved successfully.",
+    "saving": "Saving…",
+    "manageAccount": "Manage your account and application preferences.",
+    "languageSaved": "Language preference saved."
   },
   "askAI": {
     "mentorMode": "ASK AI · MENTOR MODE",

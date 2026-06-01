@@ -13,7 +13,7 @@
     "practice": "अभ्यास",
     "growth": "विकास",
     "logout": "लॉग आउट",
-    "askAI": "Ask AI",
+    "askAI": "AI से पूछें",
     "rewards": "रैंक और पुरस्कार",
     "settings": "सेटिंग्स"
   },
@@ -387,7 +387,23 @@
     "optionalSubjectLabel": "वैकल्पिक विषय (वैकल्पिक)",
     "optionalSubjectPlaceholder": "उदा. PSIR, समाजशास्त्र",
     "passwordsMismatch": "पासवर्ड मेल नहीं खाते",
-    "stageBeginner": "शुरुआती (Beginner)"
+    "stageBeginner": "शुरुआती",
+    "languageLabel": "ऐप की भाषा",
+    "languageSub": "पूरे ऐप के लिए हिंदी या अंग्रेज़ी चुनें।",
+    "authorizing": "साइन इन हो रहा है…",
+    "processing": "प्रोसेस हो रहा है…"
+  },
+  "common": {
+    "admin": "एडमिन",
+    "loading": "लोड हो रहा है…",
+    "save": "सहेजें",
+    "cancel": "रद्द करें",
+    "allPapers": "सभी पेपर",
+    "emailCannotChange": "ईमेल बदला नहीं जा सकता।",
+    "profileSaved": "प्रोफ़ाइल सहेजी गई।",
+    "saving": "सहेजा जा रहा है…",
+    "manageAccount": "अपना खाता और ऐप प्राथमिकताएँ प्रबंधित करें।",
+    "languageSaved": "भाषा प्राथमिकता सहेजी गई।"
   },
   "askAI": {
     "mentorMode": "ASK AI · मेंटर मोड",

@@ -6,27 +6,22 @@ consistent logging and auto-promotion.
 
 from sqlalchemy.orm import Session
 from app.db.models import User, ReputationLog, UserRole
-from app.config import settings
+from app.constants import (
+    LEVELS,
+    POINTS_PER_UPVOTE,
+    CONTRIBUTOR_REPUTATION_THRESHOLD,
+)
 from app.services.redis_service import redis_service, LEADERBOARD_KEYS
 
 
-# Level thresholds
-LEVELS = [
-    {"name": "Beginner", "min_points": 0},
-    {"name": "Learner", "min_points": 50},
-    {"name": "Contributor", "min_points": 200},
-    {"name": "Scholar", "min_points": 500},
-    {"name": "Mentor", "min_points": 1000},
-]
-
 # Auto-promotion thresholds (reputation -> role)
 ROLE_PROMOTION_THRESHOLD = {
-    UserRole.CONTRIBUTOR: 200,
+    UserRole.CONTRIBUTOR: CONTRIBUTOR_REPUTATION_THRESHOLD,
 }
 
 
 def get_level(reputation: int) -> dict:
-    """Get the user's level based on reputation points."""
+    """Get the user's level and rank based on reputation points."""
     current_level = LEVELS[0]
     next_level = LEVELS[1] if len(LEVELS) > 1 else None
 
@@ -39,7 +34,9 @@ def get_level(reputation: int) -> dict:
 
     return {
         "level": current_level["name"],
+        "rank": current_level["rank"],
         "next_level": next_level["name"] if next_level else None,
+        "next_rank": next_level["rank"] if next_level else None,
         "points_to_next_level": max(0, points_to_next),
     }
 
@@ -99,6 +96,52 @@ def _check_auto_promote(user: User):
         threshold = ROLE_PROMOTION_THRESHOLD.get(UserRole.CONTRIBUTOR)
         if threshold and user.reputation >= threshold:
             user.role = UserRole.CONTRIBUTOR
+
+
+def apply_upvote_reputation(
+    db: Session,
+    author: User,
+    old_value: int,
+    new_value: int,
+    source_type: str,
+    source_id: int,
+) -> None:
+    """Grant or revoke upvote reputation only on vote transitions."""
+    if not author:
+        return
+    if old_value == 1 and new_value != 1:
+        add_reputation(
+            db, author, -POINTS_PER_UPVOTE, "upvote_revoked", source_type, source_id
+        )
+    if new_value == 1 and old_value != 1:
+        add_reputation(db, author, POINTS_PER_UPVOTE, "upvote", source_type, source_id)
+
+
+def award_once(
+    db: Session,
+    user: User,
+    points: int,
+    reason: str,
+    source_type: str,
+    source_id: int,
+) -> bool:
+    """Award points only once per (user, reason, source) combination."""
+    exists = (
+        db.query(ReputationLog.id)
+        .filter(
+            ReputationLog.user_id == user.id,
+            ReputationLog.reason == reason,
+            ReputationLog.source_type == source_type,
+            ReputationLog.source_id == source_id,
+            ReputationLog.points > 0,
+        )
+        .first()
+    )
+    if exists:
+        return False
+    add_reputation(db, user, points, reason, source_type, source_id)
+    db.flush()
+    return True
 
 
 def get_reputation_history(

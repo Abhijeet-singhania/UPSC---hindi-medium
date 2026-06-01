@@ -1,15 +1,41 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 
 from app.db.database import get_db
 from app.db.models import Answer, Question, User, Vote
 from app.schemas.answer import AnswerCreate, AnswerUpdate, AnswerResponse
-from app.config import settings
-from app.services.reputation_service import add_reputation
-from app.api.users import get_current_user
+from app.constants import POINTS_PER_ANSWER, POINTS_DOUBT_SOLVED
+from app.services.reputation_service import add_reputation, apply_upvote_reputation, award_once
+from app.api.users import get_current_user, get_optional_current_user
 
 router = APIRouter()
+
+
+def _format_answer(answer: Answer, user_vote: int = 0) -> AnswerResponse:
+    return AnswerResponse(
+        id=answer.id,
+        content=answer.content,
+        question_id=answer.question_id,
+        user_id=answer.user_id,
+        is_accepted=answer.is_accepted,
+        upvotes=answer.upvotes,
+        downvotes=answer.downvotes,
+        created_at=answer.created_at,
+        author=answer.author,
+        user_vote=user_vote,
+    )
+
+
+def _get_user_votes(db: Session, user_id: int, answer_ids: List[int]) -> dict:
+    if not answer_ids:
+        return {}
+    votes = db.query(Vote).filter(
+        Vote.user_id == user_id,
+        Vote.target_type == "answer",
+        Vote.target_id.in_(answer_ids),
+    ).all()
+    return {vote.target_id: vote.value for vote in votes}
 
 
 @router.post("/", response_model=AnswerResponse)
@@ -29,22 +55,31 @@ def create_answer(
         user_id=current_user.id
     )
     db.add(answer)
-    
-    # Add reputation points
-    add_reputation(db, current_user, settings.POINTS_PER_ANSWER, "answer", "answer", answer.id)
+    db.flush()
+
+    add_reputation(db, current_user, POINTS_PER_ANSWER, "answer", "answer", answer.id)
     
     db.commit()
     db.refresh(answer)
-    return answer
+    return _format_answer(answer, user_vote=0)
 
 
 @router.get("/question/{question_id}", response_model=List[AnswerResponse])
-def list_answers(question_id: int, db: Session = Depends(get_db)):
+def list_answers(
+    question_id: int,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user),
+):
     """Get all answers for a question."""
     answers = db.query(Answer).filter(
         Answer.question_id == question_id
     ).order_by(Answer.upvotes.desc()).all()
-    return answers
+
+    user_votes = {}
+    if current_user:
+        user_votes = _get_user_votes(db, current_user.id, [answer.id for answer in answers])
+
+    return [_format_answer(answer, user_votes.get(answer.id, 0)) for answer in answers]
 
 
 @router.put("/{answer_id}", response_model=AnswerResponse)
@@ -66,7 +101,8 @@ def update_answer(
     
     db.commit()
     db.refresh(answer)
-    return answer
+    user_vote = _get_user_votes(db, current_user.id, [answer.id]).get(answer.id, 0)
+    return _format_answer(answer, user_vote=user_vote)
 
 
 @router.post("/{answer_id}/vote")
@@ -86,35 +122,37 @@ def vote_answer(
         Vote.target_type == "answer",
         Vote.target_id == answer_id
     ).first()
-    
-    if existing_vote:
-        if existing_vote.value == 1:
-            answer.upvotes -= 1
-        elif existing_vote.value == -1:
-            answer.downvotes -= 1
-        
-        if value == 0:
+
+    old_value = existing_vote.value if existing_vote else 0
+
+    if value == 0:
+        if existing_vote:
             db.delete(existing_vote)
-        else:
-            existing_vote.value = value
+    elif existing_vote:
+        existing_vote.value = value
     else:
-        if value != 0:
-            new_vote = Vote(
-                user_id=current_user.id,
-                target_type="answer",
-                target_id=answer_id,
-                value=value
-            )
-            db.add(new_vote)
-    
+        db.add(Vote(
+            user_id=current_user.id,
+            target_type="answer",
+            target_id=answer_id,
+            value=value,
+        ))
+
+    if old_value == 1:
+        answer.upvotes -= 1
+    elif old_value == -1:
+        answer.downvotes -= 1
+
     if value == 1:
         answer.upvotes += 1
-        add_reputation(db, answer.author, settings.POINTS_PER_UPVOTE, "upvote", "answer", answer.id)
     elif value == -1:
         answer.downvotes += 1
-    
+
+    author = db.query(User).filter(User.id == answer.user_id).first()
+    apply_upvote_reputation(db, author, old_value, value, "answer", answer.id)
+
     db.commit()
-    return {"upvotes": answer.upvotes, "downvotes": answer.downvotes}
+    return {"upvotes": answer.upvotes, "downvotes": answer.downvotes, "user_vote": value}
 
 
 @router.post("/{answer_id}/accept")
@@ -144,7 +182,9 @@ def accept_answer(
     # Bonus reputation for getting answer accepted (doubt solved)
     answer_author = db.query(User).filter(User.id == answer.user_id).first()
     if answer_author:
-        add_reputation(db, answer_author, settings.POINTS_DOUBT_SOLVED, "doubt_solved", "answer", answer.id)
+        award_once(
+            db, answer_author, POINTS_DOUBT_SOLVED, "doubt_solved", "answer", answer.id
+        )
 
     db.commit()
     return {"message": "Answer accepted", "answer_id": answer_id}

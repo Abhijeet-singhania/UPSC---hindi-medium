@@ -5,6 +5,8 @@ import { useTheme } from '../../context/ThemeContext';
 import { User, Sliders, Globe, Palette, Save, Loader2, CheckCircle2 } from 'lucide-react';
 import { useApi } from '../../hooks/useApi';
 import { fetchProfile } from '../../store/slices/authSlice';
+import LanguageToggle from '../../components/common/LanguageToggle';
+import { applyLanguage, normalizeLanguage } from '../../utils/language';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 
@@ -68,8 +70,21 @@ const Settings = () => {
     }
   };
 
-  const handleLanguageChange = (lang) => {
-    i18n.changeLanguage(lang);
+  const handleLanguageChange = async (lang) => {
+    const code = normalizeLanguage(lang);
+    applyLanguage(code);
+    setSaveError('');
+    try {
+      await updateProfile({
+        method: 'PUT',
+        body: { preferred_language: code },
+      });
+      dispatch(fetchProfile());
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err) {
+      setSaveError(err.message || 'Failed to save language.');
+    }
   };
 
   const tabs = [
@@ -81,7 +96,7 @@ const Settings = () => {
     <div className="max-w-[1000px] mx-auto w-full p-2 md:p-6 flex flex-col gap-8">
       <div className="mb-4">
         <h1 className="text-3xl font-serif text-text-primary mb-2">{t('settings.title')}</h1>
-        <p className="text-text-secondary">Manage your account and application preferences.</p>
+        <p className="text-text-secondary">{t('common.manageAccount')}</p>
       </div>
 
       <div className="flex flex-col md:flex-row gap-8 items-start">
@@ -136,7 +151,7 @@ const Settings = () => {
                     disabled
                     className="w-full bg-bg-surface-dark border border-border-muted rounded-lg px-4 py-2.5 text-text-muted cursor-not-allowed opacity-70"
                   />
-                  <p className="text-[11px] text-text-muted">Email cannot be changed.</p>
+                  <p className="text-[11px] text-text-muted">{t('common.emailCannotChange')}</p>
                 </div>
 
                 <div className="flex flex-col gap-2">
@@ -183,7 +198,7 @@ const Settings = () => {
 
                 {saveSuccess && (
                   <div className="flex items-center gap-2 text-[#2B7A4B] text-[13px]">
-                    <CheckCircle2 size={16} /> Profile saved successfully.
+                    <CheckCircle2 size={16} /> {t('common.profileSaved')}
                   </div>
                 )}
 
@@ -194,7 +209,7 @@ const Settings = () => {
                     className="bg-primary hover:bg-primary-hover text-white font-medium py-2 px-6 rounded-lg transition-colors flex items-center gap-2 cursor-pointer shadow-sm disabled:opacity-60"
                   >
                     {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                    {saving ? 'Saving...' : t('settings.saveChanges')}
+                    {saving ? t('common.saving') : t('settings.saveChanges')}
                   </button>
                 </div>
 
@@ -213,30 +228,16 @@ const Settings = () => {
                 </div>
                 <div className="p-6">
                   <p className="text-sm text-text-secondary mb-6">{t('settings.languageSub')}</p>
-                  <div className="flex flex-wrap gap-4">
-                    <button
-                      onClick={() => handleLanguageChange('en')}
-                      className={`flex items-center gap-3 px-5 py-3 rounded-xl border transition-all cursor-pointer ${
-                        i18n.language === 'en'
-                          ? 'bg-primary/10 border-primary text-primary shadow-sm'
-                          : 'bg-bg-surface border-border-default text-text-secondary hover:border-text-muted hover:bg-bg-panel-hover'
-                      }`}
-                    >
-                      <span className="font-medium text-base">{t('settings.english')}</span>
-                      {i18n.language === 'en' && <div className="w-2 h-2 rounded-full bg-primary" />}
-                    </button>
-                    <button
-                      onClick={() => handleLanguageChange('hi')}
-                      className={`flex items-center gap-3 px-5 py-3 rounded-xl border transition-all cursor-pointer ${
-                        i18n.language === 'hi'
-                          ? 'bg-primary/10 border-primary text-primary shadow-sm'
-                          : 'bg-bg-surface border-border-default text-text-secondary hover:border-text-muted hover:bg-bg-panel-hover'
-                      }`}
-                    >
-                      <span className="font-medium text-base">{t('settings.hindi')}</span>
-                      {i18n.language === 'hi' && <div className="w-2 h-2 rounded-full bg-primary" />}
-                    </button>
-                  </div>
+                  <LanguageToggle
+                    value={user?.preferred_language || i18n.language}
+                    onChange={handleLanguageChange}
+                  />
+                  {saveSuccess && (
+                    <p className="text-[#2B7A4B] text-[13px] mt-4">{t('common.languageSaved')}</p>
+                  )}
+                  {saveError && (
+                    <p className="text-red-500 text-[13px] mt-4">{saveError}</p>
+                  )}
                 </div>
               </div>
 

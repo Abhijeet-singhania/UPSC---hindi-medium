@@ -1,5 +1,7 @@
+import os
 import time
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,6 +12,8 @@ from app.db.database import engine, SessionLocal
 from app.db import models
 from app.db.models import PastYearProblem, PastYearExamType
 from app.config import settings
+from app.services.scheduler import start_scheduler, stop_scheduler
+from app.api.silent_library import sync_active_room_from_db
 
 logger = logging.getLogger(__name__)
 
@@ -37,9 +41,31 @@ def _wait_for_db(retries: int = 15, delay: float = 2.0) -> None:
 _wait_for_db()
 models.Base.metadata.create_all(bind=engine)
 
+# Dev convenience: add preferred_language if DB existed before migration
+try:
+    from sqlalchemy import inspect, text
+    insp = inspect(engine)
+    if "users" in insp.get_table_names():
+        col_names = {c["name"] for c in insp.get_columns("users")}
+        if "preferred_language" not in col_names:
+            with engine.begin() as conn:
+                conn.execute(
+                    text(
+                        "ALTER TABLE users ADD COLUMN IF NOT EXISTS "
+                        "preferred_language VARCHAR(5) NOT NULL DEFAULT 'hi'"
+                    )
+                )
+            logger.info("Added users.preferred_language column (run alembic upgrade head in production).")
+except Exception as exc:
+    logger.warning("Could not ensure preferred_language column: %s", exc)
+
 
 def seed_past_year_problems():
-    """Seed a few starter PYQs if the table is empty."""
+    """Seed a few starter PYQs if the table is empty and SEED_STARTER_PYQ=1."""
+    raw = os.environ.get("SEED_STARTER_PYQ", "").strip().lower()
+    if raw not in ("1", "true", "yes", "on"):
+        return
+
     db = SessionLocal()
     try:
         existing_count = db.query(PastYearProblem).count()
@@ -120,10 +146,21 @@ from app.seeds.demo_data import seed_demo_data_if_enabled  # noqa: E402
 
 seed_demo_data_if_enabled()
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Start background scheduler on startup; stop it on shutdown."""
+    sync_active_room_from_db()
+    start_scheduler()
+    yield
+    stop_scheduler()
+
+
 app = FastAPI(
     title="UPSC Hindi Peer Network",
     description="A peer-to-peer UPSC Hindi learning ecosystem",
-    version="0.1.0"
+    version="0.1.0",
+    lifespan=lifespan,
 )
 
 # CORS — driven by ALLOWED_ORIGINS env var (set to specific origins in production)

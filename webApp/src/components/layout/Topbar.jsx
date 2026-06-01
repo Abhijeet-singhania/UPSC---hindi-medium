@@ -1,7 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import useAppLanguage from '../../hooks/useAppLanguage';
 import { PenLine } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const ROUTE_TITLE_MAP = {
   '/dashboard': 'sidebar.dashboard',
@@ -16,15 +17,19 @@ const ROUTE_TITLE_MAP = {
   '/community': 'sidebar.community',
   '/wellbeing': 'sidebar.wellbeing',
   '/settings': 'sidebar.settings',
+  '/admin': 'common.admin',
 };
 
 const Topbar = () => {
   const { t } = useTranslation();
+  const { language } = useAppLanguage();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const titleKey = ROUTE_TITLE_MAP[location.pathname] || 'sidebar.dashboard';
 
-  const today = new Date().toLocaleDateString('en-IN', {
+  const locale = language === 'hi' ? 'hi-IN' : 'en-IN';
+  const today = new Date().toLocaleDateString(locale, {
     weekday: 'short',
     day: '2-digit',
     month: 'short',
@@ -37,8 +42,11 @@ const Topbar = () => {
 
       <div className="flex items-center gap-6">
         <span className="font-mono text-text-muted text-[13px]">{today}</span>
-        {location.pathname !== '/settings' && (
-          <button className="bg-primary hover:bg-primary-hover text-white border-none py-2 px-4 rounded-md text-[13px] font-medium flex items-center gap-2 transition-colors cursor-pointer shadow-sm">
+        {location.pathname !== '/settings' && location.pathname !== '/answers' && (
+          <button
+            onClick={() => navigate('/answers')}
+            className="bg-primary hover:bg-primary-hover text-white border-none py-2 px-4 rounded-md text-[13px] font-medium flex items-center gap-2 transition-colors cursor-pointer shadow-sm"
+          >
             <PenLine size={16} />
             {t('roadmap.writeToday')}
           </button>

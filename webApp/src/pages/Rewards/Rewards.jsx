@@ -1,16 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { Trophy, Check, X, Loader2, Crown } from 'lucide-react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchProfile } from '../../store/slices/authSlice';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 
-const MOCK_BADGES = [
-  { name: "First Blood", desc: "Complete your first PYQ drill.", rarity: "Common", earned: true },
-  { name: "Night Owl", desc: "Study in the Silent Library.", rarity: "Rare", earned: true },
-  { name: "Streak 30", desc: "Maintain a 30-day streak.", rarity: "Epic", earned: false, progress: 0, total: 30 },
-  { name: "Flawless", desc: "Score 100% in a 50-question mock.", rarity: "Legendary", earned: false, progress: 0, total: 1 },
-  { name: "Scholar", desc: "Reach 500 reputation points.", rarity: "Epic", earned: false, progress: 0, total: 500 },
-  { name: "Cabinet", desc: "Reach Mentor rank.", rarity: "Mythic", earned: false, progress: 0, total: 1000 },
+// Static badge definitions — earned/progress is resolved at runtime from the server
+const BADGE_DEFS = [
+  { key: "first_blood", name: "First Blood",  desc: "Submit your first answer or daily practice.",  rarity: "Common",    total: null },
+  { key: "night_owl",   name: "Night Owl",    desc: "Complete a session in the Silent Library.",     rarity: "Rare",      total: null },
+  { key: "streak_30",   name: "Streak 30",    desc: "Maintain a 30-day study streak.",               rarity: "Epic",      total: 30,  progressKey: "streak_progress" },
+  { key: "flawless",    name: "Flawless",     desc: "Score 100% in a 50-question mock.",             rarity: "Legendary", total: 1 },
+  { key: "scholar",     name: "Scholar",      desc: "Reach 500 reputation points.",                  rarity: "Epic",      total: 500, progressKey: "reputation" },
+  { key: "cabinet",     name: "Cabinet",      desc: "Reach Mentor rank (1 000 pts).",                rarity: "Mythic",    total: 1000, progressKey: "reputation" },
 ];
 
 const PageHeader = ({ kicker, title, dek, right }) => (
@@ -24,8 +26,8 @@ const PageHeader = ({ kicker, title, dek, right }) => (
   </div>
 );
 
-// Map reputation points → level (mirrors server reputation_service.py)
-const LEVELS = [
+// Fallback levels while loading from API
+const FALLBACK_LEVELS = [
   { name: "Beginner", min: 0, rank: "Aspirant", lvlNum: 1 },
   { name: "Learner", min: 50, rank: "Cadet", lvlNum: 6 },
   { name: "Contributor", min: 200, rank: "Strategist", lvlNum: 16 },
@@ -33,13 +35,14 @@ const LEVELS = [
   { name: "Mentor", min: 1000, rank: "Senior Officer", lvlNum: 41 },
 ];
 
-function getLevel(reputation) {
-  let current = LEVELS[0];
-  let next = LEVELS[1];
-  for (let i = 0; i < LEVELS.length; i++) {
-    if (reputation >= LEVELS[i].min) {
-      current = LEVELS[i];
-      next = LEVELS[i + 1] || null;
+function getLevel(reputation, levels) {
+  const ladder = levels?.length ? levels : FALLBACK_LEVELS;
+  let current = ladder[0];
+  let next = ladder[1];
+  for (let i = 0; i < ladder.length; i++) {
+    if (reputation >= ladder[i].min) {
+      current = ladder[i];
+      next = ladder[i + 1] || null;
     }
   }
   const toNext = next ? next.min - reputation : 0;
@@ -49,14 +52,41 @@ function getLevel(reputation) {
 }
 
 const Rewards = () => {
-  const { user } = useSelector(state => state.auth);
+  const dispatch = useDispatch();
+  const { user, token } = useSelector(state => state.auth);
   const reputation = user?.reputation ?? 0;
-  const { current: currentLevel, next: nextLevel, toNext, progress: xpProgress } = getLevel(reputation);
+  const streakDays = user?.streak_days ?? 0;
   const safeUser = user || {};
   const [leaderboard, setLeaderboard] = useState([]);
   const [studyBoard, setStudyBoard] = useState([]);
   const [userRankings, setUserRankings] = useState(null);
   const [loadingBoard, setLoadingBoard] = useState(true);
+  const [achievementData, setAchievementData] = useState(null);
+  const [levels, setLevels] = useState(FALLBACK_LEVELS);
+
+  useEffect(() => {
+    if (token && token !== 'mock_jwt_token') {
+      dispatch(fetchProfile());
+    }
+  }, [dispatch, token]);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/v1/gamification/config`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d?.levels?.length) {
+          setLevels(d.levels.map((lv, i) => ({
+            name: lv.name,
+            min: lv.min_points,
+            rank: lv.rank,
+            lvlNum: [1, 6, 16, 26, 41][i] ?? i + 1,
+          })));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const { current: currentLevel, next: nextLevel, toNext, progress: xpProgress } = getLevel(reputation, levels);
 
   useEffect(() => {
     Promise.all([
@@ -77,18 +107,30 @@ const Rewards = () => {
       .catch(() => {});
   }, [user?.id]);
 
-  // Compute earned badges dynamically based on real user data
-  const dynamicBadges = MOCK_BADGES.map(b => {
-    if (b.name === 'Scholar') return { ...b, progress: reputation, earned: reputation >= 500 };
-    if (b.name === 'Cabinet') return { ...b, progress: reputation, earned: reputation >= 1000 };
-    if (b.name === 'Streak 30') return { ...b, progress: safeUser.streak_days ?? 0 };
-    return b;
+  // Fetch server-computed achievement flags for the logged-in user
+  useEffect(() => {
+    if (!token) return;
+    fetch(`${API_BASE}/api/v1/users/me/achievements`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => d && setAchievementData(d))
+      .catch(() => {});
+  }, [token]);
+
+  // Resolve badges against live server data
+  const dynamicBadges = BADGE_DEFS.map(b => {
+    const earned = achievementData ? !!achievementData[b.key] : false;
+    let progress = 0;
+    if (b.progressKey === 'reputation') progress = reputation;
+    else if (b.progressKey === 'streak_progress') progress = achievementData?.streak_progress ?? streakDays;
+    return { ...b, earned, progress };
   });
 
   return (
     <div className="flex flex-col gap-6 max-w-[1200px] mx-auto w-full">
       <PageHeader
-        kicker="THE LADDER · 81 LEVELS · 8 RANKS"
+        kicker="THE LADDER · 5 LEVELS · 5 RANKS"
         title={<>From Aspirant to <em className="text-primary not-italic font-serif font-medium">Cabinet Secretary</em>.</>}
         dek="Earn cosmetics, badges, and titles for the work you'd do anyway. Streaks matter. Mistake-logs matter more. No pay-to-win — none of this is sold."
         right={<div className="bg-primary/10 border border-primary text-primary px-3 py-1.5 rounded-full text-[11px] font-semibold flex items-center gap-2 shadow-sm"><Trophy size={14}/> {currentLevel.rank} · {reputation} pts</div>}
@@ -247,7 +289,7 @@ const Rewards = () => {
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[12px] text-text-secondary">Streak</span>
-                <span className="font-mono font-semibold text-text-primary">{safeUser.streak_days ?? 0} days</span>
+                <span className="font-mono font-semibold text-text-primary">{streakDays} days</span>
               </div>
               {userRankings?.reputation?.rank && (
                 <div className="flex justify-between items-center">

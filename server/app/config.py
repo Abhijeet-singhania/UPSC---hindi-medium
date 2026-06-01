@@ -1,55 +1,60 @@
-import os
+"""
+Environment-specific and sensitive settings.
+
+Values are loaded from environment variables / the .env file by pydantic-settings.
+Non-sensitive app constants (points, algorithm, prefixes) live in constants.py.
+"""
 import warnings
 from pydantic_settings import BaseSettings
+
 
 _INSECURE_DEFAULT_KEY = "SPARTA"
 
 
 class Settings(BaseSettings):
-    """Application settings loaded from environment variables."""
+    # ── Database ──────────────────────────────────────────────────────────────
+    DATABASE_URL: str = "postgresql://postgres:postgres@db:5432/upsc_hindi"
 
-    # Database
-    DATABASE_URL: str = os.getenv(
-        "DATABASE_URL",
-        "postgresql://postgres:postgres@db:5432/upsc_hindi"
+    # ── Redis ─────────────────────────────────────────────────────────────────
+    REDIS_URL: str = "redis://redis:6379/0"
+
+    # ── Security ──────────────────────────────────────────────────────────────
+    # Generate: python -c "import secrets; print(secrets.token_hex(32))"
+    SECRET_KEY: str = _INSECURE_DEFAULT_KEY
+
+    # ── CORS ──────────────────────────────────────────────────────────────────
+    # Comma-separated origins. Use * for dev; explicit URLs in production.
+    ALLOWED_ORIGINS: str = "*"
+
+    # ── Demo data seeding ─────────────────────────────────────────────────────
+    # Set to 1 in docker-compose (or .env) to seed demo accounts on first run.
+    SEED_DEMO_DATA: str = "0"
+
+    # ── Current Affairs automation ────────────────────────────────────────────
+    # Free Gemini key: https://aistudio.google.com/app/apikey
+    # Leave blank → AI processing skipped; raw RSS items saved for manual edit.
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-2.0-flash-lite"
+
+    # Comma-separated RSS feed URLs ingested daily at 07:30 IST.
+    RSS_FEEDS: str = (
+        "https://www.thehindu.com/news/national/feeder/default.rss,"
+        "https://pib.gov.in/RssMain.aspx,"
+        "https://indianexpress.com/section/india/feed/"
     )
-
-    # Redis
-    REDIS_URL: str = os.getenv("REDIS_URL", "redis://redis:6379/0")
-
-    # API Settings
-    API_V1_PREFIX: str = "/api/v1"
-    PROJECT_NAME: str = "UPSC Hindi Peer Network"
-
-    # Security
-    SECRET_KEY: str = os.getenv("SECRET_KEY", _INSECURE_DEFAULT_KEY)
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 1 week
-
-    # CORS — comma-separated list of allowed origins; "*" allows all (dev only)
-    ALLOWED_ORIGINS: str = os.getenv("ALLOWED_ORIGINS", "*")
-
-    # Points Configuration
-    POINTS_PER_UPVOTE: int = 10
-    POINTS_PER_ANSWER: int = 5
-    POINTS_PER_QUESTION: int = 2
-    POINTS_PER_STUDY_MINUTE: int = 1
-    POINTS_BEST_ANSWER: int = 25
-    POINTS_DOUBT_SOLVED: int = 15
-    POINTS_DAILY_SUBMISSION: int = 10
-    CONTRIBUTOR_REPUTATION_THRESHOLD: int = 200
 
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "ignore"
 
 
 settings = Settings()
 
 if settings.SECRET_KEY == _INSECURE_DEFAULT_KEY:
     warnings.warn(
-        "SECURITY WARNING: SECRET_KEY is set to the insecure default 'SPARTA'. "
-        "Set the SECRET_KEY environment variable before deploying to production.",
+        "SECURITY WARNING: SECRET_KEY is using the insecure default. "
+        "Set a strong SECRET_KEY in your .env before deploying to production.",
         RuntimeWarning,
         stacklevel=2,
     )

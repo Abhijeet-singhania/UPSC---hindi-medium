@@ -19,7 +19,8 @@ import {
   Sun,
   Moon,
   Trophy,
-  Settings
+  Settings,
+  ShieldCheck
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -47,7 +48,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
     {
       title: t('sidebar.practice'),
       items: [
-        { id: 'prelims', label: 'Practice Lab', icon: <FlaskConical size={18} />, path: '/prelims' },
+        { id: 'prelims', label: t('sidebar.prelimsLab'), icon: <FlaskConical size={18} />, path: '/prelims' },
         { id: 'answer', label: t('sidebar.answerWriting'), icon: <PenTool size={18} />, path: '/answers' },
       ]
     },
@@ -133,6 +134,16 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
       )}
 
       <div className={`mx-6 mb-6 flex flex-col gap-2 ${isCollapsed ? 'mx-3' : ''}`}>
+        {['admin', 'moderator'].includes(user?.role) && (
+          <NavLink
+            to="/admin"
+            className={({ isActive }) => `w-full border py-2 rounded-lg transition cursor-pointer text-sm flex items-center justify-center gap-2 ${isActive ? 'bg-primary text-white border-primary' : 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100'}`}
+            title={isCollapsed ? 'Admin' : ''}
+          >
+            <ShieldCheck size={16} />
+            {!isCollapsed && t('common.admin')}
+          </NavLink>
+        )}
         <NavLink 
           to="/settings" 
           className={({ isActive }) => `w-full border border-border-default py-2 rounded-lg transition cursor-pointer text-sm flex items-center justify-center gap-2 ${isActive ? 'bg-primary text-text-primary border-primary' : 'bg-bg-panel text-text-secondary hover:text-text-primary hover:bg-bg-panel-hover'}`}

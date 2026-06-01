@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchProfile } from '../../store/slices/authSlice';
 import { useUI } from '../../context/UIContext';
+import useAppLanguage from '../../hooks/useAppLanguage';
 import {
   Search, FileText, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight,
   CheckCircle2, XCircle, MessageCircle, Loader2, PenLine, RotateCcw,
@@ -244,6 +246,7 @@ const MainsPanel = ({ problem, attempt, onAttempt, testMode = false }) => {
 const BrowseView = () => {
   const navigate = useNavigate();
   const token = useSelector(state => state.auth?.token);
+  const { contentLanguage } = useAppLanguage();
 
   // Filters
   const [availableFilters, setAvailableFilters] = useState({ years: [], subjects: [], papers: [], exam_types: [] });
@@ -266,21 +269,21 @@ const BrowseView = () => {
 
   // Fetch filters on mount
   useEffect(() => {
-    const qs = buildQS({ language: 'en' });
+    const qs = buildQS({ language: contentLanguage });
     fetch(`${API_BASE}/api/v1/past-year-problems/filters?${qs}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d) setAvailableFilters(d); })
       .catch(() => {});
-  }, [token]);
+  }, [token, contentLanguage]);
 
-  // Fetch questions whenever filters change
+  // Fetch questions whenever filters change (contentLanguage included in deps to avoid stale closure)
   const fetchQuestions = useCallback(async (extra = {}) => {
     setIsLoading(true);
     setFetchError('');
     const params = {
-      language: 'en',
+      language: contentLanguage,
       limit: 100,
       year: selectedYear || undefined,
       exam_type: selectedExamType || undefined,
@@ -303,7 +306,7 @@ const BrowseView = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [token, selectedYear, selectedExamType, selectedSubject, selectedPaper, searchInput]);
+  }, [token, contentLanguage, selectedYear, selectedExamType, selectedSubject, selectedPaper, searchInput]);
 
   useEffect(() => { fetchQuestions(); }, [fetchQuestions]);
 
@@ -440,7 +443,12 @@ const BrowseView = () => {
           <div className="flex flex-col items-center justify-center h-64 bg-bg-panel border border-border-default rounded-xl text-center px-8 gap-3">
             <Target size={32} className="text-text-muted" />
             <p className="text-[14px] text-text-muted font-medium">
-              {showBookmarksOnly ? 'No bookmarked questions.' : 'No questions found for these filters.'}
+              {showBookmarksOnly ? 'No bookmarked questions.' : 'No questions found.'}
+            </p>
+            <p className="text-[12px] text-text-muted">
+              {showBookmarksOnly
+                ? 'Bookmark questions while browsing to see them here.'
+                : 'Try different filters, or add questions in Admin → Past Year Problems.'}
             </p>
             {showBookmarksOnly && (
               <button onClick={() => setShowBookmarksOnly(false)} className="text-primary text-[13px] underline cursor-pointer">
@@ -643,8 +651,11 @@ const BrowseView = () => {
 };
 
 // ─── TestConfigView ───────────────────────────────────────────────────────────
-const TestConfigView = ({ filterData, config, setConfig, onStart, isLoading, startError }) => {
+const TestConfigView = ({ filterData, quizFilterData, config, setConfig, onStart, isLoading, startError }) => {
   const filters = filterData || {};
+  const qFilters = quizFilterData || {};
+  const isQuizBank = config.source === 'quiz-bank';
+
   const NUM_OPTIONS = [10, 20, 30, 50, 100];
   const TIME_DEFAULTS = {
     prelims: { 10: 15, 20: 25, 30: 40, 50: 60, 100: 120 },
@@ -659,6 +670,10 @@ const TestConfigView = ({ filterData, config, setConfig, onStart, isLoading, sta
   const handleExamTypeChange = (et) => {
     const auto = (TIME_DEFAULTS[et] || TIME_DEFAULTS.prelims)[config.numQuestions] || 60;
     setConfig(c => ({ ...c, examType: et, timeMinutes: auto }));
+  };
+
+  const handleSourceChange = (src) => {
+    setConfig(c => ({ ...c, source: src, subject: '', year: '', topic: '', difficulty: '' }));
   };
 
   return (
@@ -678,51 +693,114 @@ const TestConfigView = ({ filterData, config, setConfig, onStart, isLoading, sta
         </div>
 
         <div className="p-8 flex flex-col gap-6">
-          {/* Exam type */}
+
+          {/* Question source */}
           <div>
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-text-muted mb-2">Exam Type</label>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-text-muted mb-2">Question Source</label>
             <div className="flex gap-3">
               {[
-                { id: 'prelims', label: '🎯 Prelims (MCQ)', desc: '+2 / −⅔ scoring' },
-                { id: 'mains', label: '✍️ Mains (Subjective)', desc: 'Written answers' },
-              ].map(et => (
+                { id: 'pyq', label: '📜 Past Year Questions', desc: 'Official UPSC PYQs' },
+                { id: 'quiz-bank', label: '🧪 Topic Quiz Bank', desc: 'Custom practice questions' },
+              ].map(src => (
                 <button
-                  key={et.id}
-                  onClick={() => handleExamTypeChange(et.id)}
-                  className={`flex-1 py-3 px-4 rounded-xl border text-left transition cursor-pointer ${config.examType === et.id ? 'border-primary bg-primary/10' : 'border-border-default hover:bg-bg-surface'}`}
+                  key={src.id}
+                  onClick={() => handleSourceChange(src.id)}
+                  className={`flex-1 py-3 px-4 rounded-xl border text-left transition cursor-pointer ${config.source === src.id ? 'border-primary bg-primary/10' : 'border-border-default hover:bg-bg-surface'}`}
                 >
-                  <div className={`text-[13px] font-medium ${config.examType === et.id ? 'text-primary' : 'text-text-primary'}`}>{et.label}</div>
-                  <div className="text-[11px] text-text-muted mt-0.5">{et.desc}</div>
+                  <div className={`text-[13px] font-medium ${config.source === src.id ? 'text-primary' : 'text-text-primary'}`}>{src.label}</div>
+                  <div className="text-[11px] text-text-muted mt-0.5">{src.desc}</div>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Filters */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* Exam type — only relevant for PYQ source */}
+          {!isQuizBank && (
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-text-muted mb-2">Subject</label>
-              <select
-                value={config.subject}
-                onChange={e => setConfig(c => ({ ...c, subject: e.target.value }))}
-                className="w-full border border-border-default rounded-lg text-[13px] px-3 py-2.5 bg-bg-surface text-text-primary cursor-pointer"
-              >
-                <option value="">All subjects</option>
-                {(filters.subjects || []).map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-text-muted mb-2">Exam Type</label>
+              <div className="flex gap-3">
+                {[
+                  { id: 'prelims', label: '🎯 Prelims (MCQ)', desc: '+2 / −⅔ scoring · XP awarded' },
+                  { id: 'mains', label: '✍️ Mains (Subjective)', desc: 'Practice only · no MCQ scoring' },
+                ].map(et => (
+                  <button
+                    key={et.id}
+                    onClick={() => handleExamTypeChange(et.id)}
+                    className={`flex-1 py-3 px-4 rounded-xl border text-left transition cursor-pointer ${config.examType === et.id ? 'border-primary bg-primary/10' : 'border-border-default hover:bg-bg-surface'}`}
+                  >
+                    <div className={`text-[13px] font-medium ${config.examType === et.id ? 'text-primary' : 'text-text-primary'}`}>{et.label}</div>
+                    <div className="text-[11px] text-text-muted mt-0.5">{et.desc}</div>
+                  </button>
+                ))}
+              </div>
             </div>
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-text-muted mb-2">Year</label>
-              <select
-                value={config.year}
-                onChange={e => setConfig(c => ({ ...c, year: e.target.value }))}
-                className="w-full border border-border-default rounded-lg text-[13px] px-3 py-2.5 bg-bg-surface text-text-primary cursor-pointer"
-              >
-                <option value="">All years</option>
-                {(filters.years || []).map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
+          )}
+
+          {/* Filters — PYQ: subject + year  |  Quiz Bank: subject + topic + difficulty */}
+          {!isQuizBank ? (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-text-muted mb-2">Subject</label>
+                <select
+                  value={config.subject}
+                  onChange={e => setConfig(c => ({ ...c, subject: e.target.value }))}
+                  className="w-full border border-border-default rounded-lg text-[13px] px-3 py-2.5 bg-bg-surface text-text-primary cursor-pointer"
+                >
+                  <option value="">All subjects</option>
+                  {(filters.subjects || []).map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-text-muted mb-2">Year</label>
+                <select
+                  value={config.year}
+                  onChange={e => setConfig(c => ({ ...c, year: e.target.value }))}
+                  className="w-full border border-border-default rounded-lg text-[13px] px-3 py-2.5 bg-bg-surface text-text-primary cursor-pointer"
+                >
+                  <option value="">All years</option>
+                  {(filters.years || []).map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-text-muted mb-2">Subject</label>
+                <select
+                  value={config.subject}
+                  onChange={e => setConfig(c => ({ ...c, subject: e.target.value }))}
+                  className="w-full border border-border-default rounded-lg text-[13px] px-3 py-2.5 bg-bg-surface text-text-primary cursor-pointer"
+                >
+                  <option value="">All</option>
+                  {(qFilters.subjects || []).map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-text-muted mb-2">Topic</label>
+                <select
+                  value={config.topic}
+                  onChange={e => setConfig(c => ({ ...c, topic: e.target.value }))}
+                  className="w-full border border-border-default rounded-lg text-[13px] px-3 py-2.5 bg-bg-surface text-text-primary cursor-pointer"
+                >
+                  <option value="">All</option>
+                  {(qFilters.topics || []).map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-text-muted mb-2">Difficulty</label>
+                <select
+                  value={config.difficulty}
+                  onChange={e => setConfig(c => ({ ...c, difficulty: e.target.value }))}
+                  className="w-full border border-border-default rounded-lg text-[13px] px-3 py-2.5 bg-bg-surface text-text-primary cursor-pointer"
+                >
+                  <option value="">All</option>
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </div>
+            </div>
+          )}
 
           {/* Number of questions */}
           <div>
@@ -788,7 +866,7 @@ const TestConfigView = ({ filterData, config, setConfig, onStart, isLoading, sta
 };
 
 // ─── TestRunningView ──────────────────────────────────────────────────────────
-const TestRunningView = ({ questions, answers, onSetAnswer, currentIdx, setCurrentIdx, timeLeft, totalSecs, onSubmit, violationBanner, violationCount, maxViolations }) => {
+const TestRunningView = ({ questions, answers, onSetAnswer, currentIdx, setCurrentIdx, timeLeft, totalSecs, onSubmit, violationBanner, violationCount, maxViolations, isFullscreen }) => {
   const [showConfirm, setShowConfirm] = useState(false);
   const q = questions[currentIdx];
   if (!q) return null;
@@ -798,8 +876,30 @@ const TestRunningView = ({ questions, answers, onSetAnswer, currentIdx, setCurre
   const isRed = timeLeft != null && timeLeft < 300;
   const timeProgress = totalSecs > 0 ? Math.max(0, timeLeft / totalSecs) : 0;
 
+  const reenterFullscreen = () => {
+    document.documentElement.requestFullscreen?.().catch(() => {});
+  };
+
   return (
-    <div className="flex gap-5 items-start">
+    <div className="flex flex-col min-h-screen">
+      {/* ── Fullscreen-exit sticky bar ── */}
+      {!isFullscreen && (
+        <div className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between gap-4 bg-amber-500 text-white px-5 py-2.5 shadow-lg">
+          <div className="flex items-center gap-2 text-[13px] font-semibold">
+            <Maximize2 size={16} className="shrink-0" />
+            Test is running — you exited full screen. Your test is still active.
+          </div>
+          <button
+            onClick={reenterFullscreen}
+            className="flex items-center gap-1.5 bg-white text-amber-700 font-bold text-[12px] px-4 py-1.5 rounded-lg cursor-pointer hover:bg-amber-50 transition shrink-0"
+          >
+            <Maximize2 size={13} /> Return to Full Screen
+          </button>
+        </div>
+      )}
+
+      {/* Push content down when sticky bar is showing */}
+      <div className={`flex gap-5 items-start flex-1 ${!isFullscreen ? 'pt-12' : ''}`}>
       {/* Main question area */}
       <div className="flex-1 min-w-0">
         {/* Top bar with timer */}
@@ -983,17 +1083,62 @@ const TestRunningView = ({ questions, answers, onSetAnswer, currentIdx, setCurre
           </div>
         </div>
       )}
+      </div>{/* end inner flex gap row */}
     </div>
   );
 };
 
 // ─── TestResultsView ──────────────────────────────────────────────────────────
-const TestResultsView = ({ questions, answers, elapsedSecs, totalSecs, config, onReset, onBrowse }) => {
-  const [expandedIdx, setExpandedIdx] = useState(null);
+const TestResultsView = ({ questions, answers, elapsedSecs, totalSecs, config, onReset, onBrowse, token }) => {
+  const dispatch = useDispatch();
+  const submittedRef = useRef(false);
+  const [submitState, setSubmitState] = useState({ loading: false, points: null, error: null });
+
   const results = useMemo(() => calcResults(questions, answers), [questions, answers]);
   const timeUsedPct = totalSecs > 0 ? (elapsedSecs ?? totalSecs) / totalSecs : 1;
   const achievements = useMemo(() => getAchievements(results, timeUsedPct), [results, timeUsedPct]);
   const { correct, wrong, unattempted, score, maxScore, percentage, subjectStats } = results;
+
+  useEffect(() => {
+    if (!token || submittedRef.current || questions.length === 0) return;
+    submittedRef.current = true;
+    setSubmitState(s => ({ ...s, loading: true }));
+
+    const source = config.source === 'quiz-bank' ? 'quiz-bank' : 'pyq';
+    fetch(`${API_BASE}/api/v1/mock-tests/submit`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        exam_type: config.examType || 'prelims',
+        source,
+        total_questions: questions.length,
+        correct_count: correct,
+        wrong_count: wrong,
+        unattempted_count: unattempted,
+        score,
+        percentage,
+        time_used_seconds: elapsedSecs ?? totalSecs ?? 0,
+      }),
+    })
+      .then(r => r.ok ? r.json() : r.json().then(e => Promise.reject(e)))
+      .then(data => {
+        setSubmitState({ loading: false, points: data.points_awarded, error: null });
+        dispatch(fetchProfile());
+      })
+      .catch(err => {
+        setSubmitState({
+          loading: false,
+          points: null,
+          error: err?.detail || 'Could not save test results',
+        });
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, questions.length]);
+
+  const [expandedIdx, setExpandedIdx] = useState(null);
 
   const scoreCls = percentage >= 60 ? 'text-[#2B7A4B]' : percentage >= 40 ? 'text-yellow-600' : 'text-red-500';
   const scoreLabel = percentage >= 75 ? '🏆 Topper Zone' : percentage >= 60 ? '✅ Cutoff Safe' : percentage >= 40 ? '⚠️ Below Cutoff' : '❌ Needs Work';
@@ -1044,6 +1189,25 @@ const TestResultsView = ({ questions, answers, elapsedSecs, totalSecs, config, o
             <p className="text-[12px] text-text-muted bg-bg-surface border border-border-default rounded-lg px-4 py-2.5">
               <strong>UPSC Prelims scoring:</strong> +2 correct · −0.67 wrong · 0 skipped · Your score: <strong className={scoreCls}>{score}</strong> / {maxScore}
             </p>
+          </div>
+        )}
+        {token && (
+          <div className="px-6 pb-4">
+            {submitState.loading && (
+              <p className="text-[12px] text-text-muted flex items-center gap-2">
+                <Loader2 size={14} className="animate-spin" /> Saving results & awarding XP…
+              </p>
+            )}
+            {submitState.points != null && (
+              <p className="text-[12px] text-[#2B7A4B] bg-[#EBF5F0] border border-[#2B7A4B]/20 rounded-lg px-4 py-2.5">
+                +{submitState.points} reputation points earned for this attempt.
+              </p>
+            )}
+            {submitState.error && (
+              <p className="text-[12px] text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5">
+                {submitState.error}
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -1199,11 +1363,13 @@ const TestResultsView = ({ questions, answers, elapsedSecs, totalSecs, config, o
 const PracticeLab = () => {
   const token = useSelector(state => state.auth?.token);
   const { setTestMode } = useUI();
+  const { contentLanguage, t } = useAppLanguage();
 
   const [activeTab, setActiveTab] = useState('browse');
   const [testPhase, setTestPhase] = useState('config'); // 'config' | 'running' | 'results'
-  const [config, setConfig] = useState({ examType: 'prelims', subject: '', year: '', numQuestions: 30, timeMinutes: 40 });
+  const [config, setConfig] = useState({ source: 'pyq', examType: 'prelims', subject: '', year: '', topic: '', difficulty: '', numQuestions: 30, timeMinutes: 40 });
   const [filterData, setFilterData] = useState(null);
+  const [quizFilterData, setQuizFilterData] = useState(null);
 
   // Test state
   const [testQuestions, setTestQuestions] = useState([]);
@@ -1219,19 +1385,34 @@ const PracticeLab = () => {
   // Violation / fullscreen state
   const [violationCount, setViolationCount] = useState(0);
   const [violationBanner, setViolationBanner] = useState('');
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const MAX_VIOLATIONS = 3;
   const bannerTimerRef = useRef(null);
   const doSubmitRef = useRef(null);
 
-  // Load filter data once
+  // Always track real fullscreen state so TestRunningView can show re-enter button
   useEffect(() => {
-    fetch(`${API_BASE}/api/v1/past-year-problems/filters?language=en`, {
+    const syncFullscreen = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', syncFullscreen);
+    return () => document.removeEventListener('fullscreenchange', syncFullscreen);
+  }, []);
+
+  // Load PYQ + quiz-bank filter data once
+  useEffect(() => {
+    fetch(`${API_BASE}/api/v1/past-year-problems/filters?language=${contentLanguage}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d) setFilterData(d); })
       .catch(() => {});
-  }, [token]);
+
+    fetch(`${API_BASE}/api/v1/quiz-questions/filters?language=${contentLanguage}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setQuizFilterData(d); })
+      .catch(() => {});
+  }, [token, contentLanguage]);
 
   // Timer countdown
   useEffect(() => {
@@ -1316,24 +1497,40 @@ const PracticeLab = () => {
     setStartError('');
     setIsTestLoading(true);
 
-    const params = {
-      exam_type: config.examType,
-      language: 'en',
-      limit: 100,  // server hard-cap is le=100
-      ...(config.subject ? { subject: config.subject } : {}),
-      ...(config.year ? { year: config.year } : {}),
-    };
-    const qs = buildQS(params);
-
     try {
-      const resp = await fetch(`${API_BASE}/api/v1/past-year-problems/?${qs}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const data = await resp.json();
+      let available = [];
 
-      const available = Array.isArray(data) ? data : [];
-      if (available.length === 0) {
+      if (config.source === 'quiz-bank') {
+        // Fetch from the custom quiz-questions bank
+        const params = {
+          language: contentLanguage,
+          limit: 100,
+          ...(config.subject ? { subject: config.subject } : {}),
+          ...(config.topic ? { topic: config.topic } : {}),
+          ...(config.difficulty ? { difficulty: config.difficulty } : {}),
+        };
+        const resp = await fetch(`${API_BASE}/api/v1/quiz-questions/?${buildQS(params)}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        available = await resp.json();
+      } else {
+        // Default: fetch from past-year-problems
+        const params = {
+          exam_type: config.examType,
+          language: contentLanguage,
+          limit: 100,
+          ...(config.subject ? { subject: config.subject } : {}),
+          ...(config.year ? { year: config.year } : {}),
+        };
+        const resp = await fetch(`${API_BASE}/api/v1/past-year-problems/?${buildQS(params)}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        available = await resp.json();
+      }
+
+      if (!Array.isArray(available) || available.length === 0) {
         setStartError('No questions found for this configuration. Try different filters.');
         setIsTestLoading(false);
         return;
@@ -1356,7 +1553,7 @@ const PracticeLab = () => {
     } finally {
       setIsTestLoading(false);
     }
-  }, [config, token]);
+  }, [config, token, contentLanguage]);
 
   const resetTest = useCallback(() => {
     clearTimeout(timerRef.current);
@@ -1380,10 +1577,8 @@ const PracticeLab = () => {
       {/* Page header */}
       <div className="mb-6 flex items-start justify-between">
         <div>
-          <h2 className="font-serif text-[28px] font-semibold text-text-primary mb-1">Practice Lab</h2>
-          <p className="text-text-muted text-[13px]">
-            Browse PYQs with instant answers · Timed mock tests · Full post-test analysis
-          </p>
+          <h2 className="font-serif text-[28px] font-semibold text-text-primary mb-1">{t('prelimsLab.title')}</h2>
+          <p className="text-text-muted text-[13px]">{t('prelimsLab.subtitle')}</p>
         </div>
       </div>
 
@@ -1411,6 +1606,7 @@ const PracticeLab = () => {
       {activeTab === 'test' && testPhase === 'config' && (
         <TestConfigView
           filterData={filterData}
+          quizFilterData={quizFilterData}
           config={config}
           setConfig={setConfig}
           onStart={handleStart}
@@ -1433,6 +1629,7 @@ const PracticeLab = () => {
           violationBanner={violationBanner}
           violationCount={violationCount}
           maxViolations={MAX_VIOLATIONS}
+          isFullscreen={isFullscreen}
         />
       )}
 
@@ -1446,6 +1643,7 @@ const PracticeLab = () => {
           config={config}
           onReset={resetTest}
           onBrowse={() => setActiveTab('browse')}
+          token={token}
         />
       )}
     </div>

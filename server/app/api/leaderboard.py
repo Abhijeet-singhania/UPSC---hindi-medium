@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import List
+from sqlalchemy import func
 
 from app.db.database import get_db
 from app.db.models import User, SilentSession
@@ -15,26 +15,31 @@ def get_reputation_leaderboard(
     limit: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db)
 ):
-    """Get reputation leaderboard from Redis with user details."""
-    board = redis_service.get_leaderboard(
-        LEADERBOARD_KEYS["reputation"], 
-        start=0, 
-        end=limit-1
+    """Get reputation leaderboard from the database (source of truth for XP)."""
+    users = (
+        db.query(User)
+        .filter(User.reputation > 0)
+        .order_by(User.reputation.desc(), User.id.asc())
+        .limit(limit)
+        .all()
     )
-    
-    # Enrich with user details
+
     results = []
-    for entry in board:
-        user = db.query(User).filter(User.id == entry["user_id"]).first()
-        if user:
-            results.append({
-                "rank": entry["rank"],
-                "user_id": entry["user_id"],
-                "name": user.name or "Anonymous",
-                "score": entry["score"],
-                "exam_stage": user.exam_stage.value if user.exam_stage else "beginner"
-            })
-    
+    for rank, user in enumerate(users, start=1):
+        results.append({
+            "rank": rank,
+            "user_id": user.id,
+            "name": user.name or "Anonymous",
+            "score": user.reputation,
+            "exam_stage": user.exam_stage.value if user.exam_stage else "beginner",
+        })
+        try:
+            redis_service.update_leaderboard(
+                LEADERBOARD_KEYS["reputation"], user.id, user.reputation
+            )
+        except Exception:
+            pass
+
     return {"leaderboard": results, "type": "reputation"}
 
 
@@ -77,11 +82,14 @@ def get_user_rankings(user_id: int, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    higher_rep = db.query(User).filter(User.reputation > user.reputation).count()
+    reputation_rank = higher_rep + 1 if user.reputation > 0 else None
     
     rankings = {
         "reputation": {
-            "rank": redis_service.get_user_rank(LEADERBOARD_KEYS["reputation"], user_id),
-            "score": redis_service.get_user_score(LEADERBOARD_KEYS["reputation"], user_id)
+            "rank": reputation_rank,
+            "score": user.reputation,
         },
         "study_daily": {
             "rank": redis_service.get_user_rank(LEADERBOARD_KEYS["study_daily"], user_id),
@@ -123,7 +131,6 @@ def sync_leaderboards(
         )
     
     # Sync study time (alltime)
-    from sqlalchemy import func
     study_totals = db.query(
         SilentSession.user_id,
         func.sum(SilentSession.duration_minutes).label("total")

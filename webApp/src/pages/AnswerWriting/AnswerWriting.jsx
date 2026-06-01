@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { PenLine, ThumbsUp, ChevronDown, ChevronUp, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { PenLine, ThumbsUp, ChevronDown, ChevronUp, Loader2, AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react';
 import { useApi } from '../../hooks/useApi';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -12,6 +12,7 @@ const AnswerWriting = () => {
   const [submitError, setSubmitError] = useState('');
   const [expandedAnswerId, setExpandedAnswerId] = useState(null);
   const textareaRef = useRef(null);
+  const prevTodayIdRef = useRef(null);
 
   const {
     data: todayQuestion,
@@ -40,14 +41,31 @@ const AnswerWriting = () => {
     `${API_BASE}/api/v1/daily/answers/:answerId/vote`
   );
 
-  useEffect(() => {
+  const refreshToday = useCallback(() => {
     fetchToday().catch(() => {});
     fetchPast({ queryParams: { limit: 10 } }).catch(() => {});
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (todayQuestion && !selectedQuestion) {
+    refreshToday();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Refetch on window focus so rotation is visible without a full reload
+  useEffect(() => {
+    const onFocus = () => refreshToday();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [refreshToday]);
+
+  // When todayQuestion changes (rotation), update selectedQuestion + clear stale answer
+  useEffect(() => {
+    if (!todayQuestion) return;
+    if (todayQuestion.id !== prevTodayIdRef.current) {
+      prevTodayIdRef.current = todayQuestion.id;
       setSelectedQuestion(todayQuestion);
+      setAnswerText('');
+      setSubmitSuccess(false);
+      setSubmitError('');
     }
   }, [todayQuestion]);
 
@@ -101,7 +119,17 @@ const AnswerWriting = () => {
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
         {/* Left: Question List */}
         <aside className="flex flex-col gap-3">
-          <div className="text-[10px] tracking-widest text-text-secondary font-bold uppercase mb-1">Questions</div>
+          <div className="flex items-center justify-between">
+            <div className="text-[10px] tracking-widest text-text-secondary font-bold uppercase">Questions</div>
+            <button
+              onClick={refreshToday}
+              disabled={loadingToday}
+              className="flex items-center gap-1 text-[11px] text-text-muted hover:text-primary transition cursor-pointer bg-transparent border-none p-0"
+            >
+              <RefreshCw size={12} className={loadingToday ? 'animate-spin' : ''} />
+              Refresh
+            </button>
+          </div>
 
           {loadingToday && (
             <div className="flex items-center gap-2 text-text-muted text-sm py-2">
@@ -158,7 +186,8 @@ const AnswerWriting = () => {
                     }`}
                   >
                     <p className="text-[13px] text-text-primary leading-relaxed line-clamp-2">{q.title}</p>
-                    <div className="text-[11px] text-text-muted mt-1">
+                    <div className="text-[11px] text-text-muted mt-1 flex items-center gap-2">
+                      {q.is_active && <span className="text-emerald-600 font-semibold">● Active</span>}
                       {q.submission_count ?? 0} submissions
                     </div>
                   </div>

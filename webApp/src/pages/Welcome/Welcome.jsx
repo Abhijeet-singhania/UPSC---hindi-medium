@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useSelector } from 'react-redux';
 import { Compass, Edit3, Activity, ArrowRight, Check, X, Target, BookOpen, Sparkles, Library, Swords, Trophy, Users } from 'lucide-react';
+import LanguageToggle from '../../components/common/LanguageToggle';
+import { getStoredLanguage } from '../../utils/language';
 
 const useLiveNumber = (initial, variance, intervalMs) => {
   const [num, setNum] = useState(initial);
@@ -72,10 +74,11 @@ const Welcome = () => {
       {/* Top Navbar items */}
       <nav className="fixed top-0 w-full p-8 flex justify-between items-center z-50 max-w-[1440px] left-1/2 -translate-x-1/2 bg-gradient-to-b from-[#11100F] to-transparent">
         <div className="font-serif text-2xl text-text-primary font-semibold">Drishti</div>
-        <div>
-           <button onClick={handleStart} className="bg-white/5 border border-white/10 text-text-primary px-6 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition cursor-pointer">
-             {t('welcome.login')}
-           </button>
+        <div className="flex items-center gap-4">
+          <LanguageToggle value={getStoredLanguage()} />
+          <button onClick={handleStart} className="bg-white/5 border border-white/10 text-text-primary px-6 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition cursor-pointer">
+            {t('welcome.login')}
+          </button>
         </div>
       </nav>
 

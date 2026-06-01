@@ -2,8 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import {
-  MessageCircle, ThumbsUp, ThumbsDown, Plus, X, ChevronDown,
-  ChevronUp, Loader2, AlertCircle, Send, Trophy
+  MessageCircle, ThumbsUp, ThumbsDown, Plus, X,
+  Loader2, AlertCircle, Send, Trophy
 } from 'lucide-react';
 import { useApi } from '../../hooks/useApi';
 
@@ -11,9 +11,22 @@ const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').
 
 const COMMON_TAGS = ['GS1', 'GS2', 'GS3', 'GS4', 'Polity', 'Economy', 'History', 'Geography', 'Environment', 'Ethics'];
 
+const initials = (name) => String(name || 'U').substring(0, 2).toUpperCase();
+
+const formatError = (err, fallback) => {
+  const detail = err?.message ?? err;
+  if (Array.isArray(detail)) {
+    return detail.map((item) => item.msg || String(item)).join(', ');
+  }
+  if (typeof detail === 'string' && detail.trim()) {
+    return detail;
+  }
+  return fallback;
+};
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-const QuestionCard = ({ question, isSelected, onSelect }) => (
+const QuestionCard = ({ question, isSelected, userVote = 0, onSelect, onVote }) => (
   <div
     onClick={() => onSelect(question)}
     className={`bg-bg-panel border rounded-xl p-5 cursor-pointer transition-all ${
@@ -38,7 +51,21 @@ const QuestionCard = ({ question, isSelected, onSelect }) => (
       </div>
     )}
     <div className="flex items-center gap-4 text-[12px] text-text-muted">
-      <span className="flex items-center gap-1"><ThumbsUp size={12} /> {question.upvotes}</span>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onVote(question.id, userVote === 1 ? 0 : 1);
+        }}
+        title={userVote === 1 ? 'Remove upvote' : 'Upvote question'}
+        className={`flex items-center gap-1 px-2 py-1 rounded-lg transition cursor-pointer ${
+          userVote === 1
+            ? 'bg-primary/10 text-primary border border-primary/30'
+            : 'hover:text-primary hover:bg-primary/5 border border-transparent'
+        }`}
+      >
+        <ThumbsUp size={12} /> {question.upvotes}
+      </button>
       <span className="flex items-center gap-1"><MessageCircle size={12} /> {question.answer_count} answers</span>
     </div>
   </div>
@@ -49,7 +76,7 @@ const AnswerCard = ({ answer, onVote, userVote = 0 }) => (
     <div className="flex items-start justify-between mb-3">
       <div className="flex items-center gap-2">
         <div className="w-8 h-8 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[11px] font-semibold shrink-0">
-          {(answer.author?.name || 'U').substring(0, 2).toUpperCase()}
+          {initials(answer.author?.name)}
         </div>
         <div>
           <div className="text-[13px] font-medium text-text-primary flex items-center gap-1.5">
@@ -65,6 +92,7 @@ const AnswerCard = ({ answer, onVote, userVote = 0 }) => (
       </div>
       <div className="flex items-center gap-1">
         <button
+          type="button"
           onClick={() => onVote(answer.id, userVote === 1 ? 0 : 1)}
           title={userVote === 1 ? 'Remove upvote' : 'Upvote'}
           className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12px] font-medium transition cursor-pointer ${
@@ -76,6 +104,7 @@ const AnswerCard = ({ answer, onVote, userVote = 0 }) => (
           <ThumbsUp size={13} /> {answer.upvotes}
         </button>
         <button
+          type="button"
           onClick={() => onVote(answer.id, userVote === -1 ? 0 : -1)}
           title={userVote === -1 ? 'Remove downvote' : 'Downvote'}
           className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12px] font-medium transition cursor-pointer ${
@@ -114,7 +143,7 @@ const AskModal = ({ onClose, onSubmit, submitting }) => {
     try {
       await onSubmit({ title, content, tags: selectedTags, is_anonymous: isAnonymous });
     } catch (err) {
-      setError(err.message || 'Failed to post question.');
+      setError(formatError(err, 'Failed to post question.'));
     }
   };
 
@@ -123,7 +152,7 @@ const AskModal = ({ onClose, onSubmit, submitting }) => {
       <div className="bg-bg-panel border border-border-default rounded-2xl w-full max-w-[600px] shadow-2xl">
         <div className="flex items-center justify-between p-6 border-b border-border-default">
           <h3 className="font-serif text-[20px] font-medium text-text-primary">Ask a Question</h3>
-          <button onClick={onClose} className="text-text-muted hover:text-text-primary transition cursor-pointer">
+          <button type="button" onClick={onClose} className="text-text-muted hover:text-text-primary transition cursor-pointer">
             <X size={20} />
           </button>
         </div>
@@ -216,23 +245,23 @@ const Community = () => {
   const [answerText, setAnswerText] = useState('');
   const [answerError, setAnswerError] = useState('');
   const [acceptError, setAcceptError] = useState('');
-  // Optimistic vote state: { [answerId]: 1 | -1 | 0 }
+  const [voteError, setVoteError] = useState('');
   const [userVotes, setUserVotes] = useState({});
-  // Local answers with optimistic counts
+  const [questionVotes, setQuestionVotes] = useState({});
   const [localAnswers, setLocalAnswers] = useState([]);
+  const [localQuestions, setLocalQuestions] = useState([]);
 
-  // API hooks
   const { data: questionsData, isLoading: loadingQuestions, error: questionsError, execute: loadQuestions } =
-    useApi(`${API_BASE}/api/v1/questions`);
+    useApi(`${API_BASE}/api/v1/questions/`);
 
   const { data: answersData, isLoading: loadingAnswers, execute: loadAnswers } =
     useApi(`${API_BASE}/api/v1/answers/question/:questionId`);
 
   const { execute: postQuestion, isLoading: postingQuestion } =
-    useApi(`${API_BASE}/api/v1/questions`);
+    useApi(`${API_BASE}/api/v1/questions/`);
 
   const { execute: postAnswer, isLoading: postingAnswer } =
-    useApi(`${API_BASE}/api/v1/answers`);
+    useApi(`${API_BASE}/api/v1/answers/`);
 
   const { data: leaderboardData, execute: loadLeaderboard } =
     useApi(`${API_BASE}/api/v1/leaderboard/reputation`);
@@ -242,15 +271,18 @@ const Community = () => {
 
   const fetchQuestions = useCallback(() => {
     loadQuestions({ queryParams: { tag: activeTag || undefined, limit: 20 } }).catch(() => {});
-  }, [activeTag]);
+  }, [activeTag, loadQuestions]);
 
   useEffect(() => { fetchQuestions(); }, [fetchQuestions]);
-  useEffect(() => { loadLeaderboard({ queryParams: { limit: 5 } }).catch(() => {}); }, []);
+  useEffect(() => { loadLeaderboard({ queryParams: { limit: 5 } }).catch(() => {}); }, [loadLeaderboard]);
   useEffect(() => {
     if (selectedQuestion) {
       loadAnswers({ pathParams: { questionId: selectedQuestion.id } }).catch(() => {});
+    } else {
+      setLocalAnswers([]);
+      setUserVotes({});
     }
-  }, [selectedQuestion]);
+  }, [selectedQuestion, loadAnswers]);
 
   const handlePostQuestion = async (data) => {
     await postQuestion({ method: 'POST', body: data });
@@ -260,22 +292,37 @@ const Community = () => {
 
   const handlePostAnswer = async () => {
     if (!answerText.trim() || !selectedQuestion) return;
+    if (!token) {
+      setAnswerError('Please log in to post an answer.');
+      return;
+    }
+
+    const questionId = selectedQuestion.id;
     setAnswerError('');
+
     try {
-      await postAnswer({ method: 'POST', body: { question_id: selectedQuestion.id, content: answerText } });
+      await postAnswer({
+        method: 'POST',
+        body: { question_id: questionId, content: answerText.trim() },
+      });
       setAnswerText('');
-      loadAnswers({ pathParams: { questionId: selectedQuestion.id } }).catch(() => {});
+      await loadAnswers({ pathParams: { questionId } });
       fetchQuestions();
     } catch (err) {
-      setAnswerError(err.message || 'Failed to post answer.');
+      setAnswerError(formatError(err, 'Failed to post answer.'));
     }
   };
 
   const handleVote = async (answerId, newValue) => {
-    if (!token) return; // must be logged in
+    if (!token) {
+      setVoteError('Please log in to vote on answers.');
+      return;
+    }
+    if (!selectedQuestion) return;
+
+    setVoteError('');
     const currentVote = userVotes[answerId] ?? 0;
 
-    // Optimistic UI update immediately
     setUserVotes(prev => ({ ...prev, [answerId]: newValue }));
     setLocalAnswers(prev => prev.map(a => {
       if (a.id !== answerId) return a;
@@ -288,23 +335,90 @@ const Community = () => {
     }));
 
     try {
-      // Use direct fetch to avoid stale-closure issues with useApi
       const res = await fetch(
         `${API_BASE}/api/v1/answers/${answerId}/vote?value=${newValue}`,
         { method: 'POST', headers: { Authorization: `Bearer ${token}` } }
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const result = await res.json();
-      // Confirm with server-authoritative counts
       if (typeof result.upvotes === 'number') {
         setLocalAnswers(prev => prev.map(a =>
-          a.id === answerId ? { ...a, upvotes: result.upvotes, downvotes: result.downvotes } : a
+          a.id === answerId
+            ? { ...a, upvotes: result.upvotes, downvotes: result.downvotes, user_vote: result.user_vote ?? newValue }
+            : a
         ));
       }
+      if (typeof result.user_vote === 'number') {
+        setUserVotes(prev => ({ ...prev, [answerId]: result.user_vote }));
+      }
     } catch (_) {
-      // Revert optimistic update on failure
       setUserVotes(prev => ({ ...prev, [answerId]: currentVote }));
       loadAnswers({ pathParams: { questionId: selectedQuestion.id } }).catch(() => {});
+      setVoteError('Could not save your vote. Please try again.');
+    }
+  };
+
+  const handleQuestionVote = async (questionId, newValue) => {
+    if (!token) {
+      setVoteError('Please log in to vote on questions.');
+      return;
+    }
+
+    setVoteError('');
+    const currentVote = questionVotes[questionId] ?? 0;
+
+    setQuestionVotes(prev => ({ ...prev, [questionId]: newValue }));
+    setLocalQuestions(prev => prev.map(q => {
+      if (q.id !== questionId) return q;
+      let { upvotes, downvotes } = q;
+      if (currentVote === 1) upvotes = Math.max(0, upvotes - 1);
+      if (currentVote === -1) downvotes = Math.max(0, downvotes - 1);
+      if (newValue === 1) upvotes++;
+      if (newValue === -1) downvotes++;
+      return { ...q, upvotes, downvotes };
+    }));
+
+    if (selectedQuestion?.id === questionId) {
+      setSelectedQuestion(prev => {
+        if (!prev || prev.id !== questionId) return prev;
+        let { upvotes, downvotes } = prev;
+        if (currentVote === 1) upvotes = Math.max(0, upvotes - 1);
+        if (currentVote === -1) downvotes = Math.max(0, downvotes - 1);
+        if (newValue === 1) upvotes++;
+        if (newValue === -1) downvotes++;
+        return { ...prev, upvotes, downvotes, user_vote: newValue };
+      });
+    }
+
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/v1/questions/${questionId}/vote?value=${newValue}`,
+        { method: 'POST', headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const result = await res.json();
+      if (typeof result.upvotes === 'number') {
+        setLocalQuestions(prev => prev.map(q =>
+          q.id === questionId
+            ? { ...q, upvotes: result.upvotes, downvotes: result.downvotes, user_vote: result.user_vote ?? newValue }
+            : q
+        ));
+      }
+      if (typeof result.user_vote === 'number') {
+        setQuestionVotes(prev => ({ ...prev, [questionId]: result.user_vote }));
+      }
+      if (selectedQuestion?.id === questionId && typeof result.upvotes === 'number') {
+        setSelectedQuestion(prev => prev ? {
+          ...prev,
+          upvotes: result.upvotes,
+          downvotes: result.downvotes,
+          user_vote: result.user_vote ?? newValue,
+        } : prev);
+      }
+    } catch (_) {
+      setQuestionVotes(prev => ({ ...prev, [questionId]: currentVote }));
+      fetchQuestions();
+      setVoteError('Could not save your vote. Please try again.');
     }
   };
 
@@ -316,16 +430,44 @@ const Community = () => {
       loadAnswers({ pathParams: { questionId: selectedQuestion.id } }).catch(() => {});
       fetchQuestions();
     } catch (e) {
-      setAcceptError(e?.message || 'Could not accept answer. Only the question author can accept.');
+      setAcceptError(formatError(e, 'Could not accept answer. Only the question author can accept.'));
     }
   };
 
-  // Sync localAnswers whenever server data refreshes
   useEffect(() => {
-    setLocalAnswers(Array.isArray(answersData) ? answersData : []);
+    if (!Array.isArray(answersData)) {
+      setLocalAnswers([]);
+      return;
+    }
+    setLocalAnswers(answersData);
+    const votes = {};
+    answersData.forEach((answer) => {
+      if (answer.user_vote) votes[answer.id] = answer.user_vote;
+    });
+    setUserVotes(votes);
   }, [answersData]);
 
-  const questions = Array.isArray(questionsData) ? questionsData : [];
+  useEffect(() => {
+    if (!Array.isArray(questionsData)) {
+      setLocalQuestions([]);
+      return;
+    }
+    setLocalQuestions(questionsData);
+    const votes = {};
+    questionsData.forEach((question) => {
+      if (question.user_vote) votes[question.id] = question.user_vote;
+    });
+    setQuestionVotes(votes);
+
+    if (selectedQuestion) {
+      const fresh = questionsData.find(q => q.id === selectedQuestion.id);
+      if (fresh) {
+        setSelectedQuestion(fresh);
+      }
+    }
+  }, [questionsData]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const questions = localQuestions;
   const answers = localAnswers;
   const leaderboard = leaderboardData?.leaderboard || [];
 
@@ -345,6 +487,7 @@ const Community = () => {
           <p className="text-text-muted text-[13px]">{t('community.subtitle')}</p>
         </div>
         <button
+          type="button"
           onClick={() => setShowAskModal(true)}
           className="bg-primary hover:bg-primary-hover text-white border-none py-2 px-4 rounded-md text-[13px] font-medium flex items-center gap-2 transition-colors cursor-pointer shrink-0"
         >
@@ -353,17 +496,14 @@ const Community = () => {
       </div>
 
       <div className="flex gap-8 items-start">
-        {/* Main Feed */}
         <div className="flex-1 min-w-0">
-          {/* Tabs */}
           <div className="flex gap-8 border-b border-border-default mb-6">
             {[
               { id: 'feed', label: t('community.tabFeed') },
-              { id: 'groups', label: t('community.tabGroups') },
-              { id: 'topper', label: t('community.tabTopper') },
             ].map(tab => (
               <button
                 key={tab.id}
+                type="button"
                 onClick={() => setActiveTab(tab.id)}
                 className={`bg-transparent border-none py-3 text-[14px] font-medium relative cursor-pointer ${activeTab === tab.id ? 'text-primary' : 'text-text-muted'}`}
               >
@@ -375,9 +515,9 @@ const Community = () => {
 
           {activeTab === 'feed' && (
             <>
-              {/* Tag Filters */}
               <div className="flex gap-2 mb-6 flex-wrap">
                 <button
+                  type="button"
                   onClick={() => setActiveTag('')}
                   className={`border py-1.5 px-4 rounded-full text-[13px] cursor-pointer transition-colors ${
                     activeTag === '' ? 'bg-bg-surface-dark border-border-muted text-text-primary' : 'bg-bg-panel border-border-default text-text-muted hover:bg-bg-panel-hover'
@@ -388,6 +528,7 @@ const Community = () => {
                 {COMMON_TAGS.slice(0, 6).map(tag => (
                   <button
                     key={tag}
+                    type="button"
                     onClick={() => setActiveTag(tag === activeTag ? '' : tag)}
                     className={`border py-1.5 px-4 rounded-full text-[13px] cursor-pointer transition-colors ${
                       activeTag === tag ? 'bg-primary/10 border-primary text-primary' : 'bg-bg-panel border-border-default text-text-muted hover:bg-bg-panel-hover'
@@ -398,9 +539,13 @@ const Community = () => {
                 ))}
               </div>
 
-              {/* Two-pane: question list + detail */}
+              {voteError && (
+                <div className="mb-4 px-4 py-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-[12px]">
+                  {voteError}
+                </div>
+              )}
+
               <div className="flex gap-5">
-                {/* Question list */}
                 <div className="w-[340px] shrink-0 flex flex-col gap-3">
                   {loadingQuestions && (
                     <div className="flex items-center gap-2 text-text-muted text-sm py-4">
@@ -413,8 +558,10 @@ const Community = () => {
                     </div>
                   )}
                   {!loadingQuestions && questions.length === 0 && !questionsError && (
-                    <div className="bg-bg-panel border border-border-default rounded-xl p-5 text-center text-text-muted text-[13px]">
-                      No questions yet. Be the first to ask!
+                    <div className="bg-bg-panel border border-border-default rounded-xl p-6 text-center">
+                      <MessageCircle size={28} className="text-text-muted opacity-40 mx-auto mb-3" />
+                      <p className="text-[14px] font-medium text-text-primary mb-1">No questions yet</p>
+                      <p className="text-[12px] text-text-muted">Be the first to ask a question!</p>
                     </div>
                   )}
                   {questions.map(q => (
@@ -422,12 +569,13 @@ const Community = () => {
                       key={q.id}
                       question={q}
                       isSelected={selectedQuestion?.id === q.id}
-                      onSelect={q => { setSelectedQuestion(q); setAcceptError(''); }}
+                      userVote={questionVotes[q.id] ?? q.user_vote ?? 0}
+                      onSelect={qItem => { setSelectedQuestion(qItem); setAcceptError(''); setVoteError(''); }}
+                      onVote={handleQuestionVote}
                     />
                   ))}
                 </div>
 
-                {/* Question detail */}
                 <div className="flex-1 min-w-0">
                   {!selectedQuestion ? (
                     <div className="bg-bg-panel border border-border-default rounded-xl p-8 text-center text-text-muted text-[13px]">
@@ -435,7 +583,6 @@ const Community = () => {
                     </div>
                   ) : (
                     <div className="flex flex-col gap-4">
-                      {/* Question detail card */}
                       <div className="bg-bg-panel border border-border-default rounded-xl p-6">
                         <h3 className="font-serif text-[20px] font-medium text-text-primary mb-3 leading-snug">
                           {selectedQuestion.title}
@@ -454,7 +601,6 @@ const Community = () => {
                         )}
                       </div>
 
-                      {/* Answer composer */}
                       <div className="bg-bg-panel border border-border-default rounded-xl p-5">
                         <h4 className="font-medium text-[14px] text-text-primary mb-3">Your Answer</h4>
                         <textarea
@@ -471,6 +617,7 @@ const Community = () => {
                         {answerError && <p className="text-red-500 text-[12px] mt-2">{answerError}</p>}
                         <div className="flex justify-end mt-3">
                           <button
+                            type="button"
                             onClick={handlePostAnswer}
                             disabled={postingAnswer || !answerText.trim()}
                             className="bg-primary hover:bg-primary-hover text-white py-2 px-4 rounded-lg text-[13px] font-medium flex items-center gap-2 transition cursor-pointer disabled:opacity-60"
@@ -481,7 +628,6 @@ const Community = () => {
                         </div>
                       </div>
 
-                      {/* Answers list */}
                       <div>
                         {acceptError && (
                           <div className="mb-3 px-4 py-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-[12px]">
@@ -499,10 +645,14 @@ const Community = () => {
                         <div className="flex flex-col gap-3">
                           {answers.map(ans => (
                             <div key={ans.id}>
-                              <AnswerCard answer={ans} onVote={handleVote} userVote={userVotes[ans.id] ?? 0} />
-                              {/* Accept answer button — only for question owner */}
+                              <AnswerCard
+                                answer={ans}
+                                onVote={handleVote}
+                                userVote={userVotes[ans.id] ?? ans.user_vote ?? 0}
+                              />
                               {user?.id && selectedQuestion.user_id === user.id && !ans.is_accepted && (
                                 <button
+                                  type="button"
                                   onClick={() => handleAccept(ans.id)}
                                   className="text-[11px] text-text-muted hover:text-[#2B7A4B] mt-1 ml-1 cursor-pointer flex items-center gap-1 transition"
                                 >
@@ -527,9 +677,7 @@ const Community = () => {
           )}
         </div>
 
-        {/* Right Sidebar */}
         <div className="w-[280px] shrink-0 flex flex-col gap-6">
-          {/* Leaderboard */}
           <div>
             <h4 className="font-serif font-semibold text-[16px] mb-4 text-text-primary flex items-center gap-2">
               <Trophy size={16} className="text-primary" /> {t('community.ldrTitle')}
@@ -542,7 +690,7 @@ const Community = () => {
                 <div key={entry.user_id} className={`flex items-center gap-3 ${i > 0 ? 'border-t border-border-default mt-3 pt-3' : ''}`}>
                   <span className="text-text-muted text-xs w-6 shrink-0 font-medium">#{entry.rank}</span>
                   <div className="w-7 h-7 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[11px] font-semibold shrink-0">
-                    {(entry.name || 'U').substring(0, 2).toUpperCase()}
+                    {initials(entry.name)}
                   </div>
                   <span className="font-medium flex-1 text-sm text-text-primary truncate">{entry.name}</span>
                   <span className="text-xs text-primary font-bold">{entry.score} pts</span>
@@ -551,7 +699,6 @@ const Community = () => {
             </div>
           </div>
 
-          {/* CTA */}
           <div className="bg-primary/8 border border-primary/20 rounded-xl p-5">
             <div className="text-[10px] tracking-widest text-primary/70 font-bold uppercase mb-2">Community tip</div>
             <p className="text-[12px] text-text-secondary leading-relaxed">

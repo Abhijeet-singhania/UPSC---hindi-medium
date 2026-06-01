@@ -9,8 +9,8 @@ from app.schemas.daily_answer import (
     DailyQuestionCreate, DailyQuestionUpdate, DailyQuestionResponse,
     DailyAnswerCreate, DailyAnswerUpdate, DailyAnswerResponse
 )
-from app.config import settings
-from app.services.reputation_service import add_reputation
+from app.constants import POINTS_DAILY_SUBMISSION, POINTS_BEST_ANSWER
+from app.services.reputation_service import add_reputation, apply_upvote_reputation, award_once
 from app.api.users import get_current_user
 
 router = APIRouter()
@@ -135,9 +135,9 @@ def submit_daily_answer(
         word_count=word_count
     )
     db.add(answer)
-    
-    # Add reputation for submission
-    add_reputation(db, current_user, settings.POINTS_DAILY_SUBMISSION, "daily_submission", "daily_answer", answer.id)
+    db.flush()
+
+    add_reputation(db, current_user, POINTS_DAILY_SUBMISSION, "daily_submission", "daily_answer", answer.id)
     
     db.commit()
     db.refresh(answer)
@@ -180,28 +180,30 @@ def vote_daily_answer(
         Vote.target_type == "daily_answer",
         Vote.target_id == answer_id
     ).first()
-    
-    if existing_vote:
-        if existing_vote.value == 1:
-            answer.upvotes -= 1
-        if value == 0:
+
+    old_value = existing_vote.value if existing_vote else 0
+
+    if value == 0:
+        if existing_vote:
             db.delete(existing_vote)
-        else:
-            existing_vote.value = value
+    elif existing_vote:
+        existing_vote.value = value
     else:
-        if value != 0:
-            new_vote = Vote(
-                user_id=current_user.id,
-                target_type="daily_answer",
-                target_id=answer_id,
-                value=value
-            )
-            db.add(new_vote)
-    
+        db.add(Vote(
+            user_id=current_user.id,
+            target_type="daily_answer",
+            target_id=answer_id,
+            value=value,
+        ))
+
+    if old_value == 1:
+        answer.upvotes -= 1
     if value == 1:
         answer.upvotes += 1
-        add_reputation(db, answer.author, settings.POINTS_PER_UPVOTE, "upvote", "daily_answer", answer.id)
-    
+
+    author = db.query(User).filter(User.id == answer.user_id).first()
+    apply_upvote_reputation(db, author, old_value, value, "daily_answer", answer.id)
+
     db.commit()
     return {"upvotes": answer.upvotes}
 
@@ -232,7 +234,9 @@ def pin_daily_answer(
     # Bonus reputation for best answer
     best_author = db.query(User).filter(User.id == answer.user_id).first()
     if best_author:
-        add_reputation(db, best_author, settings.POINTS_BEST_ANSWER, "best_answer", "daily_answer", answer.id)
+        award_once(
+            db, best_author, POINTS_BEST_ANSWER, "best_answer", "daily_answer", answer.id
+        )
     
     db.commit()
     return {"message": "Answer pinned as best", "answer_id": answer_id}

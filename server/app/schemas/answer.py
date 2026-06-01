@@ -33,6 +33,7 @@ class AnswerResponse(AnswerBase):
     downvotes: int
     created_at: datetime
     author: Optional[AnswerAuthorInfo] = None
+    user_vote: int = 0
 
     class Config:
         from_attributes = True

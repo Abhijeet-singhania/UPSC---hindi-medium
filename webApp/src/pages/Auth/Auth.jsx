@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginUser, registerUser, clearError, mockLogin } from '../../store/slices/authSlice';
+import LanguageToggle from '../../components/common/LanguageToggle';
+import { getStoredLanguage } from '../../utils/language';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -22,7 +24,8 @@ const Auth = () => {
     confirmPassword: '',
     bio: '',
     examStage: 'prelims',
-    optionalSubject: ''
+    optionalSubject: '',
+    preferredLanguage: getStoredLanguage(),
   });
 
   if (isAuthenticated) {
@@ -53,7 +56,8 @@ const Auth = () => {
         password: formData.password,
         bio: formData.bio,
         exam_stage: formData.examStage,
-        optional_subject: formData.optionalSubject
+        optional_subject: formData.optionalSubject,
+        preferred_language: formData.preferredLanguage,
       };
       dispatch(registerUser(payload));
     }
@@ -95,6 +99,13 @@ const Auth = () => {
                 </div>
               )}
               <div>
+                <label className="block text-sm font-medium text-text-primary mb-2">{t('auth.languageLabel')}</label>
+                <LanguageToggle
+                  value={formData.preferredLanguage}
+                  onChange={(lang) => setFormData(prev => ({ ...prev, preferredLanguage: lang }))}
+                />
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-text-primary">{t('auth.emailLabel')}</label>
                 <div className="mt-1">
                   <input name="email" type="email" required onChange={handleChange} className="block w-full appearance-none rounded-md border border-border-muted bg-bg-surface px-3 py-2 text-text-primary placeholder-[#716F6C] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm transition-colors" placeholder={t('auth.emailPlaceholder')} />
@@ -110,7 +121,7 @@ const Auth = () => {
 
               <div>
                 <button type="submit" disabled={loading} className="flex w-full justify-center rounded-lg bg-primary py-2.5 px-4 text-sm font-semibold text-text-primary shadow-sm hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-[#1C1B18] transition-colors cursor-pointer disabled:opacity-50">
-                  {loading ? 'Authorizing...' : t('auth.login')}
+                  {loading ? t('auth.authorizing') : t('auth.login')}
                 </button>
               </div>
 
@@ -183,6 +194,15 @@ const Auth = () => {
                 </div>
               )}
               <div>
+                <label className="block text-sm font-medium text-text-primary mb-2">{t('auth.languageLabel')}</label>
+                <p className="text-xs text-text-muted mb-2">{t('auth.languageSub')}</p>
+                <LanguageToggle
+                  value={formData.preferredLanguage}
+                  onChange={(lang) => setFormData(prev => ({ ...prev, preferredLanguage: lang }))}
+                />
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-text-primary">{t('auth.bioLabel')}</label>
                 <div className="mt-1">
                   <textarea name="bio" rows={3} onChange={handleChange} className="block w-full appearance-none rounded-md border border-border-muted bg-bg-surface px-3 py-2 text-text-primary placeholder-[#716F6C] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm transition-colors" placeholder={t('auth.bioPlaceholder')} />
@@ -213,7 +233,7 @@ const Auth = () => {
                   {t('auth.skipFinish')}
                 </button>
                 <button type="submit" disabled={loading} className="flex flex-1 justify-center rounded-lg bg-primary py-2.5 px-4 text-sm font-semibold text-text-primary shadow-sm hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors cursor-pointer disabled:opacity-50">
-                  {loading ? 'Processing...' : t('auth.saveFinish')}
+                  {loading ? t('auth.processing') : t('auth.saveFinish')}
                 </button>
               </div>
             </motion.form>

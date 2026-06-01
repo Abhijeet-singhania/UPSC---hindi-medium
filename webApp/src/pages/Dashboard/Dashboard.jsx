@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, Circle, Loader2, Trophy, Flame } from 'lucide-react';
+import { CheckCircle2, Loader2, Trophy, Flame, ArrowRight, PenLine, BookOpen, Users, Dumbbell, Heart } from 'lucide-react';
 import { useApi } from '../../hooks/useApi';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
@@ -25,12 +25,26 @@ const Dashboard = () => {
     execute: fetchLeaderboard,
   } = useApi(`${API_BASE}/api/v1/leaderboard/reputation`);
 
+  const {
+    data: todayCA,
+    execute: fetchTodayCA,
+  } = useApi(`${API_BASE}/api/v1/affairs/today`);
+
+  const {
+    data: todayQuestion,
+    execute: fetchTodayQuestion,
+  } = useApi(`${API_BASE}/api/v1/daily/questions/today`);
+
   useEffect(() => {
     if (userId) {
       fetchStats({ pathParams: { userId } }).catch(() => {});
     }
     fetchLeaderboard({ queryParams: { limit: 5 } }).catch(() => {});
-  }, [userId]);
+    fetchTodayCA().catch(() => {});
+    fetchTodayQuestion().catch(() => {});
+  }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const caItems = Array.isArray(todayCA) ? todayCA.slice(0, 3) : [];
 
   const leaderboard = leaderboardData?.leaderboard || [];
   const displayName = user?.name || user?.email?.split('@')[0] || 'Aspirant';
@@ -179,35 +193,27 @@ const Dashboard = () => {
                 <span className="text-text-muted text-[13px]">Suggested daily tasks</span>
               </div>
             </div>
-            <div className="flex flex-col gap-4">
-              <div className="flex gap-4 items-start">
-                <CheckCircle2 color="#2B7A4B" size={20} className="shrink-0" />
-                <div>
-                  <div className="text-[14px] font-medium text-text-primary mb-1">Browse community Q&A</div>
-                  <div className="text-[12px] text-text-muted">Community tab · Answer a doubt</div>
-                </div>
-              </div>
-              <div className="flex gap-4 items-start">
-                <Circle color="#A3A19E" size={20} className="shrink-0" />
-                <div>
-                  <div className="text-[14px] font-medium text-text-primary mb-1">Practice Prelims MCQs</div>
-                  <div className="text-[12px] text-text-muted">Prelims Lab · 30-question set · <span className="bg-border-default py-[2px] px-[6px] rounded text-[10px]">45 min</span></div>
-                </div>
-              </div>
-              <div className="flex gap-4 items-start">
-                <Circle color="#A3A19E" size={20} className="shrink-0" />
-                <div>
-                  <div className="text-[14px] font-medium text-text-primary mb-1">Daily Answer Writing</div>
-                  <div className="text-[12px] text-text-muted">Answer Writing tab · Today's prompt · <span className="bg-border-default py-[2px] px-[6px] rounded text-[10px]">30 min</span></div>
-                </div>
-              </div>
-              <div className="flex gap-4 items-start">
-                <Circle color="#A3A19E" size={20} className="shrink-0" />
-                <div>
-                  <div className="text-[14px] font-medium text-text-primary mb-1">Review a Past Year Problem</div>
-                  <div className="text-[12px] text-text-muted">PYQ Vault · Filter by subject</div>
-                </div>
-              </div>
+            <div className="flex flex-col gap-2">
+              {[
+                { icon: <PenLine size={16} />, label: 'Daily Answer Writing', sub: "Today's prompt · 30 min", route: '/answers' },
+                { icon: <Dumbbell size={16} />, label: 'Practice Prelims MCQs', sub: 'Prelims Lab · 30-question set · 45 min', route: '/prelims' },
+                { icon: <Users size={16} />, label: 'Browse Community Q&A', sub: 'Community tab · Answer a doubt', route: '/community' },
+                { icon: <Heart size={16} />, label: 'Silent Study Session', sub: 'Wellbeing · Focus with peers', route: '/wellbeing' },
+              ].map(({ icon, label, sub, route }) => (
+                <button
+                  key={route}
+                  onClick={() => navigate(route)}
+                  className="flex gap-3 items-start p-3 rounded-lg hover:bg-bg-panel-hover transition text-left w-full cursor-pointer bg-transparent border-none"
+                >
+                  <span className="mt-0.5 text-primary shrink-0">{icon}</span>
+                  <div>
+                    <div className="text-[14px] font-medium text-text-primary flex items-center gap-1">
+                      {label} <ArrowRight size={12} className="text-text-muted" />
+                    </div>
+                    <div className="text-[12px] text-text-muted">{sub}</div>
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
 
@@ -274,30 +280,70 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* CA Digest — static for MVP */}
+          {/* Today's CA Digest — live */}
           <div className="bg-bg-panel border border-border-default rounded-xl p-6 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-serif text-[18px] font-semibold">{t('dashboard.todaysCADigest')}</h3>
-              <span className="text-text-muted text-[13px]">Syllabus-linked</span>
+              <button
+                onClick={() => navigate('/affairs')}
+                className="text-[12px] text-primary hover:underline flex items-center gap-1 cursor-pointer bg-transparent border-none p-0"
+              >
+                View all <ArrowRight size={12} />
+              </button>
             </div>
-            <div className="flex flex-col gap-3">
-              <div className="border border-border-default border-l-[4px] border-l-primary p-3 px-4 rounded-md bg-bg-panel-hover">
-                <div className="text-[10px] font-semibold text-primary mb-1 uppercase tracking-wider">GS2 - IR</div>
-                <div className="text-[14px] font-semibold text-text-primary mb-1">India-Maldives diplomatic reset</div>
-                <div className="text-[12px] text-text-muted">Connects: Neighbourhood First · SAARC</div>
+            {caItems.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 py-6 text-center">
+                <BookOpen size={28} className="text-text-muted opacity-40" />
+                <p className="text-[13px] text-text-muted">No current affairs published today.</p>
+                <p className="text-[11px] text-text-muted opacity-70">Publish items in Admin → Current Affairs.</p>
               </div>
-              <div className="border border-border-default border-l-[4px] border-l-[#2B7A4B] p-3 px-4 rounded-md bg-bg-panel-hover">
-                <div className="text-[10px] font-semibold text-[#2B7A4B] mb-1 uppercase tracking-wider">GS3 - ECONOMY</div>
-                <div className="text-[14px] font-semibold text-text-primary mb-1">RBI holds repo rate at 6.5%</div>
-                <div className="text-[12px] text-text-muted">Connects: Monetary Policy · Inflation targeting</div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {caItems.map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => navigate(`/affairs/${item.id}`)}
+                    className="border border-border-default border-l-[4px] border-l-primary p-3 px-4 rounded-md bg-bg-panel-hover text-left w-full cursor-pointer hover:bg-bg-surface transition"
+                  >
+                    {item.gs_paper && (
+                      <div className="text-[10px] font-semibold text-primary mb-1 uppercase tracking-wider">
+                        {item.gs_paper}
+                      </div>
+                    )}
+                    <div className="text-[14px] font-semibold text-text-primary mb-1 line-clamp-1">{item.title}</div>
+                    {item.syllabus_links && (
+                      <div className="text-[12px] text-text-muted line-clamp-1">Links: {item.syllabus_links}</div>
+                    )}
+                  </button>
+                ))}
               </div>
-              <div className="border border-border-default border-l-[4px] border-l-[#BFA532] p-3 px-4 rounded-md bg-bg-panel-hover">
-                <div className="text-[10px] font-semibold text-[#BFA532] mb-1 uppercase tracking-wider">GS3 - ENVIRONMENT</div>
-                <div className="text-[14px] font-semibold text-text-primary mb-1">COP29 outcome — India's stance</div>
-                <div className="text-[12px] text-text-muted">Connects: Climate Finance · UNFCCC</div>
-              </div>
-            </div>
+            )}
           </div>
+
+          {/* Today's daily question teaser */}
+          {todayQuestion && (
+            <div className="bg-bg-panel border border-border-default rounded-xl p-6 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="font-serif text-[18px] font-semibold flex items-center gap-2">
+                  <CheckCircle2 size={16} className="text-primary" /> Today's Writing Prompt
+                </h3>
+                <button
+                  onClick={() => navigate('/answers')}
+                  className="text-[12px] text-primary hover:underline flex items-center gap-1 cursor-pointer bg-transparent border-none p-0"
+                >
+                  Write <ArrowRight size={12} />
+                </button>
+              </div>
+              <p className="text-[14px] text-text-primary font-medium leading-snug line-clamp-2">
+                {todayQuestion.title}
+              </p>
+              {todayQuestion.subject && (
+                <span className="inline-block mt-2 text-[11px] font-bold uppercase tracking-wider bg-primary/10 text-primary px-2 py-0.5 rounded">
+                  {todayQuestion.subject}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

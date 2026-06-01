@@ -1,6 +1,14 @@
+import json
 import redis
 from typing import List, Optional
 from app.config import settings
+
+
+# Redis keys for silent-library live presence
+ACTIVE_ROOM_KEY = "silent_library:active_users"
+ACTIVE_USER_KEY = "silent_library:user:{user_id}"
+PRESENCE_CHANNEL = "silent_library:presence"
+ACTIVE_SESSION_TTL = 8 * 3600  # 8 hours — matches stale-session expiry
 
 
 class RedisService:
@@ -63,6 +71,72 @@ class RedisService:
     def delete_cache(self, key: str):
         """Delete a cached value."""
         self.redis.delete(key)
+
+    # ==================== Silent Library Presence ====================
+
+    def join_active_room(
+        self, user_id: int, name: str, session_id: int, since_iso: str, *, publish: bool = True
+    ) -> None:
+        """Register a user as actively studying (Redis SET + HASH)."""
+        user_key = ACTIVE_USER_KEY.format(user_id=user_id)
+        pipe = self.redis.pipeline()
+        pipe.hset(
+            user_key,
+            mapping={
+                "name": name or "Anonymous",
+                "session_id": str(session_id),
+                "since": since_iso,
+            },
+        )
+        pipe.sadd(ACTIVE_ROOM_KEY, str(user_id))
+        pipe.expire(user_key, ACTIVE_SESSION_TTL)
+        pipe.execute()
+        if publish:
+            self.redis.publish(PRESENCE_CHANNEL, "update")
+
+    def leave_active_room(self, user_id: int) -> None:
+        """Remove a user from the active study room."""
+        user_key = ACTIVE_USER_KEY.format(user_id=user_id)
+        pipe = self.redis.pipeline()
+        pipe.srem(ACTIVE_ROOM_KEY, str(user_id))
+        pipe.delete(user_key)
+        pipe.execute()
+        self.redis.publish(PRESENCE_CHANNEL, "update")
+
+    def get_active_room(self) -> dict:
+        """Return count + list of users currently in the focus room."""
+        user_ids = self.redis.smembers(ACTIVE_ROOM_KEY)
+        users = []
+        stale_ids = []
+        for uid in user_ids:
+            data = self.redis.hgetall(ACTIVE_USER_KEY.format(user_id=uid))
+            if data:
+                users.append({
+                    "id": int(uid),
+                    "name": data.get("name") or "Anonymous",
+                    "study_since": data.get("since") or "",
+                })
+            else:
+                stale_ids.append(uid)
+        if stale_ids:
+            self.redis.srem(ACTIVE_ROOM_KEY, *stale_ids)
+        users.sort(key=lambda u: u.get("study_since") or "")
+        return {"count": len(users), "users": users}
+
+    def clear_active_room(self) -> None:
+        """Remove all presence keys (used when rebuilding from DB)."""
+        user_ids = self.redis.smembers(ACTIVE_ROOM_KEY)
+        pipe = self.redis.pipeline()
+        pipe.delete(ACTIVE_ROOM_KEY)
+        for uid in user_ids:
+            pipe.delete(ACTIVE_USER_KEY.format(user_id=uid))
+        pipe.execute()
+
+    def subscribe_presence(self):
+        """Return a pubsub object subscribed to presence updates."""
+        pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
+        pubsub.subscribe(PRESENCE_CHANNEL)
+        return pubsub
 
 
 # Leaderboard key names

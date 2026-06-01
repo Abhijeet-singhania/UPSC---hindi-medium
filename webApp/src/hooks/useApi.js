@@ -100,13 +100,11 @@ export const useApi = (baseUrl) => {
       }
 
       if (!response.ok) {
-        // FastAPI uses `detail`; fall back to `message` for other backends
-        throw new Error(
-          (responseData && responseData.detail) ||
-          (responseData && responseData.message) ||
-          (typeof responseData === 'string' ? responseData : 'An error occurred') ||
-          response.statusText
-        );
+        const detail = responseData && responseData.detail;
+        const message = Array.isArray(detail)
+          ? detail.map((item) => item.msg || String(item)).join(', ')
+          : (detail || (responseData && responseData.message) || (typeof responseData === 'string' ? responseData : 'An error occurred') || response.statusText);
+        throw new Error(message);
       }
 
       setData(responseData);

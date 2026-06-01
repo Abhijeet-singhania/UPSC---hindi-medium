@@ -9,6 +9,10 @@ from app.api import (
     leaderboard,
     reports,
     past_year_problems,
+    affairs,
+    quiz_questions,
+    mock_tests,
+    gamification,
 )
 
 router = APIRouter()
@@ -25,3 +29,7 @@ router.include_router(
     prefix="/past-year-problems",
     tags=["past-year-problems"],
 )
+router.include_router(affairs.router, prefix="/affairs", tags=["current-affairs"])
+router.include_router(quiz_questions.router, prefix="/quiz-questions", tags=["quiz-questions"])
+router.include_router(mock_tests.router, prefix="/mock-tests", tags=["mock-tests"])
+router.include_router(gamification.router, prefix="/gamification", tags=["gamification"])

@@ -37,6 +37,7 @@ class User(Base):
     bio = Column(Text, nullable=True)
     exam_stage = Column(Enum(ExamStage), default=ExamStage.BEGINNER)
     optional_subject = Column(String(100), nullable=True)
+    preferred_language = Column(String(5), default="hi", nullable=False)  # hi | en — UI + content preference
     role = Column(Enum(UserRole), default=UserRole.USER)
     reputation = Column(Integer, default=0)
     wallet_balance = Column(Integer, default=0)
@@ -260,4 +261,76 @@ class PastYearProblem(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     creator = relationship("User")
+
+
+class CurrentAffair(Base):
+    """Daily current affairs digest items posted/imported by admin."""
+    __tablename__ = "current_affairs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(300), nullable=False)
+    summary = Column(Text, nullable=False)           # 2-3 sentence quick read
+    detailed_notes = Column(Text, nullable=True)     # full write-up / analysis
+    syllabus_links = Column(Text, nullable=True)     # "GS2: Governance; GS3: Economy"
+    source_url = Column(String(500), nullable=True)
+    source_name = Column(String(100), nullable=True) # "The Hindu", "PIB", etc.
+    gs_paper = Column(String(30), nullable=True, index=True)   # GS1/GS2/GS3/GS4/Essay
+    subject_tags = Column(String(400), nullable=True)          # comma-separated
+    published_date = Column(Date, nullable=False, index=True)
+    is_published = Column(Boolean, default=False, index=True)
+    language = Column(String(5), default="hi", index=True)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    author = relationship("User")
+
+
+class QuizQuestion(Base):
+    """Custom topic-wise MCQ bank (separate from past_year_problems)."""
+    __tablename__ = "quiz_questions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    subject = Column(String(100), nullable=False, index=True)  # Polity, Economy…
+    topic = Column(String(150), nullable=True, index=True)
+    difficulty = Column(String(10), default="medium", index=True)  # easy/medium/hard
+    question_text = Column(Text, nullable=False)
+    option_a = Column(Text, nullable=False)
+    option_b = Column(Text, nullable=False)
+    option_c = Column(Text, nullable=False)
+    option_d = Column(Text, nullable=False)
+    correct_option = Column(String(1), nullable=False)   # A/B/C/D
+    explanation = Column(Text, nullable=True)
+    source = Column(String(200), nullable=True)          # "NCERT Ch.3", "Hindu 2024"
+    # Optional CA linkage — lets quiz show CA-linked questions
+    current_affair_id = Column(Integer, ForeignKey("current_affairs.id"), nullable=True, index=True)
+    language = Column(String(5), default="hi", index=True)
+    is_approved = Column(Boolean, default=False, index=True)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    creator = relationship("User")
+    current_affair = relationship("CurrentAffair")
+
+
+class MockTestAttempt(Base):
+    """Recorded mock test / prelims practice session."""
+    __tablename__ = "mock_test_attempts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    exam_type = Column(String(20), nullable=False)   # prelims | mains
+    source = Column(String(20), nullable=False)      # pyq | quiz-bank
+    total_questions = Column(Integer, nullable=False)
+    correct_count = Column(Integer, default=0)
+    wrong_count = Column(Integer, default=0)
+    unattempted_count = Column(Integer, default=0)
+    score = Column(Float, default=0)
+    percentage = Column(Integer, default=0)
+    time_used_seconds = Column(Integer, default=0)
+    points_awarded = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User")
 

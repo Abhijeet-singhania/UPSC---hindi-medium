@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { jwtDecode } from 'jwt-decode';
+import { applyLanguage, getStoredLanguage } from '../../utils/language';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 
@@ -99,6 +100,7 @@ const getInitialState = () => {
       } else {
         const decoded = jwtDecode(token);
         if (decoded.exp && decoded.exp * 1000 > Date.now()) {
+          applyLanguage(getStoredLanguage());
           return {
             isAuthenticated: true,
             user: { email: decoded.sub || '' },
@@ -137,6 +139,7 @@ const authSlice = createSlice({
       state.token = null;
       state.error = null;
       localStorage.removeItem('access_token');
+      applyLanguage(getStoredLanguage());
     },
     clearError: (state) => {
       state.error = null;
@@ -145,7 +148,14 @@ const authSlice = createSlice({
     mockLogin: (state) => {
       if (!import.meta.env.DEV) return;
       state.isAuthenticated = true;
-      state.user = { email: 'mockuser@example.com', name: 'Mock User', role: 'user', reputation: 0 };
+      state.user = {
+        email: 'mockuser@example.com',
+        name: 'Mock User',
+        role: 'user',
+        reputation: 0,
+        preferred_language: getStoredLanguage(),
+      };
+      applyLanguage(getStoredLanguage());
       state.token = 'mock_jwt_token';
       state.error = null;
       localStorage.setItem('access_token', 'mock_jwt_token');
@@ -197,6 +207,9 @@ const authSlice = createSlice({
     builder
       .addCase(fetchProfile.fulfilled, (state, action) => {
         state.user = action.payload;
+        if (action.payload?.preferred_language) {
+          applyLanguage(action.payload.preferred_language);
+        }
       });
   },
 });
