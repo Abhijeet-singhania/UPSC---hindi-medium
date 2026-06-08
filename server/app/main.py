@@ -3,6 +3,13 @@ import time
 import logging
 from contextlib import asynccontextmanager
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+# Ensure app.* loggers (ingestion, scheduler) show in Docker/uvicorn output
+logging.getLogger("app").setLevel(logging.INFO)
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.exc import OperationalError
@@ -39,6 +46,16 @@ def _wait_for_db(retries: int = 15, delay: float = 2.0) -> None:
 
 # Wait for Postgres then create tables
 _wait_for_db()
+
+# Enable pgvector extension (required before any VECTOR column is created)
+try:
+    from sqlalchemy import text as _text
+    with engine.begin() as _conn:
+        _conn.execute(_text("CREATE EXTENSION IF NOT EXISTS vector"))
+    logger.info("pgvector extension enabled.")
+except Exception as _vec_exc:
+    logger.warning("Could not enable pgvector extension: %s", _vec_exc)
+
 models.Base.metadata.create_all(bind=engine)
 
 # Dev convenience: add preferred_language if DB existed before migration

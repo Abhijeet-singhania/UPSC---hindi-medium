@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
+  # PostgreSQL Database (pgvector image required for AI embeddings)
   db:
-    image: postgres:15-alpine
+    image: pgvector/pgvector:pg15
     container_name: upsc_postgres
     environment:
       POSTGRES_USER: postgres
@@ -57,6 +57,7 @@ services:
     container_name: upsc_api
     ports:
       - "8000:8000"
+    env_file: ./server/.env
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/upsc_hindi
       REDIS_URL: redis://redis:6379/0

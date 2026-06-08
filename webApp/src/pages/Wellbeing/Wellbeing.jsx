@@ -136,19 +136,45 @@ const FocusRoom = () => {
     return () => clearTimeout(tick);
   }, [isTimerRunning, intervalSecs, isBreak]);
 
-  // Show a warning when tab is hidden during an active session (but don't auto-leave)
-  const [tabHiddenWarning, setTabHiddenWarning] = useState(false);
+  const doEndSessionRef = useRef(null);
+
+  // End session when user leaves focus screen (tab/app switch or fullscreen exit)
   useEffect(() => {
     if (!isActive) return;
+    let fullscreenReady = false;
+    const readyTimer = setTimeout(() => { fullscreenReady = true; }, 800);
+
+    const endForViolation = (reason) => {
+      setError(reason);
+      doEndSessionRef.current?.();
+    };
+
     const onVisibility = () => {
-      if (document.hidden) {
-        setTabHiddenWarning(true);
-      } else {
-        setTabHiddenWarning(false);
+      if (document.hidden) endForViolation('Session ended: you left the focus screen.');
+    };
+
+    const onFullscreen = () => {
+      if (!document.fullscreenElement && fullscreenReady) {
+        endForViolation('Session ended: full screen was exited.');
       }
     };
+
+    const onBlur = () => {
+      if (!document.hidden && fullscreenReady) {
+        endForViolation('Session ended: switched to another application.');
+      }
+    };
+
     document.addEventListener('visibilitychange', onVisibility);
-    return () => document.removeEventListener('visibilitychange', onVisibility);
+    document.addEventListener('fullscreenchange', onFullscreen);
+    window.addEventListener('blur', onBlur);
+
+    return () => {
+      clearTimeout(readyTimer);
+      document.removeEventListener('visibilitychange', onVisibility);
+      document.removeEventListener('fullscreenchange', onFullscreen);
+      window.removeEventListener('blur', onBlur);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive]);
 
@@ -182,7 +208,7 @@ const FocusRoom = () => {
   };
 
   const doEndSession = async () => {
-    setIsTimerRunning(false); setIsBusy(true); setError('');
+    setIsTimerRunning(false); setIsBusy(true);
     if (document.fullscreenElement) { try { await document.exitFullscreen(); } catch (_) {} }
     try {
       const r = await fetch(`${API_BASE}/api/v1/silent-library/leave`, { method: 'POST', headers: authHdr() });
@@ -194,6 +220,8 @@ const FocusRoom = () => {
       fetchActive(); fetchHistory();
     } catch (e) { setError(e.message); } finally { setIsBusy(false); }
   };
+
+  useEffect(() => { doEndSessionRef.current = doEndSession; }, [doEndSession]);
 
   const startNextInterval = (breakMode, mins) => {
     setIsBreak(breakMode);
@@ -336,13 +364,6 @@ const FocusRoom = () => {
         @keyframes fr-pulse { 0%,100%{filter:drop-shadow(0 0 6px ${ringColor})} 50%{filter:drop-shadow(0 0 24px ${ringColor})} }
         .fr-ring-running { animation: fr-pulse 2.5s ease-in-out infinite; }
       `}</style>
-
-      {/* Tab-hidden warning — shown when user switches tab but session continues */}
-      {tabHiddenWarning && (
-        <div className="bg-amber-500/90 text-black text-[13px] font-semibold text-center py-2 px-4 shrink-0">
-          Session is still running — come back to keep earning XP. End session to stop tracking.
-        </div>
-      )}
 
       {/* Top bar */}
       <div className="flex items-center justify-between px-10 py-4 border-b border-white/10 shrink-0">

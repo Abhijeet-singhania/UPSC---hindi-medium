@@ -43,4 +43,5 @@ CA_INGESTION_MAX_AI_ARTICLES = 2        # max Gemini calls per ingestion run
 CA_INGESTION_GEMINI_DELAY_SEC = 10      # pause between calls (free tier ~6 RPM)
 CA_INGESTION_MAX_DESC_CHARS = 1200      # article excerpt sent to Gemini
 CA_INGESTION_MAX_ARTICLE_CHARS = 5000   # max chars stored from fetched article body
-CA_INGESTION_DEFAULT_GEMINI_MODEL = "gemini-2.0-flash-lite"
+# gemini-2.0-flash-lite returns free-tier limit:0 on many keys (deprecated for free tier).
+CA_INGESTION_DEFAULT_GEMINI_MODEL = "gemini-2.5-flash-lite"

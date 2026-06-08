@@ -10,6 +10,7 @@ from app.schemas.quiz_question import (
     QuizFiltersResponse,
     QuizQuestionCreate,
     QuizQuestionResponse,
+    QuizQuestionTestResponse,
     QuizQuestionUpdate,
 )
 
@@ -17,6 +18,23 @@ router = APIRouter()
 
 VALID_OPTIONS = {"A", "B", "C", "D"}
 VALID_DIFFICULTIES = {"easy", "medium", "hard"}
+
+
+def _index_quiz_bg(question_id: int) -> None:
+    def _run():
+        from app.db.database import SessionLocal
+        from app.services.indexing_service import index_source
+        db = SessionLocal()
+        try:
+            index_source(db, "quiz", question_id)
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).warning("Async index quiz %d failed: %s", question_id, exc)
+        finally:
+            db.close()
+
+    import threading
+    threading.Thread(target=_run, daemon=True, name=f"idx-quiz-{question_id}").start()
 
 
 def _ensure_admin(user: User) -> None:
@@ -56,7 +74,23 @@ def get_quiz_filters(
     return {"subjects": subjects, "topics": topics, "difficulties": difficulties}
 
 
-@router.get("/", response_model=List[QuizQuestionResponse])
+@router.get("/review", response_model=List[QuizQuestionResponse])
+def review_quiz_questions(
+    ids: str = Query(..., description="Comma-separated question IDs"),
+    db: Session = Depends(get_db),
+):
+    """Return full quiz questions (with answers) for post-test review."""
+    id_list = [int(x.strip()) for x in ids.split(",") if x.strip().isdigit()]
+    if not id_list:
+        raise HTTPException(status_code=400, detail="At least one valid ID required")
+
+    items = db.query(QuizQuestion).filter(QuizQuestion.id.in_(id_list)).all()
+    order = {qid: idx for idx, qid in enumerate(id_list)}
+    items.sort(key=lambda q: order.get(q.id, len(id_list)))
+    return items
+
+
+@router.get("/")
 def list_quiz_questions(
     subject: Optional[str] = None,
     topic: Optional[str] = None,
@@ -65,6 +99,7 @@ def list_quiz_questions(
     language: str = Query("hi"),
     skip: int = 0,
     limit: int = Query(20, ge=1, le=100),
+    for_test: bool = Query(False, description="Strip answers for mock test mode"),
     db: Session = Depends(get_db),
 ):
     """
@@ -86,7 +121,10 @@ def list_quiz_questions(
     if current_affair_id:
         q = q.filter(QuizQuestion.current_affair_id == current_affair_id)
 
-    return q.order_by(QuizQuestion.id.asc()).offset(skip).limit(limit).all()
+    items = q.order_by(QuizQuestion.id.asc()).offset(skip).limit(limit).all()
+    if for_test:
+        return [QuizQuestionTestResponse.model_validate(item) for item in items]
+    return items
 
 
 @router.get("/{question_id}", response_model=QuizQuestionResponse)
@@ -150,6 +188,8 @@ def create_quiz_question(
     db.add(item)
     db.commit()
     db.refresh(item)
+    if item.is_approved:
+        _index_quiz_bg(item.id)
     return item
 
 
@@ -177,6 +217,8 @@ def update_quiz_question(
 
     db.commit()
     db.refresh(item)
+    if item.is_approved:
+        _index_quiz_bg(item.id)
     return item
 
 

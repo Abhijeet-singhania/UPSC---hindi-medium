@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Calendar, ExternalLink, Link2, Loader2, BookOpen,
+  ArrowLeft, Calendar, ExternalLink, Link2, Loader2, BookOpen, Sparkles, ChevronRight,
 } from 'lucide-react';
+import { parseAffairNotes } from '../../utils/formatAffairNotes';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 
@@ -14,6 +15,121 @@ const GS_COLORS = {
   Essay: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400',
 };
 const gsColor = (gs) => GS_COLORS[gs] || 'bg-bg-surface text-text-muted';
+
+const AnalysisSection = ({ notes, isArticle }) => {
+  const { bullets, paragraphs } = parseAffairNotes(notes);
+
+  return (
+    <div className="bg-bg-panel border border-border-default rounded-xl p-6">
+      <h2 className="font-serif text-[18px] font-semibold text-text-primary mb-1">
+        {isArticle ? 'Article' : 'Analysis'}
+      </h2>
+      {!isArticle && (
+        <p className="text-[12px] text-text-muted mb-4">Key points for aspirants</p>
+      )}
+
+      {bullets.length > 0 ? (
+        <ul className="space-y-3 text-[14px] leading-[1.7] text-text-secondary list-none m-0 p-0">
+          {bullets.map((point, i) => (
+            <li key={i} className="flex gap-3">
+              <span className="text-primary font-bold shrink-0 mt-0.5">•</span>
+              <span>{point}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className="text-[14px] leading-[1.75] text-text-secondary whitespace-pre-wrap">
+          {paragraphs.map((p, i) => (
+            <p key={i} className={i > 0 ? 'mt-4' : ''}>{p}</p>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const RelatedSection = ({ affairId }) => {
+  const navigate = useNavigate();
+  const [related, setRelated] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`${API_BASE}/api/v1/ai/related?source_type=affair&source_id=${affairId}&want=pyq,quiz&top_k=4`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.related) setRelated(data.related);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [affairId]);
+
+  const hasPYQs = related?.pyqs?.length > 0;
+  const hasQuizzes = related?.quizzes?.length > 0;
+
+  if (loading) return null;
+  if (!hasPYQs && !hasQuizzes) return null;
+
+  return (
+    <div className="bg-bg-panel border border-border-default rounded-xl p-6">
+      <div className="flex items-center gap-2 mb-4">
+        <Sparkles size={15} className="text-primary" />
+        <h2 className="font-serif text-[16px] font-semibold text-text-primary">AI-Connected Study Material</h2>
+        <span className="text-[10px] text-text-muted bg-bg-surface border border-border-default px-2 py-0.5 rounded">
+          Semantic match
+        </span>
+      </div>
+
+      {hasPYQs && (
+        <div className="mb-4">
+          <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2">Related Past Year Questions</div>
+          <div className="flex flex-col gap-2">
+            {related.pyqs.map((item, i) => (
+              <button
+                key={i}
+                onClick={() => navigate('/prelims')}
+                className="flex items-start justify-between gap-3 p-3 bg-bg-surface border border-border-default rounded-lg hover:border-primary/40 hover:bg-primary/5 transition text-left cursor-pointer w-full"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] text-text-primary line-clamp-2">{item.title}</p>
+                  <div className="flex gap-2 mt-1 flex-wrap">
+                    {item.year && <span className="text-[10px] text-text-muted">{item.year}</span>}
+                    {item.exam_type && <span className="text-[10px] text-text-muted capitalize">{item.exam_type}</span>}
+                    {item.paper && <span className="text-[10px] text-primary">{item.paper}</span>}
+                  </div>
+                </div>
+                <ChevronRight size={14} className="text-text-muted shrink-0 mt-1" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {hasQuizzes && (
+        <div>
+          <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2">Related Quiz Questions</div>
+          <div className="flex flex-col gap-2">
+            {related.quizzes.map((item, i) => (
+              <button
+                key={i}
+                onClick={() => navigate('/prelims')}
+                className="flex items-start justify-between gap-3 p-3 bg-bg-surface border border-border-default rounded-lg hover:border-primary/40 hover:bg-primary/5 transition text-left cursor-pointer w-full"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] text-text-primary line-clamp-2">{item.title}</p>
+                  {item.subject && (
+                    <span className="text-[10px] text-primary mt-1 inline-block">{item.subject}</span>
+                  )}
+                </div>
+                <ChevronRight size={14} className="text-text-muted shrink-0 mt-1" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const AffairDetail = () => {
   const { id } = useParams();
@@ -115,16 +231,11 @@ const AffairDetail = () => {
         </div>
       )}
 
-      {/* Full article / analysis */}
       {hasAnalysis && (
-        <div className="bg-bg-panel border border-border-default rounded-xl p-6">
-          <h2 className="font-serif text-[18px] font-semibold text-text-primary mb-4">
-            {summarySameAsTitle ? 'Article' : 'Analysis'}
-          </h2>
-          <div className="text-[14px] leading-[1.75] text-text-secondary whitespace-pre-wrap">
-            {item.detailed_notes}
-          </div>
-        </div>
+        <AnalysisSection
+          notes={item.detailed_notes}
+          isArticle={summarySameAsTitle}
+        />
       )}
 
       {/* Fallback when only headline was stored (legacy ingests) */}
@@ -169,6 +280,9 @@ const AffairDetail = () => {
           ))}
         </div>
       )}
+
+      {/* AI-connected related content (Phase 3) */}
+      <RelatedSection affairId={id} />
     </div>
   );
 };

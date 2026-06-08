@@ -9,6 +9,7 @@ from app.schemas.past_year_problem import (
     PastYearProblemCreate,
     PastYearProblemUpdate,
     PastYearProblemResponse,
+    PastYearProblemTestResponse,
     PastYearProblemFiltersResponse,
 )
 from app.api.users import get_current_user
@@ -17,6 +18,23 @@ router = APIRouter()
 
 VALID_EXAM_TYPES = {"prelims", "mains"}
 VALID_OPTIONS = {"A", "B", "C", "D"}
+
+
+def _index_pyq_bg(problem_id: int) -> None:
+    def _run():
+        from app.db.database import SessionLocal
+        from app.services.indexing_service import index_source
+        db = SessionLocal()
+        try:
+            index_source(db, "pyq", problem_id)
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).warning("Async index PYQ %d failed: %s", problem_id, exc)
+        finally:
+            db.close()
+
+    import threading
+    threading.Thread(target=_run, daemon=True, name=f"idx-pyq-{problem_id}").start()
 
 
 def _parse_exam_type(exam_type: str) -> PastYearExamType:
@@ -40,7 +58,27 @@ def _ensure_admin(user: User) -> None:
         raise HTTPException(status_code=403, detail="Only admins can perform this action")
 
 
-@router.get("/", response_model=List[PastYearProblemResponse])
+@router.get("/review", response_model=List[PastYearProblemResponse])
+def review_past_year_problems(
+    ids: str = Query(..., description="Comma-separated problem IDs"),
+    db: Session = Depends(get_db),
+):
+    """Return full problems (with answers) for post-test review."""
+    id_list = [int(x.strip()) for x in ids.split(",") if x.strip().isdigit()]
+    if not id_list:
+        raise HTTPException(status_code=400, detail="At least one valid ID required")
+
+    problems = (
+        db.query(PastYearProblem)
+        .filter(PastYearProblem.id.in_(id_list))
+        .all()
+    )
+    order = {pid: idx for idx, pid in enumerate(id_list)}
+    problems.sort(key=lambda p: order.get(p.id, len(id_list)))
+    return problems
+
+
+@router.get("/")
 def list_past_year_problems(
     skip: int = 0,
     limit: int = Query(20, ge=1, le=100),
@@ -50,6 +88,7 @@ def list_past_year_problems(
     paper: Optional[str] = None,
     language: Optional[str] = Query("hi", description="hi or en"),
     search: Optional[str] = Query(None, description="Search in question text"),
+    for_test: bool = Query(False, description="Strip answers for mock test mode"),
     db: Session = Depends(get_db),
 ):
     """List past year problems with filters for year/exam/subject/paper/language."""
@@ -73,12 +112,15 @@ def list_past_year_problems(
             )
         )
 
-    return (
+    problems = (
         query.order_by(PastYearProblem.year.desc(), PastYearProblem.id.desc())
         .offset(skip)
         .limit(limit)
         .all()
     )
+    if for_test:
+        return [PastYearProblemTestResponse.model_validate(p) for p in problems]
+    return problems
 
 
 @router.get("/filters", response_model=PastYearProblemFiltersResponse)
@@ -173,6 +215,7 @@ def create_past_year_problem(
     db.add(problem)
     db.commit()
     db.refresh(problem)
+    _index_pyq_bg(problem.id)
     return problem
 
 
@@ -203,4 +246,5 @@ def update_past_year_problem(
 
     db.commit()
     db.refresh(problem)
+    _index_pyq_bg(problem.id)
     return problem

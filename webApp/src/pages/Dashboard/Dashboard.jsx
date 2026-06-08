@@ -2,10 +2,23 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, Loader2, Trophy, Flame, ArrowRight, PenLine, BookOpen, Users, Dumbbell, Heart } from 'lucide-react';
+import { CheckCircle2, Loader2, Trophy, Flame, ArrowRight, PenLine, BookOpen, Users, Dumbbell, Heart, Sparkles } from 'lucide-react';
 import { useApi } from '../../hooks/useApi';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+
+const _recIcon = (type) => {
+  const map = {
+    answer_writing: <PenLine size={16} />,
+    prelims_weak: <Dumbbell size={16} />,
+    prelims_focus: <Dumbbell size={16} />,
+    current_affairs: <BookOpen size={16} />,
+    ask_ai: <Sparkles size={16} />,
+    wellbeing: <Heart size={16} />,
+    community: <Users size={16} />,
+  };
+  return map[type] || <ArrowRight size={16} />;
+};
 
 const Dashboard = () => {
   const { t } = useTranslation();
@@ -53,6 +66,24 @@ const Dashboard = () => {
   const answersGiven = userStats?.answers_given ?? 0;
   const studyMinutes = userStats?.total_study_minutes ?? 0;
   const studyHours = Math.round(studyMinutes / 60);
+
+  // Personalised AI recommendations
+  const [aiRecs, setAiRecs] = useState(null);
+  const [loadingRecs, setLoadingRecs] = useState(false);
+
+  useEffect(() => {
+    if (!token) return;
+    setLoadingRecs(true);
+    fetch(`${API_BASE}/api/v1/ai/recommendations`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.recommendations) setAiRecs(data.recommendations);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingRecs(false));
+  }, [userId, token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Heatmap built from real Silent Library sessions
   const [heatmapData, setHeatmapData] = useState(
@@ -185,21 +216,39 @@ const Dashboard = () => {
       {/* Main Content Grid */}
       <div className="grid grid-cols-2 gap-6">
         <div className="flex flex-col gap-6">
-          {/* Today's Plan */}
+          {/* Today's Plan — AI personalised */}
           <div className="bg-bg-panel border border-border-default rounded-xl p-6 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
             <div className="flex justify-between items-center mb-4">
               <div>
-                <h3 className="font-serif text-[18px] font-semibold">{t('dashboard.todaysPlan')}</h3>
-                <span className="text-text-muted text-[13px]">Suggested daily tasks</span>
+                <h3 className="font-serif text-[18px] font-semibold flex items-center gap-2">
+                  {t('dashboard.todaysPlan')}
+                  {token && (
+                    <span className="flex items-center gap-1 text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded font-normal tracking-wide">
+                      <Sparkles size={9} /> AI
+                    </span>
+                  )}
+                </h3>
+                <span className="text-text-muted text-[13px]">
+                  {token ? 'Personalised for your stage & weak areas' : 'Suggested daily tasks'}
+                </span>
               </div>
+              {loadingRecs && <Loader2 size={14} className="animate-spin text-text-muted" />}
             </div>
             <div className="flex flex-col gap-2">
-              {[
-                { icon: <PenLine size={16} />, label: 'Daily Answer Writing', sub: "Today's prompt · 30 min", route: '/answers' },
-                { icon: <Dumbbell size={16} />, label: 'Practice Prelims MCQs', sub: 'Prelims Lab · 30-question set · 45 min', route: '/prelims' },
-                { icon: <Users size={16} />, label: 'Browse Community Q&A', sub: 'Community tab · Answer a doubt', route: '/community' },
-                { icon: <Heart size={16} />, label: 'Silent Study Session', sub: 'Wellbeing · Focus with peers', route: '/wellbeing' },
-              ].map(({ icon, label, sub, route }) => (
+              {(aiRecs && aiRecs.length > 0
+                ? aiRecs.map((rec) => ({
+                    icon: _recIcon(rec.type),
+                    label: rec.label,
+                    sub: rec.reason,
+                    route: rec.route,
+                  }))
+                : [
+                    { icon: <PenLine size={16} />, label: 'Daily Answer Writing', sub: "Today's prompt · 30 min", route: '/answers' },
+                    { icon: <Dumbbell size={16} />, label: 'Practice Prelims MCQs', sub: 'Prelims Lab · 30-question set · 45 min', route: '/prelims' },
+                    { icon: <Users size={16} />, label: 'Browse Community Q&A', sub: 'Community tab · Answer a doubt', route: '/community' },
+                    { icon: <Heart size={16} />, label: 'Silent Study Session', sub: 'Wellbeing · Focus with peers', route: '/wellbeing' },
+                  ]
+              ).map(({ icon, label, sub, route }) => (
                 <button
                   key={route}
                   onClick={() => navigate(route)}

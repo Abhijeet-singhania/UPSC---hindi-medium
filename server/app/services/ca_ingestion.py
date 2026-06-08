@@ -30,8 +30,16 @@ from app.constants import (
     CA_INGESTION_MAX_ARTICLE_CHARS,
     CA_INGESTION_MAX_DESC_CHARS,
 )
+from app.services import ca_ingestion_status as ingestion_status
 
 logger = logging.getLogger(__name__)
+
+
+def _log(level: str, message: str, *args: object) -> None:
+    """Write to Python logger and in-memory status (Admin UI poll)."""
+    text = message % args if args else message
+    getattr(logger, level if level in ("debug", "info", "warning", "error") else "info")(text)
+    ingestion_status.append_log(level, text)
 
 _FETCH_HEADERS = {
     "User-Agent": (
@@ -83,7 +91,7 @@ def _fetch_rss_entries(feed_urls: list[str]) -> list[dict]:
     try:
         import feedparser  # type: ignore[import]
     except ImportError:
-        logger.warning("feedparser not installed — skipping RSS ingestion. Run: pip install feedparser")
+        _log("error", "feedparser not installed — skipping RSS. Run: pip install feedparser")
         return []
 
     entries = []
@@ -99,9 +107,10 @@ def _fetch_rss_entries(feed_urls: list[str]) -> list[dict]:
                     "source": feed.feed.get("title", url),
                     "published": e.get("published", ""),
                 })
-            logger.info("Fetched %d entries from %s", len(feed.entries), url)
+            _log("info", "Fetched %d entries from %s", len(feed.entries), url)
         except Exception:
-            logger.exception("Failed to fetch RSS feed: %s", url)
+            _log("error", "Failed to fetch RSS feed: %s", url)
+            logger.exception("RSS feed error: %s", url)
     return entries
 
 
@@ -212,10 +221,61 @@ def _extract_lead(text: str, max_chars: int = 450) -> str:
     return text[:max_chars].rsplit(" ", 1)[0] + ("…" if len(text) > max_chars else "")
 
 
+def _format_notes_bullets(items: list[str]) -> str:
+    """Turn a list of points into readable bullet lines for storage/display."""
+    lines: list[str] = []
+    for item in items:
+        item = item.strip()
+        if not item:
+            continue
+        item = re.sub(r"^[-•*]\s*", "", item)
+        item = re.sub(r"^\d+[.)]\s*", "", item)
+        if item and item[-1] not in ".!?":
+            item += "."
+        lines.append(f"• {item}")
+    return "\n".join(lines)
+
+
+def _normalize_detailed_notes(value) -> Optional[str]:
+    """
+    Gemini often returns detailed_notes as a JSON array or pseudo-object.
+    Normalize to plain bullet text for the DB and UI.
+    """
+    if value is None:
+        return None
+    if isinstance(value, list):
+        items = [str(x).strip() for x in value if str(x).strip()]
+        return _format_notes_bullets(items) if items else None
+    if isinstance(value, dict):
+        items = [str(v).strip() for v in value.values() if str(v).strip()]
+        return _format_notes_bullets(items) if items else None
+
+    text = str(value).strip()
+    if not text:
+        return None
+
+    if text.startswith("["):
+        try:
+            parsed = json.loads(text)
+            if isinstance(parsed, list):
+                return _normalize_detailed_notes(parsed)
+        except json.JSONDecodeError:
+            pass
+
+    # Invalid JSON like { "point one", "point two" }
+    if text.startswith("{") and text.endswith("}"):
+        quoted = re.findall(r'"((?:[^"\\]|\\.)*)"', text)
+        if len(quoted) >= 2:
+            return _format_notes_bullets(quoted)
+
+    return text
+
+
 def _build_affair_text(title: str, full_text: str, ai_data: Optional[dict]) -> tuple[str, Optional[str]]:
     """Return (summary, detailed_notes) for DB storage."""
     if ai_data:
-        return ai_data["upsc_summary"], ai_data.get("detailed_notes")
+        notes = _normalize_detailed_notes(ai_data.get("detailed_notes"))
+        return ai_data["upsc_summary"], notes
 
     text = (full_text or "").strip()
     if not text:
@@ -247,7 +307,7 @@ If relevant:
 {
   "is_upsc_relevant": true,
   "upsc_summary": "2-3 sentences for aspirants",
-  "detailed_notes": "3-4 bullet points: key facts, syllabus link, policy angle",
+  "detailed_notes": "Single string with 3-4 lines, each starting with • (not a JSON array). Key facts, policy angle, why it matters for UPSC.",
   "gs_paper": "GS2",
   "subject_tags": "comma-separated tags",
   "syllabus_links": "e.g. GS2: Governance",
@@ -308,6 +368,8 @@ def _process_with_gemini(
         data = json.loads(raw)
         if not data.get("is_upsc_relevant", False):
             return None
+        if data.get("detailed_notes") is not None:
+            data["detailed_notes"] = _normalize_detailed_notes(data["detailed_notes"])
         return data
 
     except json.JSONDecodeError:
@@ -315,7 +377,21 @@ def _process_with_gemini(
         return None
     except genai_errors.ClientError as exc:
         if getattr(exc, "code", None) == 429 or "429" in str(exc) or "RESOURCE_EXHAUSTED" in str(exc):
-            logger.warning("Gemini quota exhausted (429) — stopping AI for this run: %s", title)
+            detail = str(exc)
+            if "limit: 0" in detail:
+                logger.error(
+                    "Gemini model %s has NO free-tier quota (limit: 0) for this API key. "
+                    "Set GEMINI_MODEL=gemini-2.5-flash-lite in .env. Detail: %s",
+                    model,
+                    detail[:400],
+                )
+            else:
+                logger.warning(
+                    "Gemini quota/rate limit (429) on model %s for: %s — %s",
+                    model,
+                    title[:60],
+                    detail[:200],
+                )
             raise QuotaExhausted(str(exc)) from exc
         logger.warning("Gemini client error for %s: %s", title, exc)
         return None
@@ -326,7 +402,7 @@ def _process_with_gemini(
 
 # ── Main ingestion runner ─────────────────────────────────────────────────────
 
-def run_ingestion() -> None:
+def run_ingestion(*, triggered_by: str = "scheduler") -> None:
     """
     Full ingestion cycle. Called by APScheduler at 07:30 IST.
     Safe to call manually for testing.
@@ -335,14 +411,21 @@ def run_ingestion() -> None:
     from app.db.database import SessionLocal
     from app.db.models import CurrentAffair, QuizQuestion
 
+    ingestion_status.reset()
+    _log("info", "Starting Current Affairs ingestion (trigger=%s)", triggered_by)
+
     db = SessionLocal()
     try:
         feed_urls = [u.strip() for u in settings.RSS_FEEDS.split(",") if u.strip()] or DEFAULT_RSS_FEEDS
+        _log("info", "RSS feeds (%d): %s", len(feed_urls), ", ".join(feed_urls[:3]) + ("…" if len(feed_urls) > 3 else ""))
 
         entries = _fetch_rss_entries(feed_urls)
         if not entries:
-            logger.info("No RSS entries fetched — nothing to ingest.")
+            _log("warning", "No RSS entries fetched — check feed URLs and network.")
+            ingestion_status.complete({"saved": 0, "skipped": 0, "raw_fallback": 0, "ai_calls": 0})
             return
+
+        _log("info", "Total RSS entries to process: %d", len(entries))
 
         api_key: str = settings.GEMINI_API_KEY or ""
         use_ai = bool(api_key)
@@ -350,10 +433,11 @@ def run_ingestion() -> None:
         ai_calls = 0
 
         if not use_ai:
-            logger.info("GEMINI_API_KEY not set — saving fetched article text without AI processing.")
+            _log("info", "GEMINI_API_KEY not set — saving fetched article text without AI.")
         else:
-            logger.info(
-                "Gemini ingestion: model=%s, max_ai_articles=%d, delay=%ds",
+            _log(
+                "info",
+                "Gemini: model=%s, max_ai=%d, delay=%ds",
                 gemini_model,
                 CA_INGESTION_MAX_AI_ARTICLES,
                 CA_INGESTION_GEMINI_DELAY_SEC,
@@ -363,8 +447,9 @@ def run_ingestion() -> None:
         skipped = 0
         raw_fallback = 0
         today = date.today()
+        total = len(entries)
 
-        for entry in entries:
+        for idx, entry in enumerate(entries, start=1):
             title = entry["title"]
             if not title:
                 continue
@@ -379,7 +464,12 @@ def run_ingestion() -> None:
             )
             if exists:
                 skipped += 1
+                if idx <= 5 or idx % 25 == 0:
+                    _log("debug", "[%d/%d] Skip duplicate: %s", idx, total, title[:70])
                 continue
+
+            if idx == 1 or idx % 10 == 0:
+                _log("info", "[%d/%d] Processing: %s", idx, total, title[:80])
 
             full_text = _resolve_article_text(
                 title,
@@ -393,18 +483,24 @@ def run_ingestion() -> None:
                 try:
                     if ai_calls > 0:
                         time.sleep(CA_INGESTION_GEMINI_DELAY_SEC)
+                    _log("info", "Gemini call %d/%d for: %s", ai_calls + 1, CA_INGESTION_MAX_AI_ARTICLES, title[:60])
                     ai_data = _process_with_gemini(
                         api_key, title, full_text, model=gemini_model
                     )
                     ai_calls += 1
                     if ai_data is None:
+                        _log("info", "Gemini: not UPSC-relevant, skipping: %s", title[:60])
                         skipped += 1
                         continue
-                except QuotaExhausted:
+                    _log("info", "Gemini OK → %s (%s)", title[:50], ai_data.get("gs_paper", "?"))
+                except QuotaExhausted as exc:
                     use_ai = False
-                    logger.warning(
-                        "Free-tier quota hit after %d AI calls — remaining items saved with fetched text.",
+                    _log(
+                        "warning",
+                        "Gemini unavailable after %d call(s) on %r — saving rest without AI. %s",
                         ai_calls,
+                        title[:50],
+                        str(exc)[:180],
                     )
 
             if not ai_data and api_key:
@@ -413,7 +509,7 @@ def run_ingestion() -> None:
             summary, detailed_notes = _build_affair_text(title, full_text, ai_data)
 
             if summary.strip().lower() == title.strip().lower() and not detailed_notes:
-                logger.info("Skipping thin article (no body): %s", title[:80])
+                _log("info", "Skip thin article (no body): %s", title[:80])
                 skipped += 1
                 continue
 
@@ -454,16 +550,30 @@ def run_ingestion() -> None:
                     ))
 
             saved += 1
+            _log("info", "Saved draft #%s: %s", affair.id, title[:60])
 
         db.commit()
-        logger.info(
-            "CA ingestion complete: %d saved, %d skipped (duplicate/irrelevant/thin), "
-            "%d raw RSS fallbacks, %d Gemini calls.",
-            saved, skipped, raw_fallback, ai_calls,
+        result = {
+            "saved": saved,
+            "skipped": skipped,
+            "raw_fallback": raw_fallback,
+            "ai_calls": ai_calls,
+            "entries_total": total,
+        }
+        _log(
+            "info",
+            "CA ingestion complete: %d saved, %d skipped, %d raw fallbacks, %d Gemini calls.",
+            saved,
+            skipped,
+            raw_fallback,
+            ai_calls,
         )
+        ingestion_status.complete(result)
 
-    except Exception:
+    except Exception as exc:
         logger.exception("run_ingestion failed")
+        _log("error", "Ingestion failed: %s", exc)
+        ingestion_status.fail(str(exc))
         db.rollback()
     finally:
         db.close()

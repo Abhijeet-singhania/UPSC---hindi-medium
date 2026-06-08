@@ -4,12 +4,20 @@ import {
   LayoutDashboard, Newspaper, FlaskConical, PenTool, Settings2,
   Users, RefreshCw, CheckCircle2, XCircle, Trash2, Play, Clock,
   AlertTriangle, ChevronDown, ChevronUp, Plus, Shield, Zap,
-  Eye, EyeOff, RotateCcw, Activity, Database, Calendar
+  Eye, EyeOff, RotateCcw, Activity, Database, Calendar, BookOpen
 } from 'lucide-react';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 
 // ── helpers ──────────────────────────────────────────────────────────────────
+
+const formatApiError = (body, status) => {
+  const d = body?.detail;
+  if (typeof d === 'string') return d;
+  if (Array.isArray(d)) return d.map((x) => x.msg || x.message || JSON.stringify(x)).join('; ');
+  if (d && typeof d === 'object') return JSON.stringify(d);
+  return `HTTP ${status}`;
+};
 
 const useAdminFetch = (token) => {
   const call = useCallback(async (path, options = {}) => {
@@ -23,12 +31,120 @@ const useAdminFetch = (token) => {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `HTTP ${res.status}`);
+      throw new Error(formatApiError(err, res.status));
     }
     if (res.status === 204) return null;
     return res.json();
   }, [token]);
   return call;
+};
+
+const INGESTION_STATUS_COLORS = {
+  idle: 'gray',
+  running: 'amber',
+  completed: 'green',
+  failed: 'red',
+};
+
+/** Polls GET /admin/ingestion-status while a run is active; shows live log lines. */
+const IngestionLogPanel = ({ token, pollKey = 0 }) => {
+  const call = useAdminFetch(token);
+  const [status, setStatus] = useState(null);
+  const [loadError, setLoadError] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    let timer;
+
+    const load = async () => {
+      try {
+        const data = await call('/affairs/admin/ingestion-status');
+        if (cancelled) return;
+        setStatus(data);
+        setLoadError('');
+        if (data.status === 'running') {
+          timer = setTimeout(load, 2000);
+        }
+      } catch (e) {
+        if (!cancelled) setLoadError(e.message);
+      }
+    };
+
+    load();
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [call, pollKey]);
+
+  const logs = status?.logs ?? [];
+  const result = status?.result;
+
+  return (
+    <div className="bg-bg-panel border border-border-default rounded-xl p-4 mt-4">
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-[12px] font-bold uppercase tracking-wider text-text-muted">
+          Ingestion log
+        </div>
+        {status && (
+          <Badge color={INGESTION_STATUS_COLORS[status.status] || 'gray'}>
+            {status.status}
+            {status.status === 'running' && (
+              <RefreshCw size={10} className="ml-1 animate-spin inline" />
+            )}
+          </Badge>
+        )}
+      </div>
+
+      {loadError && (
+        <div className="text-[12px] text-red-600 mb-2">Could not load status: {loadError}</div>
+      )}
+
+      {result && status?.status === 'completed' && (
+        <div className="text-[12px] text-emerald-700 bg-emerald-50 rounded-lg px-3 py-2 mb-2">
+          Done — {result.saved} saved, {result.skipped} skipped
+          {result.ai_calls != null ? `, ${result.ai_calls} Gemini call(s)` : ''}
+          {result.entries_total != null ? ` (${result.entries_total} RSS items)` : ''}
+        </div>
+      )}
+
+      {status?.error && status.status === 'failed' && (
+        <div className="text-[12px] text-red-700 bg-red-50 rounded-lg px-3 py-2 mb-2">
+          Failed: {status.error}
+        </div>
+      )}
+
+      <div className="bg-[#1a1a1a] text-[#e8e8e8] rounded-lg p-3 max-h-52 overflow-y-auto font-mono text-[11px] leading-relaxed">
+        {logs.length === 0 ? (
+          <span className="text-[#888]">
+            No ingestion run yet. Click Run News Ingestion — progress appears here and in Docker logs.
+          </span>
+        ) : (
+          logs.map((line, i) => (
+            <div
+              key={`${line.ts}-${i}`}
+              className={
+                line.level === 'error' ? 'text-red-400' :
+                line.level === 'warning' ? 'text-amber-300' :
+                line.level === 'debug' ? 'text-[#888]' :
+                'text-[#ddd]'
+              }
+            >
+              <span className="text-[#666]">{line.ts?.slice(11, 19) || ''} </span>
+              {line.message}
+            </div>
+          ))
+        )}
+      </div>
+
+      {status?.started_at && (
+        <div className="text-[10px] text-text-muted mt-2">
+          Started {status.started_at}
+          {status.finished_at ? ` · Finished ${status.finished_at}` : status.status === 'running' ? ' · Running…' : ''}
+        </div>
+      )}
+    </div>
+  );
 };
 
 const Badge = ({ children, color = 'gray' }) => {
@@ -100,6 +216,7 @@ const OverviewTab = ({ token, onTabChange }) => {
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState({});
   const [triggerMsg, setTriggerMsg] = useState('');
+  const [ingestionPoll, setIngestionPoll] = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -144,7 +261,8 @@ const OverviewTab = ({ token, onTabChange }) => {
     try {
       const res = await call(`/affairs/admin/${action}`, { method: 'POST' });
       setTriggerMsg(`✓ ${res?.message || label + ' triggered.'}`);
-      setTimeout(() => setTriggerMsg(''), 6000);
+      if (action === 'trigger-ingestion') setIngestionPoll((n) => n + 1);
+      setTimeout(() => setTriggerMsg(''), 12000);
     } catch (e) {
       setTriggerMsg(`✗ ${e.message}`);
     } finally {
@@ -232,6 +350,7 @@ const OverviewTab = ({ token, onTabChange }) => {
               {triggerMsg}
             </div>
           )}
+          <IngestionLogPanel token={token} pollKey={ingestionPoll} />
         </div>
 
         {/* Job Scheduler */}
@@ -555,7 +674,9 @@ const DailyTab = ({ token }) => {
       setQuestions(prev => [created, ...prev]);
       setShowCreate(false);
       setForm({ title: '', content: '', subject: '', word_limit: 250, marks: 15, model_answer: '', date: todayISO });
-      setSaveMsg('Question created!');
+      setSaveMsg(created.is_active
+        ? 'Question published and visible to users!'
+        : 'Question queued for its scheduled date.');
     } catch (e) {
       setSaveMsg(`Error: ${e.message}`);
     } finally {
@@ -614,7 +735,11 @@ const DailyTab = ({ token }) => {
                 className="mt-1 w-full bg-bg-surface border border-border-default rounded-lg px-3 py-2 text-[13px] text-text-primary focus:outline-none focus:ring-1 focus:ring-primary resize-none" />
             </div>
           </div>
-          {saveMsg && <div className="text-[12px] text-red-600">{saveMsg}</div>}
+          {saveMsg && (
+            <div className={`text-[12px] ${saveMsg.startsWith('Error') ? 'text-red-600' : 'text-emerald-600'}`}>
+              {saveMsg}
+            </div>
+          )}
           <div className="flex gap-2 pt-1">
             <ActionBtn variant="primary" disabled={saving}>
               {saving ? <RefreshCw size={12} className="animate-spin" /> : <Plus size={12} />} Create
@@ -661,6 +786,7 @@ const JobsTab = ({ token }) => {
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState({});
   const [msgs, setMsgs] = useState({});
+  const [ingestionPoll, setIngestionPoll] = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -680,7 +806,8 @@ const JobsTab = ({ token }) => {
     try {
       const res = await call(`/affairs/admin/${action}`, { method: 'POST' });
       setMsgs(m => ({ ...m, [key]: `✓ ${res?.message || 'Done'}` }));
-      setTimeout(() => setMsgs(m => ({ ...m, [key]: '' })), 8000);
+      if (action === 'trigger-ingestion') setIngestionPoll((n) => n + 1);
+      setTimeout(() => setMsgs(m => ({ ...m, [key]: '' })), 12000);
     } catch (e) {
       setMsgs(m => ({ ...m, [key]: `✗ ${e.message}` }));
     } finally {
@@ -734,6 +861,7 @@ const JobsTab = ({ token }) => {
               </div>
             ))}
           </div>
+          <IngestionLogPanel token={token} pollKey={ingestionPoll} />
         </div>
 
         {/* All jobs */}
@@ -865,6 +993,311 @@ const UsersTab = ({ token }) => {
   );
 };
 
+// ── Tab: Study Materials ──────────────────────────────────────────────────────
+
+const SUBJECT_OPTIONS = [
+  'Polity', 'Economy', 'History', 'Geography', 'Environment',
+  'Science & Technology', 'Ethics', 'Art & Culture', 'International Relations',
+  'Internal Security', 'Disaster Management', 'Social Justice', 'Other',
+];
+const GS_OPTIONS = ['GS1', 'GS2', 'GS3', 'GS4', 'CSAT', 'Optional'];
+
+const UploadStatusPanel = ({ token, pollKey }) => {
+  const call = useAdminFetch(token);
+  const [status, setStatus] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    let timer;
+    const load = async () => {
+      try {
+        const data = await call('/ai/admin/upload-status');
+        if (cancelled) return;
+        setStatus(data);
+        if (data.status === 'running') timer = setTimeout(load, 2000);
+      } catch {}
+    };
+    load();
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [call, pollKey]);
+
+  if (!status || status.status === 'idle') return null;
+
+  const COLOR = { running: 'amber', completed: 'green', failed: 'red' };
+  const logs = status.logs ?? [];
+
+  return (
+    <div className="bg-bg-panel border border-border-default rounded-xl p-4 mt-4">
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-[12px] font-bold uppercase tracking-wider text-text-muted">
+          Ingestion log{status.file ? ` — ${status.file}` : ''}
+        </div>
+        <Badge color={COLOR[status.status] || 'gray'}>
+          {status.status}
+          {status.status === 'running' && <RefreshCw size={10} className="ml-1 animate-spin inline" />}
+        </Badge>
+      </div>
+
+      {status.result && status.status === 'completed' && (
+        <div className="text-[12px] text-emerald-700 bg-emerald-50 rounded-lg px-3 py-2 mb-2">
+          Done — {status.result.chunks_written} chunks indexed for &ldquo;{status.result.book}&rdquo;
+        </div>
+      )}
+      {status.error && status.status === 'failed' && (
+        <div className="text-[12px] text-red-700 bg-red-50 rounded-lg px-3 py-2 mb-2">
+          Failed: {status.error}
+        </div>
+      )}
+
+      <div className="bg-[#1a1a1a] text-[#e8e8e8] rounded-lg p-3 max-h-40 overflow-y-auto font-mono text-[11px] leading-relaxed">
+        {logs.length === 0 ? (
+          <span className="text-[#888]">Processing…</span>
+        ) : logs.map((line, i) => (
+          <div key={i} className={line.level === 'error' ? 'text-red-400' : 'text-[#ddd]'}>
+            <span className="text-[#666]">{line.ts?.slice(11, 19) || ''} </span>
+            {line.message}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const StudyMaterialsTab = ({ token }) => {
+  const call = useAdminFetch(token);
+
+  const [materials, setMaterials] = useState([]);
+  const [loadingList, setLoadingList] = useState(true);
+  const [deleting, setDeleting] = useState({});
+  const [pollKey, setPollKey] = useState(0);
+
+  const [file, setFile] = useState(null);
+  const [bookName, setBookName] = useState('');
+  const [subject, setSubject] = useState('');
+  const [gsPaper, setGsPaper] = useState('');
+  const [chapter, setChapter] = useState('');
+  const [language, setLanguage] = useState('en');
+  const [uploading, setUploading] = useState(false);
+  const [uploadMsg, setUploadMsg] = useState('');
+
+  const loadMaterials = useCallback(async () => {
+    setLoadingList(true);
+    try {
+      const data = await call('/ai/admin/materials');
+      setMaterials(data.materials || []);
+    } catch {
+      setMaterials([]);
+    } finally {
+      setLoadingList(false);
+    }
+  }, [call]);
+
+  useEffect(() => { loadMaterials(); }, [loadMaterials]);
+
+  const handleUpload = async (e) => {
+    e.preventDefault();
+    if (!file || !bookName || !subject) return;
+
+    setUploading(true);
+    setUploadMsg('');
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('book_name', bookName);
+      fd.append('subject', subject);
+      if (gsPaper) fd.append('gs_paper', gsPaper);
+      if (chapter) fd.append('chapter', chapter);
+      fd.append('language', language);
+
+      const res = await fetch(`${API_BASE}/api/v1/ai/admin/upload-material`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(formatApiError(err, res.status));
+      }
+
+      const data = await res.json();
+      setUploadMsg(`✓ ${data.message}`);
+      setPollKey((n) => n + 1);
+      setFile(null);
+      setBookName('');
+      setSubject('');
+      setGsPaper('');
+      setChapter('');
+      e.target.reset();
+      setTimeout(() => loadMaterials(), 3000);
+    } catch (err) {
+      setUploadMsg(`✗ ${err.message}`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDelete = async (sourceId, title) => {
+    if (!window.confirm(`Remove "${title}" from the AI index? This cannot be undone.`)) return;
+    setDeleting((d) => ({ ...d, [sourceId]: true }));
+    try {
+      await call(`/ai/admin/materials/${sourceId}`, { method: 'DELETE' });
+      setMaterials((prev) => prev.filter((m) => m.source_id !== sourceId));
+    } catch (err) {
+      alert(`Delete failed: ${err.message}`);
+    } finally {
+      setDeleting((d) => ({ ...d, [sourceId]: false }));
+    }
+  };
+
+  const inputCls = 'w-full bg-bg-surface border border-border-default rounded-lg px-3 py-2 text-[13px] text-text-primary focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-text-muted';
+
+  return (
+    <div className="space-y-6">
+      {/* Upload form */}
+      <div className="bg-bg-panel border border-border-default rounded-xl p-5">
+        <div className="text-[12px] font-bold uppercase tracking-wider text-text-muted mb-4">
+          Upload Study Material
+        </div>
+        <form onSubmit={handleUpload} className="space-y-3">
+          {/* File picker */}
+          <div>
+            <label className="block text-[12px] text-text-muted mb-1">File (PDF, .txt, or .md) *</label>
+            <input
+              type="file"
+              accept=".pdf,.txt,.md"
+              required
+              onChange={(e) => setFile(e.target.files[0] || null)}
+              className="block w-full text-[13px] text-text-primary file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[12px] file:font-medium file:bg-[#fbefe9] file:text-primary hover:file:bg-[#f8e0d0] cursor-pointer"
+            />
+            {file && <div className="text-[11px] text-text-muted mt-1">{file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)</div>}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[12px] text-text-muted mb-1">Book / Document Name *</label>
+              <input
+                type="text"
+                required
+                value={bookName}
+                onChange={(e) => setBookName(e.target.value)}
+                placeholder="e.g. NCERT Class 11 Political Science"
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className="block text-[12px] text-text-muted mb-1">Chapter / Section (optional)</label>
+              <input
+                type="text"
+                value={chapter}
+                onChange={(e) => setChapter(e.target.value)}
+                placeholder="e.g. Chapter 3 — Federalism"
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className="block text-[12px] text-text-muted mb-1">Subject *</label>
+              <select
+                required
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                className={inputCls}
+              >
+                <option value="">Select subject…</option>
+                {SUBJECT_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[12px] text-text-muted mb-1">GS Paper (optional)</label>
+              <select value={gsPaper} onChange={(e) => setGsPaper(e.target.value)} className={inputCls}>
+                <option value="">None</option>
+                {GS_OPTIONS.map((g) => <option key={g} value={g}>{g}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[12px] text-text-muted mb-1">Language</label>
+              <select value={language} onChange={(e) => setLanguage(e.target.value)} className={inputCls}>
+                <option value="en">English</option>
+                <option value="hi">Hindi</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 pt-1">
+            <ActionBtn variant="primary" disabled={uploading || !file || !bookName || !subject}>
+              {uploading ? <RefreshCw size={13} className="animate-spin" /> : <Plus size={13} />}
+              {uploading ? 'Uploading…' : 'Upload & Index'}
+            </ActionBtn>
+            {uploadMsg && (
+              <span className={`text-[12px] ${uploadMsg.startsWith('✓') ? 'text-emerald-600' : 'text-red-600'}`}>
+                {uploadMsg}
+              </span>
+            )}
+          </div>
+        </form>
+
+        <UploadStatusPanel token={token} pollKey={pollKey} />
+      </div>
+
+      {/* Materials list */}
+      <div className="bg-bg-panel border border-border-default rounded-xl p-5">
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-[12px] font-bold uppercase tracking-wider text-text-muted">
+            Indexed Materials ({materials.length})
+          </div>
+          <ActionBtn variant="default" onClick={loadMaterials} disabled={loadingList}>
+            <RefreshCw size={13} className={loadingList ? 'animate-spin' : ''} /> Refresh
+          </ActionBtn>
+        </div>
+
+        {loadingList ? <Spinner /> : materials.length === 0 ? (
+          <EmptyState msg="No study materials indexed yet. Upload a PDF or text file above." />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-[12px]">
+              <thead>
+                <tr className="border-b border-border-default text-text-muted text-left">
+                  <th className="pb-2 pr-4 font-semibold">Title</th>
+                  <th className="pb-2 pr-4 font-semibold">Subject</th>
+                  <th className="pb-2 pr-4 font-semibold">Paper</th>
+                  <th className="pb-2 pr-4 font-semibold">Lang</th>
+                  <th className="pb-2 pr-4 font-semibold text-right">Chunks</th>
+                  <th className="pb-2 font-semibold"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {materials.map((m) => (
+                  <tr key={m.source_id} className="border-b border-border-default last:border-0 hover:bg-bg-panel-hover/50">
+                    <td className="py-2.5 pr-4">
+                      <div className="font-semibold text-text-primary">{m.book_name}</div>
+                      {m.chapter && <div className="text-text-muted text-[11px]">{m.chapter}</div>}
+                      {m.file && <div className="text-text-muted text-[10px]">{m.file}</div>}
+                    </td>
+                    <td className="py-2.5 pr-4 text-text-primary">{m.subject || '—'}</td>
+                    <td className="py-2.5 pr-4 text-text-muted">{m.gs_paper || '—'}</td>
+                    <td className="py-2.5 pr-4 text-text-muted">{m.language === 'hi' ? 'Hindi' : 'English'}</td>
+                    <td className="py-2.5 pr-4 text-right font-mono text-text-primary">{m.chunks}</td>
+                    <td className="py-2.5">
+                      <ActionBtn
+                        variant="red"
+                        disabled={deleting[m.source_id]}
+                        onClick={() => handleDelete(m.source_id, m.book_name)}
+                      >
+                        {deleting[m.source_id] ? <RefreshCw size={11} className="animate-spin" /> : <Trash2 size={11} />}
+                        Remove
+                      </ActionBtn>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // ── Main Admin Page ───────────────────────────────────────────────────────────
 
 const TABS = [
@@ -872,6 +1305,7 @@ const TABS = [
   { id: 'affairs', label: 'Current Affairs', icon: <Newspaper size={15} /> },
   { id: 'quiz', label: 'Quiz Bank', icon: <FlaskConical size={15} /> },
   { id: 'daily', label: 'Daily Questions', icon: <PenTool size={15} /> },
+  { id: 'materials', label: 'Study Materials', icon: <BookOpen size={15} /> },
   { id: 'jobs', label: 'Jobs & System', icon: <Settings2 size={15} /> },
   { id: 'users', label: 'Users', icon: <Users size={15} /> },
 ];
@@ -910,32 +1344,35 @@ const Admin = () => {
         </Badge>
       </div>
 
-      {/* Tab Nav */}
-      <div className="flex gap-1 bg-bg-surface border border-border-default rounded-xl p-1 overflow-x-auto">
-        {TABS.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium cursor-pointer transition whitespace-nowrap ${
-              activeTab === tab.id
-                ? 'bg-bg-panel text-text-primary shadow-sm border border-border-default'
-                : 'text-text-muted hover:text-text-primary'
-            }`}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <div className="flex flex-col lg:flex-row gap-6 min-h-[70vh]">
+        {/* Sidebar navigation */}
+        <aside className="lg:w-56 shrink-0 bg-bg-surface border border-border-default rounded-xl p-2 flex lg:flex-col gap-1 overflow-x-auto lg:overflow-x-visible">
+          {TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-[13px] font-medium cursor-pointer transition whitespace-nowrap lg:w-full ${
+                activeTab === tab.id
+                  ? 'bg-bg-panel text-text-primary shadow-sm border border-border-default'
+                  : 'text-text-muted hover:text-text-primary hover:bg-bg-panel/50'
+              }`}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
+        </aside>
 
-      {/* Tab Content */}
-      <div>
-        {activeTab === 'overview' && <OverviewTab token={token} onTabChange={setActiveTab} />}
-        {activeTab === 'affairs' && <AffairsTab token={token} />}
-        {activeTab === 'quiz' && <QuizTab token={token} />}
-        {activeTab === 'daily' && <DailyTab token={token} />}
-        {activeTab === 'jobs' && <JobsTab token={token} />}
-        {activeTab === 'users' && <UsersTab token={token} />}
+        {/* Tab Content */}
+        <div className="flex-1 min-w-0">
+          {activeTab === 'overview' && <OverviewTab token={token} onTabChange={setActiveTab} />}
+          {activeTab === 'affairs' && <AffairsTab token={token} />}
+          {activeTab === 'quiz' && <QuizTab token={token} />}
+          {activeTab === 'daily' && <DailyTab token={token} />}
+          {activeTab === 'materials' && <StudyMaterialsTab token={token} />}
+          {activeTab === 'jobs' && <JobsTab token={token} />}
+          {activeTab === 'users' && <UsersTab token={token} />}
+        </div>
       </div>
     </div>
   );

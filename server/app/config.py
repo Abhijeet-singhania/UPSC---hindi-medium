@@ -34,7 +34,8 @@ class Settings(BaseSettings):
     # Free Gemini key: https://aistudio.google.com/app/apikey
     # Leave blank → AI processing skipped; raw RSS items saved for manual edit.
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-2.0-flash-lite"
+    GEMINI_MODEL: str = "gemini-2.5-flash-lite"
+    GEMINI_EMBEDDING_MODEL: str = "text-embedding-004"
 
     # Comma-separated RSS feed URLs ingested daily at 07:30 IST.
     RSS_FEEDS: str = (
@@ -42,6 +43,15 @@ class Settings(BaseSettings):
         "https://pib.gov.in/RssMain.aspx,"
         "https://indianexpress.com/section/india/feed/"
     )
+
+    # ── AI Tutor settings ─────────────────────────────────────────────────────
+    # Max chunks returned per RAG query (top-k retrieval)
+    AI_RETRIEVAL_TOP_K: int = 8
+    # Max token budget for context passed to Gemini chat
+    AI_CONTEXT_MAX_TOKENS: int = 6000
+    # Chunk size for splitting long texts (in tokens, approx 4 chars each)
+    AI_CHUNK_SIZE_TOKENS: int = 300
+    AI_CHUNK_OVERLAP_TOKENS: int = 50
 
     class Config:
         env_file = ".env"

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { PenLine, ThumbsUp, ChevronDown, ChevronUp, Loader2, AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react';
+import { PenLine, ThumbsUp, ChevronDown, ChevronUp, Loader2, AlertCircle, CheckCircle2, RefreshCw, BookOpen, Sparkles } from 'lucide-react';
 import { useApi } from '../../hooks/useApi';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -234,14 +234,17 @@ const AnswerWriting = () => {
                   <p className="text-[14px] text-text-secondary leading-relaxed">{selectedQuestion.content}</p>
                 )}
                 {selectedQuestion.model_answer && (
-                  <details className="mt-4 border-t border-border-default pt-4">
-                    <summary className="text-[13px] text-primary cursor-pointer select-none font-medium">
-                      View model answer
-                    </summary>
-                    <div className="mt-3 text-[13px] text-text-secondary leading-relaxed whitespace-pre-wrap">
-                      {selectedQuestion.model_answer}
+                  <div className="mt-6 border-t border-border-default pt-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <BookOpen size={16} className="text-primary" />
+                      <h4 className="font-serif text-[16px] font-medium text-text-primary">Model Answer</h4>
                     </div>
-                  </details>
+                    <div className="bg-[#FDF9F5] border border-[#EED4C3] rounded-xl p-5 max-h-[min(60vh,480px)] overflow-y-auto [scrollbar-width:thin]">
+                      <div className="text-[15px] text-text-primary leading-[1.75] whitespace-pre-wrap">
+                        {selectedQuestion.model_answer}
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -358,6 +361,11 @@ const AnswerWriting = () => {
                           ? <><ChevronUp size={14} /> Show less</>
                           : <><ChevronDown size={14} /> Read full answer</>}
                       </button>
+
+                      {/* AI Score Card (shown when Gemini has evaluated the answer) */}
+                      {ans.ai_total_score != null && (
+                        <AiScoreCard answer={ans} />
+                      )}
                     </div>
                   </div>
                 ))}
@@ -366,6 +374,55 @@ const AnswerWriting = () => {
           )}
         </div>
       </div>
+    </div>
+  );
+};
+
+const AiScoreBar = ({ label, score, max, color }) => (
+  <div className="flex items-center gap-3">
+    <span className="text-[11px] text-text-muted w-20 shrink-0">{label}</span>
+    <div className="flex-1 h-1.5 bg-border-default rounded-full overflow-hidden">
+      <div
+        className={`h-full rounded-full ${color}`}
+        style={{ width: `${(score / max) * 100}%` }}
+      />
+    </div>
+    <span className="text-[11px] text-text-primary font-mono shrink-0">{score}/{max}</span>
+  </div>
+);
+
+const AiScoreCard = ({ answer }) => {
+  const total = answer.ai_total_score;
+  const percentage = Math.round((total / 10) * 100);
+
+  return (
+    <div className="mt-4 pt-4 border-t border-border-default">
+      <div className="flex items-center gap-2 mb-3">
+        <Sparkles size={13} className="text-primary" />
+        <span className="text-[11px] font-bold text-primary uppercase tracking-wider">AI Evaluation</span>
+        <span className="ml-auto text-[13px] font-semibold text-text-primary">
+          {total}<span className="text-text-muted font-normal">/10</span>
+        </span>
+      </div>
+
+      <div className="w-full h-1.5 bg-border-default rounded-full overflow-hidden mb-3">
+        <div
+          className="h-full rounded-full bg-primary"
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
+
+      <div className="flex flex-col gap-1.5 mb-3">
+        <AiScoreBar label="Content" score={answer.ai_score_content ?? 0} max={5} color="bg-[#2B7A4B]" />
+        <AiScoreBar label="Structure" score={answer.ai_score_structure ?? 0} max={3} color="bg-[#BFA532]" />
+        <AiScoreBar label="Language" score={answer.ai_score_language ?? 0} max={2} color="bg-primary" />
+      </div>
+
+      {answer.ai_feedback && (
+        <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
+          <p className="text-[12px] text-text-secondary leading-relaxed">{answer.ai_feedback}</p>
+        </div>
+      )}
     </div>
   );
 };

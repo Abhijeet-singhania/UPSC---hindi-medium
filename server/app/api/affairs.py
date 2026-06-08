@@ -23,6 +23,24 @@ VALID_DIFFICULTIES = {"easy", "medium", "hard"}
 VALID_LANGUAGES = {"hi", "en"}
 
 
+def _index_affair_bg(affair_id: int) -> None:
+    """Fire-and-forget: index a current affair in a daemon thread."""
+    def _run():
+        from app.db.database import SessionLocal
+        from app.services.indexing_service import index_source
+        db = SessionLocal()
+        try:
+            index_source(db, "affair", affair_id)
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).warning("Async index affair %d failed: %s", affair_id, exc)
+        finally:
+            db.close()
+
+    import threading
+    threading.Thread(target=_run, daemon=True, name=f"idx-affair-{affair_id}").start()
+
+
 def _ensure_admin(user: User) -> None:
     if user.role not in [UserRole.ADMIN, UserRole.MODERATOR]:
         raise HTTPException(status_code=403, detail="Only admins can perform this action")
@@ -179,6 +197,11 @@ def create_affair(
     db.add(item)
     db.commit()
     db.refresh(item)
+
+    # Index immediately if published
+    if item.is_published:
+        _index_affair_bg(item.id)
+
     return item
 
 
@@ -202,6 +225,11 @@ def update_affair(
 
     db.commit()
     db.refresh(item)
+
+    # Re-index if published (handles newly-published items)
+    if item.is_published:
+        _index_affair_bg(item.id)
+
     return item
 
 
@@ -254,17 +282,39 @@ def trigger_ingestion(current_user: User = Depends(get_current_user)):
     """
     _ensure_admin(current_user)
 
+    from app.services import ca_ingestion_status
     from app.services.ca_ingestion import run_ingestion
-    thread = threading.Thread(target=run_ingestion, daemon=True)
+
+    snap = ca_ingestion_status.get_snapshot()
+    if snap["status"] == "running":
+        raise HTTPException(
+            status_code=409,
+            detail="Ingestion is already running. Watch the log panel below or poll GET /admin/ingestion-status.",
+        )
+
+    def _run() -> None:
+        run_ingestion(triggered_by=f"admin:{current_user.id}")
+
+    thread = threading.Thread(target=_run, daemon=True, name="ca-ingestion")
     thread.start()
 
     return {
         "status": "started",
         "message": (
-            "Ingestion running in the background. "
-            "Check /api/v1/affairs?published=false in a minute to review new drafts."
+            "Ingestion started in the background (may take 1–3 minutes). "
+            "Live progress appears in the ingestion log below and in Docker logs."
         ),
     }
+
+
+@router.get("/admin/ingestion-status")
+def get_ingestion_status(current_user: User = Depends(get_current_user)):
+    """Live status and log lines for the CA ingestion job. Admin/Moderator only."""
+    _ensure_admin(current_user)
+
+    from app.services import ca_ingestion_status
+
+    return ca_ingestion_status.get_snapshot()
 
 
 @router.post("/admin/trigger-rotate-question", status_code=202)

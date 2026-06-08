@@ -1,6 +1,75 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CheckCircle2, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { CheckCircle2, ChevronRight, ChevronDown, ChevronUp, Sparkles, Clock, Loader2 } from 'lucide-react';
+
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+
+const AIDailyPlanPanel = () => {
+  const { token } = useSelector((state) => state.auth);
+  const navigate = useNavigate();
+  const [plan, setPlan] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [stage, setStage] = useState('');
+
+  useEffect(() => {
+    if (!token) return;
+    setLoading(true);
+    fetch(`${API_BASE}/api/v1/ai/daily-plan`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.plan) {
+          setPlan(data.plan);
+          setStage(data.exam_stage || '');
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [token]);
+
+  if (!token) return null;
+  if (loading) return (
+    <div className="bg-bg-panel border border-border-default rounded-xl p-5 flex items-center gap-3 text-text-muted">
+      <Loader2 size={16} className="animate-spin text-primary" />
+      <span className="text-[13px]">Building your personalised daily plan…</span>
+    </div>
+  );
+  if (!plan) return null;
+
+  return (
+    <div className="bg-bg-panel border border-border-default rounded-xl p-6 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+      <div className="flex items-center gap-2 mb-4">
+        <Sparkles size={15} className="text-primary" />
+        <h3 className="font-serif text-[18px] font-semibold">AI Daily Study Plan</h3>
+        <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded capitalize">{stage}</span>
+      </div>
+      <p className="text-[12px] text-text-muted mb-4">Personalised for your exam stage and study patterns. Adjust freely.</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {plan.map((block, i) => (
+          <button
+            key={i}
+            onClick={() => block.route && navigate(block.route)}
+            className="flex gap-3 items-start p-3 bg-bg-surface border border-border-default rounded-lg hover:border-primary/40 hover:bg-primary/5 transition text-left cursor-pointer w-full"
+          >
+            <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+              <Clock size={13} className="text-primary" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[11px] text-text-muted mb-0.5">{block.time}</div>
+              <div className="text-[13px] font-medium text-text-primary">{block.activity}</div>
+              {block.subject && (
+                <div className="text-[11px] text-primary mt-0.5">{block.subject}</div>
+              )}
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const Roadmap = () => {
   const { t } = useTranslation();
@@ -8,6 +77,9 @@ const Roadmap = () => {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* AI personalised daily plan */}
+      <AIDailyPlanPanel />
+
       {/* Roadmap Header Phase Progress */}
       <div>
          <div className="mb-6">

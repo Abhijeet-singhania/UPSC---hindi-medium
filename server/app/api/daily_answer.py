@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, date
+import pytz
 
 from app.db.database import get_db
 from app.db.models import DailyQuestion, DailyAnswer, User, Vote, UserRole
@@ -28,18 +29,39 @@ def create_daily_question(
     if current_user.role not in [UserRole.ADMIN, UserRole.MODERATOR]:
         raise HTTPException(status_code=403, detail="Only admins can create daily questions")
     
+    tz_ist = pytz.timezone("Asia/Kolkata")
+    today_ist = datetime.now(tz_ist).date()
+    scheduled_date = question_data.date or today_ist
+    scheduled_dt = tz_ist.localize(
+        datetime.combine(scheduled_date, datetime.min.time())
+    )
+
+    should_activate = (
+        question_data.is_active
+        if question_data.is_active is not None
+        else scheduled_date <= today_ist
+    )
+
+    if should_activate:
+        db.query(DailyQuestion).filter(DailyQuestion.is_active == True).update(
+            {DailyQuestion.is_active: False}
+        )
+
     daily_question = DailyQuestion(
         title=question_data.title,
         content=question_data.content,
         subject=question_data.subject,
         word_limit=question_data.word_limit,
         marks=question_data.marks,
-        posted_by=current_user.id
+        model_answer=question_data.model_answer,
+        date=scheduled_dt,
+        is_active=should_activate,
+        posted_by=current_user.id,
     )
     db.add(daily_question)
     db.commit()
     db.refresh(daily_question)
-    
+
     return _format_daily_question(daily_question)
 
 
@@ -95,9 +117,16 @@ def update_daily_question(
     if not question:
         raise HTTPException(status_code=404, detail="Daily question not found")
     
-    for key, value in question_data.model_dump(exclude_unset=True).items():
+    update_data = question_data.model_dump(exclude_unset=True)
+    if update_data.get("is_active") is True:
+        db.query(DailyQuestion).filter(
+            DailyQuestion.id != question_id,
+            DailyQuestion.is_active == True,
+        ).update({DailyQuestion.is_active: False})
+
+    for key, value in update_data.items():
         setattr(question, key, value)
-    
+
     db.commit()
     db.refresh(question)
     return _format_daily_question(question)
@@ -141,7 +170,10 @@ def submit_daily_answer(
     
     db.commit()
     db.refresh(answer)
-    
+
+    # Trigger AI scoring asynchronously (non-blocking)
+    _score_answer_bg(answer.id, question, answer_data.content, current_user.preferred_language)
+
     return _format_daily_answer(answer)
 
 
@@ -242,6 +274,102 @@ def pin_daily_answer(
     return {"message": "Answer pinned as best", "answer_id": answer_id}
 
 
+# ==================== AI Scoring ====================
+
+_AI_SCORE_PROMPT = """You are a UPSC Mains answer evaluator. Score the following answer on 3 dimensions:
+
+Question: {question}
+Answer: {answer}
+
+Evaluate strictly as a UPSC examiner would. Return ONLY valid JSON in this exact format:
+{{
+  "content": <integer 0-5>,     // Conceptual accuracy, depth, relevance
+  "structure": <integer 0-3>,   // Introduction-body-conclusion, headings, flow
+  "language": <integer 0-2>,    // Clarity, grammar, appropriate language use
+  "feedback": "<2-3 actionable sentences>"
+}}
+
+Scoring guide:
+- Content (0-5): 5=excellent coverage, all key dimensions; 3=adequate; 1=superficial
+- Structure (0-3): 3=perfect UPSC format; 2=mostly structured; 1=unstructured
+- Language (0-2): 2=clear and precise; 1=minor issues; 0=unclear
+- Feedback: Be specific. Mention what was done well AND what to improve. Keep it constructive."""
+
+
+def _score_answer_bg(answer_id: int, question: DailyQuestion, content: str, language: str = "hi") -> None:
+    """Fire-and-forget: call Gemini to score a daily answer, then update the DB row."""
+
+    def _run():
+        import json as _json
+        import logging as _logging
+        import time as _time
+        from app.config import settings as _settings
+
+        _log = _logging.getLogger(__name__)
+
+        if not _settings.GEMINI_API_KEY:
+            return
+
+        # Compose the scoring prompt
+        q_text = f"{question.title}\n{question.content}" if question.content else question.title
+        prompt = _AI_SCORE_PROMPT.format(
+            question=q_text[:800],
+            answer=content[:2000],
+        )
+
+        for attempt in range(1, 4):
+            try:
+                from google import genai
+                from google.genai import types
+
+                client = genai.Client(api_key=_settings.GEMINI_API_KEY)
+                response = client.models.generate_content(
+                    model=_settings.GEMINI_MODEL,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        temperature=0.2,
+                        max_output_tokens=400,
+                    ),
+                )
+                raw = (response.text or "").strip()
+
+                # Strip markdown fences if present
+                if raw.startswith("```"):
+                    raw = "\n".join(raw.split("\n")[1:])
+                if raw.endswith("```"):
+                    raw = raw[:-3]
+
+                scores = _json.loads(raw.strip())
+
+                # Persist to DB
+                from app.db.database import SessionLocal
+                from app.db.models import DailyAnswer as _DA
+                _db = SessionLocal()
+                try:
+                    _answer = _db.query(_DA).filter(_DA.id == answer_id).first()
+                    if _answer:
+                        _answer.ai_score_content = max(0, min(5, int(scores.get("content", 0))))
+                        _answer.ai_score_structure = max(0, min(3, int(scores.get("structure", 0))))
+                        _answer.ai_score_language = max(0, min(2, int(scores.get("language", 0))))
+                        _answer.ai_feedback = scores.get("feedback", "")
+                        _db.commit()
+                        _log.info("AI scored answer %d: %s", answer_id, scores)
+                finally:
+                    _db.close()
+                break
+
+            except Exception as exc:
+                err = str(exc)
+                if "429" in err or "quota" in err.lower():
+                    _time.sleep(5 * attempt)
+                else:
+                    _log.warning("AI scoring failed for answer %d (attempt %d): %s", answer_id, attempt, exc)
+                    break
+
+    import threading
+    threading.Thread(target=_run, daemon=True, name=f"ai-score-{answer_id}").start()
+
+
 # ==================== Helper Functions ====================
 
 def _format_daily_question(question: DailyQuestion) -> dict:
@@ -260,6 +388,10 @@ def _format_daily_question(question: DailyQuestion) -> dict:
 
 
 def _format_daily_answer(answer: DailyAnswer) -> dict:
+    c = answer.ai_score_content
+    s = answer.ai_score_structure
+    lang = answer.ai_score_language
+    ai_total = (c or 0) + (s or 0) + (lang or 0) if any(v is not None for v in [c, s, lang]) else None
     return {
         "id": answer.id,
         "daily_question_id": answer.daily_question_id,
@@ -271,5 +403,10 @@ def _format_daily_answer(answer: DailyAnswer) -> dict:
         "is_pinned": answer.is_pinned,
         "created_at": answer.created_at,
         "author_name": answer.author.name if answer.author else None,
-        "author_reputation": answer.author.reputation if answer.author else 0
+        "author_reputation": answer.author.reputation if answer.author else 0,
+        "ai_score_content": c,
+        "ai_score_structure": s,
+        "ai_score_language": lang,
+        "ai_feedback": answer.ai_feedback,
+        "ai_total_score": ai_total,
     }

@@ -5,6 +5,13 @@ import enum
 
 from app.db.database import Base
 
+try:
+    from pgvector.sqlalchemy import Vector as _Vector
+    _PGVECTOR_AVAILABLE = True
+except ImportError:
+    _Vector = None
+    _PGVECTOR_AVAILABLE = False
+
 
 class UserRole(str, enum.Enum):
     USER = "user"
@@ -179,6 +186,11 @@ class DailyAnswer(Base):
     upvotes = Column(Integer, default=0)
     is_best_answer = Column(Boolean, default=False)
     is_pinned = Column(Boolean, default=False)
+    # AI scoring (Phase 5) — populated async after submission
+    ai_score_content = Column(Integer, nullable=True)    # 0-5: conceptual accuracy
+    ai_score_structure = Column(Integer, nullable=True)  # 0-3: organisation & presentation
+    ai_score_language = Column(Integer, nullable=True)   # 0-2: clarity & language
+    ai_feedback = Column(Text, nullable=True)            # multi-line actionable feedback
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -333,4 +345,36 @@ class MockTestAttempt(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User")
+
+
+class ContentChunk(Base):
+    """
+    Universal semantic index: every piece of platform content is split into
+    token-sized chunks and embedded here for RAG retrieval and cross-linking.
+
+    source_type values:
+      affair   — CurrentAffair rows
+      pyq      — PastYearProblem rows
+      quiz     — QuizQuestion rows
+      daily_q  — DailyQuestion rows
+      ncert    — future NCERT / study material documents
+    """
+    __tablename__ = "content_chunks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    source_type = Column(String(20), nullable=False, index=True)
+    source_id = Column(Integer, nullable=False, index=True)
+    chunk_index = Column(Integer, nullable=False, default=0)
+    chunk_text = Column(Text, nullable=False)
+    token_count = Column(Integer, nullable=False, default=0)
+    content_hash = Column(String(64), nullable=False, index=True)  # SHA-256 hex
+    language = Column(String(5), nullable=True, index=True)
+    gs_paper = Column(String(30), nullable=True, index=True)
+    subject = Column(String(100), nullable=True, index=True)
+    title = Column(String(400), nullable=True)       # human-readable label for citations
+    metadata_json = Column(Text, nullable=True)      # extra fields as JSON string
+    # The 768-dim Gemini embedding — nullable until the indexer runs
+    embedding = Column(_Vector(768) if _PGVECTOR_AVAILABLE and _Vector else Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

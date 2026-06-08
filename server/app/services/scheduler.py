@@ -14,6 +14,7 @@ from app.db.database import SessionLocal
 from app.db.models import SilentSession, DailyQuestion
 from app.services.redis_service import redis_service, LEADERBOARD_KEYS
 from app.services.ca_ingestion import run_ingestion
+from app.services.indexing_service import backfill_all as _backfill_all
 
 logger = logging.getLogger(__name__)
 
@@ -133,6 +134,21 @@ def rotate_daily_question() -> None:
         db.close()
 
 
+# ── Job 5: nightly AI content reindex ────────────────────────────────────────
+
+def nightly_reindex() -> None:
+    """
+    Re-index all platform content for the RAG/AI layer at 08:15 IST daily
+    (after the 07:30 IST CA ingestion run, so newly-published articles are included).
+    Skips chunks whose content hash hasn't changed — low cost on normal days.
+    """
+    try:
+        logger.info("Nightly AI reindex starting…")
+        _backfill_all(triggered_by="scheduler")
+    except Exception:
+        logger.exception("nightly_reindex job failed")
+
+
 # ── Scheduler lifecycle ──────────────────────────────────────────────────────
 
 def start_scheduler() -> None:
@@ -171,6 +187,13 @@ def start_scheduler() -> None:
         id="ingest_current_affairs",
         replace_existing=True,
         misfire_grace_time=900,
+    )
+    _scheduler.add_job(
+        nightly_reindex,
+        CronTrigger(hour=8, minute=15, timezone="Asia/Kolkata"),
+        id="nightly_ai_reindex",
+        replace_existing=True,
+        misfire_grace_time=1800,
     )
 
     _scheduler.start()

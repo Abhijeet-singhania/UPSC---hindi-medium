@@ -1386,7 +1386,7 @@ const PracticeLab = () => {
   const [violationCount, setViolationCount] = useState(0);
   const [violationBanner, setViolationBanner] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const MAX_VIOLATIONS = 3;
+  const MAX_VIOLATIONS = 1;
   const bannerTimerRef = useRef(null);
   const doSubmitRef = useRef(null);
 
@@ -1429,39 +1429,42 @@ const PracticeLab = () => {
     // Enter fullscreen
     document.documentElement.requestFullscreen?.().catch(() => {});
 
-    const issueWarning = (msg) => {
+    let fullscreenReady = false;
+    const readyTimer = setTimeout(() => { fullscreenReady = true; }, 800);
+
+    const endTestForViolation = (msg) => {
       clearTimeout(bannerTimerRef.current);
       setViolationBanner(msg);
-      setViolationCount(prev => {
-        const next = prev + 1;
-        if (next >= MAX_VIOLATIONS) {
-          doSubmitRef.current?.();
-        } else {
-          bannerTimerRef.current = setTimeout(() => setViolationBanner(''), 6000);
-        }
-        return next;
-      });
+      setViolationCount(MAX_VIOLATIONS);
+      doSubmitRef.current?.();
     };
 
     const onVisibility = () => {
-      if (document.hidden) issueWarning('Tab switch or window focus lost detected!');
+      if (document.hidden) endTestForViolation('Test ended: tab switch or window focus lost.');
     };
 
     const onFullscreen = () => {
-      if (!document.fullscreenElement) {
-        // Immediately try to re-enter
-        document.documentElement.requestFullscreen?.().catch(() => {});
-        issueWarning('Full screen was exited! Please stay in full screen during the test.');
+      if (!document.fullscreenElement && fullscreenReady) {
+        endTestForViolation('Test ended: full screen was exited.');
+      }
+    };
+
+    const onBlur = () => {
+      if (!document.hidden && fullscreenReady) {
+        endTestForViolation('Test ended: switched to another application.');
       }
     };
 
     document.addEventListener('visibilitychange', onVisibility);
     document.addEventListener('fullscreenchange', onFullscreen);
+    window.addEventListener('blur', onBlur);
 
     return () => {
+      clearTimeout(readyTimer);
       clearTimeout(bannerTimerRef.current);
       document.removeEventListener('visibilitychange', onVisibility);
       document.removeEventListener('fullscreenchange', onFullscreen);
+      window.removeEventListener('blur', onBlur);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [testPhase]); // intentionally omit doSubmitTest — we use the ref instead
@@ -1480,13 +1483,32 @@ const PracticeLab = () => {
     return () => setTestMode(false);
   }, [testPhase, setTestMode]);
 
-  const doSubmitTest = useCallback((remainingOverride = null) => {
+  const doSubmitTest = useCallback(async (remainingOverride = null) => {
     clearTimeout(timerRef.current);
     const rem = remainingOverride != null ? remainingOverride : timeLeft ?? 0;
     const total = totalTestSecs ?? 0;
     setElapsedSecs(Math.max(0, total - rem));
+
+    if (testQuestions.length > 0) {
+      const ids = testQuestions.map(q => q.id).join(',');
+      const reviewPath = config.source === 'quiz-bank'
+        ? `/quiz-questions/review?ids=${ids}`
+        : `/past-year-problems/review?ids=${ids}`;
+      try {
+        const resp = await fetch(`${API_BASE}/api/v1${reviewPath}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (resp.ok) {
+          const reviewed = await resp.json();
+          if (Array.isArray(reviewed) && reviewed.length > 0) {
+            setTestQuestions(reviewed);
+          }
+        }
+      } catch (_) {}
+    }
+
     setTestPhase('results');
-  }, [timeLeft, totalTestSecs]);
+  }, [timeLeft, totalTestSecs, testQuestions, config.source, token]);
 
   // Keep doSubmitRef current so violation handlers always call the latest version
   // (must be declared after doSubmitTest to avoid TDZ error)
@@ -1505,6 +1527,7 @@ const PracticeLab = () => {
         const params = {
           language: contentLanguage,
           limit: 100,
+          for_test: true,
           ...(config.subject ? { subject: config.subject } : {}),
           ...(config.topic ? { topic: config.topic } : {}),
           ...(config.difficulty ? { difficulty: config.difficulty } : {}),
@@ -1520,6 +1543,7 @@ const PracticeLab = () => {
           exam_type: config.examType,
           language: contentLanguage,
           limit: 100,
+          for_test: true,
           ...(config.subject ? { subject: config.subject } : {}),
           ...(config.year ? { year: config.year } : {}),
         };

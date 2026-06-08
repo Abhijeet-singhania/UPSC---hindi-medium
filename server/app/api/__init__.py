@@ -13,6 +13,7 @@ from app.api import (
     quiz_questions,
     mock_tests,
     gamification,
+    ai,
 )
 
 router = APIRouter()
@@ -33,3 +34,4 @@ router.include_router(affairs.router, prefix="/affairs", tags=["current-affairs"
 router.include_router(quiz_questions.router, prefix="/quiz-questions", tags=["quiz-questions"])
 router.include_router(mock_tests.router, prefix="/mock-tests", tags=["mock-tests"])
 router.include_router(gamification.router, prefix="/gamification", tags=["gamification"])
+router.include_router(ai.router, prefix="/ai", tags=["ai"])

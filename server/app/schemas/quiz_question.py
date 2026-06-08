@@ -50,6 +50,28 @@ class QuizQuestionResponse(QuizQuestionBase):
         from_attributes = True
 
 
+class QuizQuestionTestResponse(BaseModel):
+    """Quiz payload for mock tests — answers withheld until review."""
+    id: int
+    subject: str
+    topic: Optional[str] = None
+    difficulty: str = "medium"
+    question_text: str
+    option_a: str
+    option_b: str
+    option_c: str
+    option_d: str
+    source: Optional[str] = None
+    current_affair_id: Optional[int] = None
+    language: str = "hi"
+    is_approved: bool = False
+    created_by: Optional[int] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class QuizFiltersResponse(BaseModel):
     subjects: List[str]
     topics: List[str]

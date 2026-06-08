@@ -54,6 +54,30 @@ class PastYearProblemResponse(PastYearProblemBase):
         from_attributes = True
 
 
+class PastYearProblemTestResponse(BaseModel):
+    """Question payload for mock tests — answers withheld until review."""
+    id: int
+    year: int
+    exam_type: str
+    paper: Optional[str] = None
+    subject: Optional[str] = None
+    topic: Optional[str] = None
+    question_number: Optional[str] = None
+    marks: Optional[int] = None
+    word_limit: Optional[int] = None
+    question_text: str
+    option_a: Optional[str] = None
+    option_b: Optional[str] = None
+    option_c: Optional[str] = None
+    option_d: Optional[str] = None
+    language: str = "hi"
+    created_by: Optional[int] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class PastYearProblemFiltersResponse(BaseModel):
     years: List[int]
     subjects: List[str]
