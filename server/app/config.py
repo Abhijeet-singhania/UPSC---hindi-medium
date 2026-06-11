@@ -35,7 +35,10 @@ class Settings(BaseSettings):
     # Leave blank → AI processing skipped; raw RSS items saved for manual edit.
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-2.5-flash-lite"
-    GEMINI_EMBEDDING_MODEL: str = "text-embedding-004"
+    # gemini-embedding-2 defaults to 3072 dims; we request GEMINI_EMBEDDING_DIM via API.
+    GEMINI_EMBEDDING_MODEL: str = "gemini-embedding-2"
+    # Must match content_chunks.embedding VECTOR(n) in the database (currently 768).
+    GEMINI_EMBEDDING_DIM: int = 768
 
     # Comma-separated RSS feed URLs ingested daily at 07:30 IST.
     RSS_FEEDS: str = (

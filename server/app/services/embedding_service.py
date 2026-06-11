@@ -1,17 +1,21 @@
 """
-Embedding service — wraps Gemini text-embedding-004.
+Embedding service — wraps Gemini embedding models (default: gemini-embedding-2).
 
 Usage:
     from app.services.embedding_service import embed_texts, embed_single
 
     vectors = embed_texts(["India's federal structure", "RTI Act 2005"])
-    # → [[0.12, -0.03, ...], [0.08, 0.22, ...]]   (list of 768-dim float lists)
+    # → [[0.12, -0.03, ...], [0.08, 0.22, ...]]   (GEMINI_EMBEDDING_DIM floats each)
+
+gemini-embedding-2 outputs 3072 dims by default; we request GEMINI_EMBEDDING_DIM (768)
+via output_dimensionality so vectors fit content_chunks.embedding VECTOR(768).
 
 Batching + retry logic mirrors ca_ingestion.py to stay within the free-tier limits.
 """
 from __future__ import annotations
 
 import logging
+import math
 import time
 from typing import Optional
 
@@ -38,11 +42,34 @@ def _get_client():
 
 # ── Public API ────────────────────────────────────────────────────────────────
 
-EMBEDDING_DIM = 768
+EMBEDDING_DIM = settings.GEMINI_EMBEDDING_DIM
 _BATCH_SIZE = 20           # chunks per Gemini embed_content call
 _RETRY_DELAY_SEC = 15      # base wait on per-minute 429
 _MAX_RETRIES = 4
 _INTER_BATCH_DELAY_SEC = 2  # ~10 batches/min → well inside 1 500 RPM free limit
+
+
+def _l2_normalize(vec: list[float]) -> list[float]:
+    """L2-normalize a vector (required for truncated gemini-embedding-001 dims)."""
+    norm = math.sqrt(sum(x * x for x in vec))
+    if norm <= 0:
+        return vec
+    return [x / norm for x in vec]
+
+
+def _finalize_embedding(vec: list[float]) -> list[float]:
+    """Ensure vector matches DB dimension and is normalized for cosine search."""
+    if len(vec) != EMBEDDING_DIM:
+        raise ValueError(
+            f"Embedding dimension mismatch: got {len(vec)}, expected {EMBEDDING_DIM}. "
+            f"Set GEMINI_EMBEDDING_DIM={len(vec)} and migrate content_chunks.embedding, "
+            f"or use a model/config that returns {EMBEDDING_DIM} dimensions."
+        )
+    # gemini-embedding-2 auto-normalizes truncated dims; gemini-embedding-001 does not.
+    # Extra L2 pass is harmless (idempotent) and keeps cosine search consistent.
+    if EMBEDDING_DIM < 3072:
+        return _l2_normalize(vec)
+    return vec
 
 
 def embed_texts(texts: list[str], task_type: str = "RETRIEVAL_DOCUMENT") -> list[list[float]]:
@@ -69,10 +96,13 @@ def embed_texts(texts: list[str], task_type: str = "RETRIEVAL_DOCUMENT") -> list
                 response = client.models.embed_content(
                     model=settings.GEMINI_EMBEDDING_MODEL,
                     contents=list(batch_texts),
-                    config=_types.EmbedContentConfig(task_type=task_type),
+                    config=_types.EmbedContentConfig(
+                        task_type=task_type,
+                        output_dimensionality=EMBEDDING_DIM,
+                    ),
                 )
                 for local_i, embedding in enumerate(response.embeddings):
-                    results[indices[local_i]] = list(embedding.values)
+                    results[indices[local_i]] = _finalize_embedding(list(embedding.values))
                 break
             except Exception as exc:
                 err_str = str(exc)
