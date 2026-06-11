@@ -28,6 +28,7 @@ def _index_quiz_bg(question_id: int) -> None:
         try:
             index_source(db, "quiz", question_id)
         except Exception as exc:
+            db.rollback()
             import logging
             logging.getLogger(__name__).warning("Async index quiz %d failed: %s", question_id, exc)
         finally:

@@ -32,6 +32,7 @@ def _index_affair_bg(affair_id: int) -> None:
         try:
             index_source(db, "affair", affair_id)
         except Exception as exc:
+            db.rollback()
             import logging
             logging.getLogger(__name__).warning("Async index affair %d failed: %s", affair_id, exc)
         finally:

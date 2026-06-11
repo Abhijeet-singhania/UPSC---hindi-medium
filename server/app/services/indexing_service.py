@@ -110,6 +110,31 @@ def delete_source(db: Session, source_type: str, source_id: int) -> int:
     return deleted
 
 
+def atomic_replace_chunks(
+    db: Session,
+    source_type: str,
+    source_id: int,
+    chunks: list[ContentChunk],
+) -> int:
+    """
+    Atomically replace all chunks for one source.
+
+    Embedding/API work must happen *before* calling this. On any DB error
+    (dimension mismatch, constraint violation, etc.) the transaction is rolled
+    back so existing chunks are preserved.
+    """
+    try:
+        delete_source(db, source_type, source_id)
+        for chunk in chunks:
+            db.add(chunk)
+        db.flush()  # surface vector/type errors before commit
+        db.commit()
+        return len(chunks)
+    except Exception:
+        db.rollback()
+        raise
+
+
 def index_source(
     db: Session,
     source_type: SourceType,
@@ -203,21 +228,20 @@ def index_source(
     if not new_chunk_texts:
         return 0  # nothing to update
 
-    # Embed all new chunks in one call
+    # Embed all new chunks in one call (outside DB transaction)
     embeddings = embed_texts(new_chunk_texts)
 
-    # Delete stale chunks for this source (re-index entirely)
-    delete_source(db, source_type, source_id)
-
-    # Rebuild all chunks (not just new ones) to keep chunk_index consistent
+    # Map embeddings for changed chunks; unchanged chunks get None embedding
     all_embeddings_map: dict[int, list[float]] = {}
     for local_i, (idx, _, _, _) in enumerate(new_chunk_meta):
         all_embeddings_map[idx] = embeddings[local_i]
 
+    # Rebuild full chunk list so chunk_index stays consistent
+    chunk_rows: list[ContentChunk] = []
     for idx, (chunk_text, token_count) in enumerate(raw_chunks):
         h = _sha256(chunk_text)
         emb = all_embeddings_map.get(idx)
-        chunk = ContentChunk(
+        chunk_rows.append(ContentChunk(
             source_type=source_type,
             source_id=source_id,
             chunk_index=idx,
@@ -230,11 +254,9 @@ def index_source(
             title=title[:400] if title else None,
             metadata_json=json.dumps(meta),
             embedding=emb,
-        )
-        db.add(chunk)
+        ))
 
-    db.commit()
-    return len(raw_chunks)
+    return atomic_replace_chunks(db, source_type, source_id, chunk_rows)
 
 
 # ── Backfill all published content ───────────────────────────────────────────
@@ -267,6 +289,7 @@ def backfill_all(triggered_by: str = "system") -> dict:
                 n = index_source(db, "affair", item.id)
                 counts["affair"] += n
             except Exception as exc:
+                db.rollback()
                 counts["errors"] += 1
                 _log("error", f"Failed to index affair {item.id}: {exc}")
             time.sleep(0.2)  # throttle embedding API
@@ -279,6 +302,7 @@ def backfill_all(triggered_by: str = "system") -> dict:
                 n = index_source(db, "pyq", item.id)
                 counts["pyq"] += n
             except Exception as exc:
+                db.rollback()
                 counts["errors"] += 1
                 _log("error", f"Failed to index PYQ {item.id}: {exc}")
             time.sleep(0.2)
@@ -291,6 +315,7 @@ def backfill_all(triggered_by: str = "system") -> dict:
                 n = index_source(db, "quiz", item.id)
                 counts["quiz"] += n
             except Exception as exc:
+                db.rollback()
                 counts["errors"] += 1
                 _log("error", f"Failed to index quiz {item.id}: {exc}")
             time.sleep(0.2)
@@ -303,6 +328,7 @@ def backfill_all(triggered_by: str = "system") -> dict:
                 n = index_source(db, "daily_q", item.id)
                 counts["daily_q"] += n
             except Exception as exc:
+                db.rollback()
                 counts["errors"] += 1
                 _log("error", f"Failed to index daily_q {item.id}: {exc}")
             time.sleep(0.2)
@@ -317,6 +343,7 @@ def backfill_all(triggered_by: str = "system") -> dict:
         return result
 
     except Exception as exc:
+        db.rollback()
         _log("error", f"Backfill failed: {exc}")
         status.fail(str(exc))
         return {"error": str(exc)}

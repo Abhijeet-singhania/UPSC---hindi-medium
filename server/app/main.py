@@ -54,7 +54,12 @@ try:
         _conn.execute(_text("CREATE EXTENSION IF NOT EXISTS vector"))
     logger.info("pgvector extension enabled.")
 except Exception as _vec_exc:
-    logger.warning("Could not enable pgvector extension: %s", _vec_exc)
+    logger.warning(
+        "Could not enable pgvector extension: %s — "
+        "On Supabase, run CREATE EXTENSION IF NOT EXISTS vector; in the SQL Editor, "
+        "then alembic upgrade head.",
+        _vec_exc,
+    )
 
 models.Base.metadata.create_all(bind=engine)
 

@@ -93,43 +93,39 @@ def ingest_document(
     texts = [t for t, _ in chunks]
     embeddings = embed_texts(texts)
 
-    # ── Persist ───────────────────────────────────────────────────────────────
+    # ── Persist (atomic: rollback restores previous chunks on failure) ────────
+    from app.services.indexing_service import atomic_replace_chunks
+
+    meta = {"book": book_name, "chapter": chapter, "file": os.path.basename(file_path)}
+    chunk_rows: list[ContentChunk] = []
+    for idx, ((chunk_text, token_count), emb) in enumerate(zip(chunks, embeddings)):
+        h = hashlib.sha256(chunk_text.encode()).hexdigest()
+        chunk_rows.append(ContentChunk(
+            source_type="ncert",
+            source_id=source_id,
+            chunk_index=idx,
+            chunk_text=chunk_text,
+            token_count=token_count,
+            content_hash=h,
+            language=language,
+            gs_paper=gs_paper,
+            subject=subject,
+            title=f"{book_name}{' — ' + chapter if chapter else ''}",
+            metadata_json=json.dumps(meta),
+            embedding=emb,
+        ))
+
     db = SessionLocal()
     try:
-        # Remove any previous chunks for this document
-        db.query(ContentChunk).filter(
-            ContentChunk.source_type == "ncert",
-            ContentChunk.source_id == source_id,
-        ).delete()
-
-        for idx, ((chunk_text, token_count), emb) in enumerate(zip(chunks, embeddings)):
-            h = hashlib.sha256(chunk_text.encode()).hexdigest()
-            meta = {"book": book_name, "chapter": chapter, "file": os.path.basename(file_path)}
-            db.add(ContentChunk(
-                source_type="ncert",
-                source_id=source_id,
-                chunk_index=idx,
-                chunk_text=chunk_text,
-                token_count=token_count,
-                content_hash=h,
-                language=language,
-                gs_paper=gs_paper,
-                subject=subject,
-                title=f"{book_name}{' — ' + chapter if chapter else ''}",
-                metadata_json=json.dumps(meta),
-                embedding=emb,
-            ))
-
-        db.commit()
-        logger.info("NCERT ingest: %d chunks written for %s", len(chunks), book_name)
+        written = atomic_replace_chunks(db, "ncert", source_id, chunk_rows)
+        logger.info("NCERT ingest: %d chunks written for %s", written, book_name)
         return {
-            "chunks_written": len(chunks),
+            "chunks_written": written,
             "book": book_name,
             "source_id": source_id,
             "file": os.path.basename(file_path),
         }
     except Exception as exc:
-        db.rollback()
         logger.error("NCERT ingest failed: %s", exc)
         raise
     finally:

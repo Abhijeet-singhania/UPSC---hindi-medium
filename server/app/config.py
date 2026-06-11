@@ -13,7 +13,11 @@ _INSECURE_DEFAULT_KEY = "SPARTA"
 
 class Settings(BaseSettings):
     # ── Database ──────────────────────────────────────────────────────────────
+    # Local Docker: postgresql://postgres:postgres@db:5432/upsc_hindi
+    # Supabase (Session pooler): postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:5432/postgres
     DATABASE_URL: str = "postgresql://postgres:postgres@db:5432/upsc_hindi"
+    # SSL for Postgres — auto-enables require for supabase.co URLs
+    DATABASE_SSL_MODE: str = "auto"
 
     # ── Redis ─────────────────────────────────────────────────────────────────
     REDIS_URL: str = "redis://redis:6379/0"

@@ -1,17 +1,15 @@
-import os
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import pool
 
 from alembic import context
 
 # Load Alembic config object
 config = context.config
 
-# Set DB URL from environment variable (overrides alembic.ini value)
-db_url = os.environ.get("DATABASE_URL")
-if db_url:
-    config.set_main_option("sqlalchemy.url", db_url)
+# Use the same DATABASE_URL (+ SSL) as the app (supports Supabase)
+from app.config import settings  # noqa: E402
+config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
 # Setup logging from alembic.ini
 if config.config_file_name is not None:
@@ -37,11 +35,9 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode (requires live DB connection)."""
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
+    from app.db.database import _create_db_engine
+
+    connectable = _create_db_engine(pool_class=pool.NullPool)
     with connectable.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata)
         with context.begin_transaction():

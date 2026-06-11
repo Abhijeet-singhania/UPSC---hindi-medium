@@ -28,6 +28,7 @@ def _index_pyq_bg(problem_id: int) -> None:
         try:
             index_source(db, "pyq", problem_id)
         except Exception as exc:
+            db.rollback()
             import logging
             logging.getLogger(__name__).warning("Async index PYQ %d failed: %s", problem_id, exc)
         finally:

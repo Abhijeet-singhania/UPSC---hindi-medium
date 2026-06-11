@@ -1,7 +1,10 @@
 version: '3.8'
 
+# See root docker-compose.yml for Supabase vs local-db profile notes.
+
 services:
   db:
+    profiles: ["local-db"]
     image: pgvector/pgvector:pg15
     container_name: upsc_postgres
     restart: always
@@ -38,19 +41,17 @@ services:
     restart: on-failure
     env_file: .env
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/upsc_hindi
       REDIS_URL: redis://redis:6379/0
       # Set to "1" to seed demo accounts on first run (disabled by default)
       SEED_DEMO_DATA: "0"
     ports:
       - "8000:8000"
     depends_on:
-      db:
-        condition: service_healthy
       redis:
         condition: service_healthy
 
   pgadmin:
+    profiles: ["local-db"]
     image: dpage/pgadmin4
     container_name: upsc_pgadmin
     restart: always
