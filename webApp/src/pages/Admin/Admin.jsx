@@ -466,6 +466,9 @@ const AffairsTab = ({ token }) => {
                     <Badge color={item.is_published ? 'green' : 'amber'}>
                       {item.is_published ? 'Published' : 'Draft'}
                     </Badge>
+                    {item.is_upsc_relevant === false && (
+                      <Badge color="red">Not UPSC</Badge>
+                    )}
                   </div>
                   <div className="text-[14px] font-semibold text-text-primary leading-snug">{item.title}</div>
                   <div className="text-[12px] text-text-muted mt-1 line-clamp-2">{item.summary}</div>
@@ -477,7 +480,12 @@ const AffairsTab = ({ token }) => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <ActionBtn variant={item.is_published ? 'default' : 'green'} onClick={() => togglePublish(item)} disabled={busy[item.id]}>
+                  <ActionBtn
+                    variant={item.is_published ? 'default' : 'green'}
+                    onClick={() => togglePublish(item)}
+                    disabled={busy[item.id] || (!item.is_published && item.is_upsc_relevant === false)}
+                    title={!item.is_published && item.is_upsc_relevant === false ? 'Not UPSC-relevant' : undefined}
+                  >
                     {item.is_published ? <><EyeOff size={13} /> Unpublish</> : <><Eye size={13} /> Publish</>}
                   </ActionBtn>
                   <ActionBtn variant="red" onClick={() => deleteItem(item.id)} disabled={busy[item.id]}>

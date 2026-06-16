@@ -313,6 +313,7 @@ def generate(
     query: str,
     context: str,
     language: str = "en",
+    history: Optional[list[dict]] = None,
 ) -> str:
     """
     Send query + context to Gemini and return the grounded answer.
@@ -332,7 +333,7 @@ def generate(
 
     user_prompt = (
         f"Context from UPSC study materials (cite by number):\n\n"
-        f"{context}\n\n"
+        f"{context or '(No retrieved context — answer from UPSC syllabus knowledge only.)'}\n\n"
         f"---\n\n"
         f"Question: {query}\n\n"
         f"{lang_instruction}\n"
@@ -345,9 +346,22 @@ def generate(
             from google.genai import types
 
             client = genai.Client(api_key=settings.GEMINI_API_KEY)
+            contents: list = []
+            for turn in history or []:
+                gemini_role = "user" if turn.get("role") == "user" else "model"
+                contents.append(
+                    types.Content(
+                        role=gemini_role,
+                        parts=[types.Part(text=turn.get("content", ""))],
+                    )
+                )
+            contents.append(
+                types.Content(role="user", parts=[types.Part(text=user_prompt)])
+            )
+
             response = client.models.generate_content(
                 model=settings.GEMINI_MODEL,
-                contents=user_prompt,
+                contents=contents if len(contents) > 1 else user_prompt,
                 config=types.GenerateContentConfig(
                     system_instruction=_SYSTEM_PROMPT,
                     temperature=0.4,

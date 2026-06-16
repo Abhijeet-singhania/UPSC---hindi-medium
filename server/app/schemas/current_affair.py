@@ -37,6 +37,7 @@ class CurrentAffairUpdate(BaseModel):
 
 class CurrentAffairResponse(CurrentAffairBase):
     id: int
+    is_upsc_relevant: bool = True
     created_by: Optional[int] = None
     created_at: datetime
     updated_at: Optional[datetime] = None

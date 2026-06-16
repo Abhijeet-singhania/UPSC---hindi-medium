@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional, List
-from datetime import datetime, date
+from datetime import datetime, date as date_type
 
 
 class DailyQuestionCreate(BaseModel):
@@ -10,7 +10,7 @@ class DailyQuestionCreate(BaseModel):
     word_limit: int = 250
     marks: int = 15
     model_answer: Optional[str] = None
-    date: Optional[date] = None
+    date: Optional[date_type] = None
     is_active: Optional[bool] = None
 
 

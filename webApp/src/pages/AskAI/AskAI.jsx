@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import {
   Sparkles, ArrowUp, BookOpen, Loader2, ExternalLink,
   Newspaper, FlaskConical, PenTool, GraduationCap,
+  Plus, MessageSquare, Trash2, PanelLeftClose, PanelLeft,
 } from 'lucide-react';
 import { AiMessageContent } from '../../utils/formatAiMessage';
 
@@ -24,21 +25,103 @@ const WELCOME = {
   welcome: true,
 };
 
+const apiHeaders = (token) => ({
+  'Content-Type': 'application/json',
+  Authorization: `Bearer ${token}`,
+});
+
+const mapApiMessage = (m) => ({
+  role: m.role === 'user' ? 'user' : 'ai',
+  text: m.content,
+  citations: m.citations || [],
+  retrievedChunks: m.retrieved_chunks ?? 0,
+  blocked: m.blocked,
+  error: m.error,
+});
+
 const AskAI = () => {
   const { t } = useTranslation();
   const { token, user } = useSelector((state) => state.auth);
 
+  const [sessions, setSessions] = useState([]);
+  const [activeSessionId, setActiveSessionId] = useState(null);
   const [messages, setMessages] = useState([WELCOME]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingSessions, setLoadingSessions] = useState(true);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const endRef = useRef();
   const inputRef = useRef();
 
   const hasConversation = messages.some((m) => m.role === 'user');
 
+  const loadSessions = useCallback(async () => {
+    if (!token) return;
+    setLoadingSessions(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/ai/sessions?limit=50`, {
+        headers: apiHeaders(token),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSessions(Array.isArray(data) ? data : []);
+      }
+    } catch {
+      setSessions([]);
+    } finally {
+      setLoadingSessions(false);
+    }
+  }, [token]);
+
+  const loadSession = useCallback(async (sessionId) => {
+    if (!token || !sessionId) return;
+    setLoadingHistory(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/ai/sessions/${sessionId}`, {
+        headers: apiHeaders(token),
+      });
+      if (!res.ok) throw new Error('Failed to load chat');
+      const data = await res.json();
+      const msgs = (data.messages || []).map(mapApiMessage);
+      setMessages(msgs.length ? msgs : [WELCOME]);
+      setActiveSessionId(sessionId);
+    } catch {
+      setMessages([WELCOME]);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    loadSessions();
+  }, [loadSessions]);
+
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isLoading]);
+  }, [messages, isLoading, loadingHistory]);
+
+  const startNewChat = () => {
+    setActiveSessionId(null);
+    setMessages([WELCOME]);
+    setInput('');
+    inputRef.current?.focus();
+  };
+
+  const deleteSession = async (e, sessionId) => {
+    e.stopPropagation();
+    if (!window.confirm(t('askAI.deleteConfirm', 'Delete this chat?'))) return;
+    try {
+      await fetch(`${API_BASE}/api/v1/ai/sessions/${sessionId}`, {
+        method: 'DELETE',
+        headers: apiHeaders(token),
+      });
+      setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+      if (activeSessionId === sessionId) startNewChat();
+    } catch {
+      /* ignore */
+    }
+  };
 
   const send = async (textOverride) => {
     const userMessage = (textOverride ?? input).trim();
@@ -55,22 +138,26 @@ const AskAI = () => {
     try {
       const res = await fetch(`${API_BASE}/api/v1/ai/chat`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        headers: apiHeaders(token),
         body: JSON.stringify({
           message: userMessage,
+          session_id: activeSessionId,
           language: user?.preferred_language || 'hi',
         }),
       });
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || `Error ${res.status}`);
+        const detail = err.detail;
+        const msg = typeof detail === 'string' ? detail : `Error ${res.status}`;
+        throw new Error(msg);
       }
 
       const data = await res.json();
+
+      if (data.session_id && data.session_id !== activeSessionId) {
+        setActiveSessionId(data.session_id);
+      }
 
       setMessages((prev) => {
         const updated = [...prev];
@@ -84,6 +171,8 @@ const AskAI = () => {
         };
         return updated;
       });
+
+      loadSessions();
     } catch (err) {
       setMessages((prev) => {
         const updated = [...prev];
@@ -109,93 +198,171 @@ const AskAI = () => {
   ];
 
   return (
-    <div className="flex flex-col h-[calc(100vh-72px)] max-w-4xl mx-auto px-4 md:px-6 pb-4">
-      {/* Header — compact once chatting */}
-      <header className={`shrink-0 transition-all ${hasConversation ? 'py-3' : 'py-6 md:py-8'}`}>
-        <div className="flex items-center gap-2 mb-1">
-          <div className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center">
-            <Sparkles size={16} className="text-primary" />
-          </div>
-          <span className="text-[11px] tracking-widest text-primary font-semibold uppercase">
-            {t('askAI.mentorMode')}
-          </span>
-        </div>
-        {!hasConversation && (
-          <>
-            <h1 className="text-2xl md:text-[28px] font-serif text-text-primary leading-tight mt-2">
-              {t('askAI.titlePrefix')}
-              <span className="text-primary">{t('askAI.titleEm')}</span>
-              {t('askAI.titleSuffix')}
-            </h1>
-            <p className="text-[13px] text-text-muted mt-2 max-w-xl leading-relaxed">
-              {t('askAI.dek')}
-            </p>
-          </>
-        )}
-      </header>
-
-      {/* Chat panel */}
-      <div className="flex-1 min-h-0 flex flex-col rounded-2xl border border-border-default bg-bg-panel/80 backdrop-blur-sm overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 md:px-6 py-5 md:py-6 space-y-6 [scrollbar-width:thin]">
-          {messages.map((m, i) => (
-            <MessageBlock key={i} m={m} t={t} />
-          ))}
-          <div ref={endRef} className="h-1" />
-        </div>
-
-        {/* Input dock */}
-        <div className="shrink-0 border-t border-border-default bg-bg-base/90 px-4 md:px-5 py-4">
-          {!hasConversation && (
-            <div className="flex flex-wrap gap-2 mb-3">
-              {suggestions.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => send(s)}
-                  disabled={isLoading}
-                  className="text-[12px] text-text-secondary bg-bg-panel border border-border-default px-3.5 py-2 rounded-full hover:text-text-primary hover:border-primary/40 hover:bg-primary/5 transition cursor-pointer disabled:opacity-50"
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          )}
-
-          <div className="flex gap-2 items-end bg-bg-panel border border-border-default rounded-2xl p-2 pl-4 focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-primary/10 transition">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  send();
-                }
-              }}
-              rows={1}
-              placeholder={t('askAI.inputPlaceholder')}
-              className="flex-1 bg-transparent border-none outline-none text-[14px] text-text-primary placeholder:text-text-muted py-2.5 resize-none max-h-32 leading-relaxed"
-              disabled={isLoading}
-              style={{ minHeight: '44px' }}
-            />
+    <div className="flex h-[calc(100vh-72px)] max-w-7xl mx-auto px-3 md:px-5 pb-4 gap-0 md:gap-4">
+      {/* Session sidebar */}
+      {sidebarOpen && (
+        <aside className="hidden md:flex flex-col w-[260px] lg:w-[280px] shrink-0 rounded-2xl border border-border-default bg-bg-panel/90 overflow-hidden">
+          <div className="p-3 border-b border-border-default">
             <button
               type="button"
-              onClick={() => send()}
-              disabled={!input.trim() || isLoading}
-              aria-label="Send"
-              className="shrink-0 w-10 h-10 flex items-center justify-center bg-primary hover:bg-primary-hover text-white rounded-xl transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              onClick={startNewChat}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-primary text-white text-[13px] font-medium hover:bg-primary-hover transition cursor-pointer"
             >
-              {isLoading ? <Loader2 size={18} className="animate-spin" /> : <ArrowUp size={18} strokeWidth={2.5} />}
+              <Plus size={15} />
+              {t('askAI.newChat', 'New chat')}
             </button>
           </div>
 
-          {!token && (
-            <p className="text-[11px] text-text-muted mt-2.5 text-center">
-              <Link to="/auth" className="text-primary hover:underline font-medium">Sign in</Link>
-              {' '}to save your chat history and get personalised answers.
-            </p>
-          )}
+          <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-text-muted">
+            {t('askAI.sessions', 'Sessions')}
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-0.5 [scrollbar-width:thin]">
+            {loadingSessions ? (
+              <div className="flex justify-center py-8">
+                <Loader2 size={18} className="animate-spin text-text-muted" />
+              </div>
+            ) : sessions.length === 0 ? (
+              <p className="text-[12px] text-text-muted px-2 py-4 text-center leading-relaxed">
+                {t('askAI.noSessions', 'Your chats will appear here')}
+              </p>
+            ) : (
+              sessions.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => loadSession(s.id)}
+                  className={`group w-full flex items-start gap-2 px-3 py-2.5 rounded-xl text-left transition cursor-pointer ${
+                    activeSessionId === s.id
+                      ? 'bg-primary/10 border border-primary/30'
+                      : 'hover:bg-bg-surface border border-transparent'
+                  }`}
+                >
+                  <MessageSquare size={14} className="shrink-0 mt-0.5 text-text-muted" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[13px] text-text-primary font-medium truncate">{s.title}</div>
+                    <div className="text-[10px] text-text-muted mt-0.5">
+                      {s.message_count} {t('askAI.messages', 'messages')}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => deleteSession(e, s.id)}
+                    className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-red-500/10 text-text-muted hover:text-red-500 transition cursor-pointer"
+                    aria-label="Delete chat"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </button>
+              ))
+            )}
+          </div>
+        </aside>
+      )}
+
+      {/* Main chat column */}
+      <div className="flex-1 min-w-0 flex flex-col">
+        <header className={`shrink-0 flex items-start justify-between gap-3 ${hasConversation ? 'py-2' : 'py-4 md:py-6'}`}>
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <button
+                type="button"
+                onClick={() => setSidebarOpen((v) => !v)}
+                className="hidden md:flex p-1.5 rounded-lg border border-border-default text-text-muted hover:text-text-primary cursor-pointer"
+                aria-label="Toggle sidebar"
+              >
+                {sidebarOpen ? <PanelLeftClose size={16} /> : <PanelLeft size={16} />}
+              </button>
+              <div className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center">
+                <Sparkles size={16} className="text-primary" />
+              </div>
+              <span className="text-[11px] tracking-widest text-primary font-semibold uppercase">
+                {t('askAI.mentorMode')}
+              </span>
+            </div>
+            {!hasConversation && (
+              <>
+                <h1 className="text-2xl md:text-[28px] font-serif text-text-primary leading-tight mt-2">
+                  {t('askAI.titlePrefix')}
+                  <span className="text-primary">{t('askAI.titleEm')}</span>
+                  {t('askAI.titleSuffix')}
+                </h1>
+                <p className="text-[13px] text-text-muted mt-2 max-w-2xl leading-relaxed">
+                  {t('askAI.dek')}
+                </p>
+              </>
+            )}
+          </div>
+
+          {/* Mobile: new chat */}
+          <button
+            type="button"
+            onClick={startNewChat}
+            className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-default text-[12px] text-text-secondary cursor-pointer"
+          >
+            <Plus size={14} /> {t('askAI.newChat', 'New')}
+          </button>
+        </header>
+
+        <div className="flex-1 min-h-0 flex flex-col rounded-2xl border border-border-default bg-bg-panel/80 backdrop-blur-sm overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
+          <div className="flex-1 overflow-y-auto px-4 md:px-8 py-5 md:py-6 space-y-6 [scrollbar-width:thin]">
+            {loadingHistory ? (
+              <div className="flex justify-center py-12">
+                <Loader2 size={24} className="animate-spin text-primary" />
+              </div>
+            ) : (
+              messages.map((m, i) => (
+                <MessageBlock key={i} m={m} t={t} />
+              ))
+            )}
+            <div ref={endRef} className="h-1" />
+          </div>
+
+          <div className="shrink-0 border-t border-border-default bg-bg-base/90 px-4 md:px-6 py-4">
+            {!hasConversation && !loadingHistory && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {suggestions.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => send(s)}
+                    disabled={isLoading}
+                    className="text-[12px] text-text-secondary bg-bg-panel border border-border-default px-3.5 py-2 rounded-full hover:text-text-primary hover:border-primary/40 hover:bg-primary/5 transition cursor-pointer disabled:opacity-50"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="flex gap-2 items-end bg-bg-panel border border-border-default rounded-2xl p-2 pl-4 focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-primary/10 transition max-w-4xl mx-auto w-full">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    send();
+                  }
+                }}
+                rows={1}
+                placeholder={t('askAI.inputPlaceholder')}
+                className="flex-1 bg-transparent border-none outline-none text-[14px] text-text-primary placeholder:text-text-muted py-2.5 resize-none max-h-32 leading-relaxed"
+                disabled={isLoading || loadingHistory}
+                style={{ minHeight: '44px' }}
+              />
+              <button
+                type="button"
+                onClick={() => send()}
+                disabled={!input.trim() || isLoading || loadingHistory}
+                aria-label="Send"
+                className="shrink-0 w-10 h-10 flex items-center justify-center bg-primary hover:bg-primary-hover text-white rounded-xl transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {isLoading ? <Loader2 size={18} className="animate-spin" /> : <ArrowUp size={18} strokeWidth={2.5} />}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -206,7 +373,7 @@ const MessageBlock = ({ m, t }) => {
   if (m.role === 'user') {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[85%] md:max-w-[75%] bg-primary text-white px-4 py-3 rounded-2xl rounded-br-md text-[14px] leading-relaxed shadow-sm">
+        <div className="max-w-[85%] lg:max-w-[70%] bg-primary text-white px-4 py-3 rounded-2xl rounded-br-md text-[14px] leading-relaxed shadow-sm">
           {m.text}
         </div>
       </div>
@@ -219,7 +386,7 @@ const MessageBlock = ({ m, t }) => {
         <Sparkles size={16} className="text-primary" />
       </div>
 
-      <div className="flex-1 min-w-0 space-y-3">
+      <div className="flex-1 min-w-0 space-y-3 max-w-4xl">
         {m.thinking ? (
           <ThinkingIndicator label={t('askAI.mentorThinking')} />
         ) : m.welcome ? (
@@ -252,8 +419,6 @@ const ThinkingIndicator = ({ label }) => (
 );
 
 const AiReplyCard = ({ m, t }) => {
-  const sourcesRef = useRef(null);
-
   const scrollToCitation = useCallback((index) => {
     const el = document.getElementById(`cite-${index}`);
     el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -271,7 +436,6 @@ const AiReplyCard = ({ m, t }) => {
             : 'border-border-default bg-bg-base/60'
       }`}
     >
-      {/* Answer body */}
       <div className="px-5 py-5 md:px-6 md:py-5">
         {m.error ? (
           <p className="text-[14px] text-red-400 leading-relaxed">{m.text}</p>
@@ -280,12 +444,8 @@ const AiReplyCard = ({ m, t }) => {
         )}
       </div>
 
-      {/* Sources footer */}
       {!m.error && m.citations?.length > 0 && (
-        <footer
-          ref={sourcesRef}
-          className="border-t border-border-default bg-bg-panel/50 px-5 py-4 md:px-6"
-        >
+        <footer className="border-t border-border-default bg-bg-panel/50 px-5 py-4 md:px-6">
           <div className="flex items-center justify-between gap-2 mb-3">
             <div className="flex items-center gap-2">
               <BookOpen size={14} className="text-primary" />
@@ -344,11 +504,7 @@ const CitationCard = ({ citation }) => {
 
   if (isLink) {
     return (
-      <Link
-        id={`cite-${citation.index}`}
-        to={href}
-        className={`${cls} no-underline`}
-      >
+      <Link id={`cite-${citation.index}`} to={href} className={`${cls} no-underline`}>
         {inner}
         <ExternalLink size={12} className="shrink-0 text-text-muted opacity-0 group-hover:opacity-100 transition" />
       </Link>

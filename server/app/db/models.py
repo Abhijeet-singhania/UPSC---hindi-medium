@@ -58,6 +58,7 @@ class User(Base):
     answers = relationship("Answer", back_populates="author")
     silent_sessions = relationship("SilentSession", back_populates="user")
     reputation_logs = relationship("ReputationLog", back_populates="user")
+    ai_chat_sessions = relationship("AiChatSession", back_populates="user")
 
 
 class Tag(Base):
@@ -290,6 +291,7 @@ class CurrentAffair(Base):
     subject_tags = Column(String(400), nullable=True)          # comma-separated
     published_date = Column(Date, nullable=False, index=True)
     is_published = Column(Boolean, default=False, index=True)
+    is_upsc_relevant = Column(Boolean, default=False, nullable=False, index=True)
     language = Column(String(5), default="hi", index=True)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -377,4 +379,45 @@ class ContentChunk(Base):
     embedding = Column(_Vector(768) if _PGVECTOR_AVAILABLE and _Vector else Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class AiChatMessageRole(str, enum.Enum):
+    USER = "user"
+    ASSISTANT = "assistant"
+
+
+class AiChatSession(Base):
+    """Persisted Ask-AI conversation thread per user."""
+    __tablename__ = "ai_chat_sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    title = Column(String(255), nullable=False, default="New chat")
+    language = Column(String(5), default="hi", nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    user = relationship("User", back_populates="ai_chat_sessions")
+    messages = relationship(
+        "AiChatMessage",
+        back_populates="session",
+        order_by="AiChatMessage.created_at",
+        cascade="all, delete-orphan",
+    )
+
+
+class AiChatMessage(Base):
+    __tablename__ = "ai_chat_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, ForeignKey("ai_chat_sessions.id"), nullable=False, index=True)
+    role = Column(Enum(AiChatMessageRole), nullable=False)
+    content = Column(Text, nullable=False)
+    citations_json = Column(Text, nullable=True)
+    retrieved_chunks = Column(Integer, nullable=True)
+    blocked = Column(Boolean, default=False)
+    error = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    session = relationship("AiChatSession", back_populates="messages")
 

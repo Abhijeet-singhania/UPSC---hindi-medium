@@ -669,6 +669,7 @@ def seed_demo_data(db: Session) -> None:
             subject_tags="Monetary Policy,RBI,Repo Rate,MPC,Inflation,Economy",
             published_date=today,
             is_published=True,
+            is_upsc_relevant=True,
             created_by=admin.id,
         ),
         CurrentAffair(
@@ -694,6 +695,7 @@ def seed_demo_data(db: Session) -> None:
             subject_tags="India-China,LAC,Border Dispute,Depsang,Foreign Policy",
             published_date=today - timedelta(days=1),
             is_published=True,
+            is_upsc_relevant=True,
             created_by=admin.id,
         ),
         CurrentAffair(
@@ -719,6 +721,7 @@ def seed_demo_data(db: Session) -> None:
             subject_tags="PMLA,ED,Supreme Court,Money Laundering,Judiciary,Civil Liberties",
             published_date=today - timedelta(days=1),
             is_published=True,
+            is_upsc_relevant=True,
             created_by=admin.id,
         ),
         CurrentAffair(
@@ -747,6 +750,7 @@ def seed_demo_data(db: Session) -> None:
             subject_tags="Heatwave,Climate Change,Disaster Management,IMD,NDMA,Urban Heat Island",
             published_date=today - timedelta(days=2),
             is_published=True,
+            is_upsc_relevant=True,
             created_by=admin.id,
         ),
         CurrentAffair(
@@ -771,6 +775,7 @@ def seed_demo_data(db: Session) -> None:
             subject_tags="SEBI,IPO,SME,Capital Market,Investor Protection,Stock Exchange",
             published_date=today - timedelta(days=2),
             is_published=True,
+            is_upsc_relevant=True,
             created_by=admin.id,
         ),
         CurrentAffair(
@@ -797,6 +802,7 @@ def seed_demo_data(db: Session) -> None:
             subject_tags="NEP 2020,Education Policy,PM SHRI,GER,Mother Tongue,Social Justice",
             published_date=today - timedelta(days=3),
             is_published=True,
+            is_upsc_relevant=True,
             created_by=admin.id,
         ),
         CurrentAffair(
@@ -821,6 +827,7 @@ def seed_demo_data(db: Session) -> None:
             subject_tags="Artemis Accords,ISRO,NASA,Space Policy,Outer Space Treaty,Lunar Mission",
             published_date=today - timedelta(days=3),
             is_published=True,
+            is_upsc_relevant=True,
             created_by=admin.id,
         ),
     ]

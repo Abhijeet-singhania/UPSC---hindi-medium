@@ -56,6 +56,14 @@ def _filter_by_language(q, language: Optional[str]):
     return q.filter(CurrentAffair.language == language)
 
 
+def _public_affairs_query(db: Session):
+    """Published affairs that passed UPSC relevance screening."""
+    return db.query(CurrentAffair).filter(
+        CurrentAffair.is_published == True,
+        CurrentAffair.is_upsc_relevant == True,
+    )
+
+
 # ── Public endpoints ────────────────────────────────────────────────────────
 
 @router.get("/", response_model=CurrentAffairListResponse)
@@ -72,7 +80,7 @@ def list_affairs(
     List published current affairs.
     Filter by date, GS paper, or subject tag.
     """
-    q = db.query(CurrentAffair).filter(CurrentAffair.is_published == True)
+    q = _public_affairs_query(db)
     q = _filter_by_language(q, language)
 
     if published_date:
@@ -92,6 +100,7 @@ def list_affairs(
 
     today_q = db.query(func.count(CurrentAffair.id)).filter(
         CurrentAffair.is_published == True,
+        CurrentAffair.is_upsc_relevant == True,
         CurrentAffair.published_date == date.today(),
     )
     today_q = _filter_by_language(today_q, language)
@@ -108,6 +117,7 @@ def get_todays_affairs(
     """Return all published current affairs for today."""
     q = db.query(CurrentAffair).filter(
         CurrentAffair.is_published == True,
+        CurrentAffair.is_upsc_relevant == True,
         CurrentAffair.published_date == date.today(),
     )
     q = _filter_by_language(q, language)
@@ -124,7 +134,7 @@ def get_archive(
     db: Session = Depends(get_db),
 ):
     """Paginated archive — filter by year and/or month."""
-    q = db.query(CurrentAffair).filter(CurrentAffair.is_published == True)
+    q = _public_affairs_query(db)
     q = _filter_by_language(q, language)
     if year:
         q = q.filter(func.extract("year", CurrentAffair.published_date) == year)
@@ -151,7 +161,7 @@ def get_affair(
     item = db.query(CurrentAffair).filter(CurrentAffair.id == affair_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Current affair not found")
-    if not item.is_published:
+    if not item.is_published or not item.is_upsc_relevant:
         raise HTTPException(status_code=404, detail="Current affair not found")
     return item
 
@@ -192,6 +202,7 @@ def create_affair(
         subject_tags=data.subject_tags,
         published_date=data.published_date,
         is_published=data.is_published,
+        is_upsc_relevant=True,
         language=data.language,
         created_by=current_user.id,
     )
@@ -220,7 +231,14 @@ def update_affair(
     if not item:
         raise HTTPException(status_code=404, detail="Current affair not found")
 
-    for key, value in data.model_dump(exclude_unset=True).items():
+    update_data = data.model_dump(exclude_unset=True)
+    if update_data.get("is_published") and not item.is_upsc_relevant:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot publish a current affair that is not marked UPSC-relevant.",
+        )
+
+    for key, value in update_data.items():
         setattr(item, key, value)
     item.updated_at = datetime.now(timezone.utc)
 
@@ -256,6 +274,7 @@ def delete_affair(
 @router.get("/admin/all")
 def admin_list_all_affairs(
     is_published: Optional[bool] = None,
+    is_upsc_relevant: Optional[bool] = None,
     skip: int = 0,
     limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
@@ -266,6 +285,8 @@ def admin_list_all_affairs(
     q = db.query(CurrentAffair)
     if is_published is not None:
         q = q.filter(CurrentAffair.is_published == is_published)
+    if is_upsc_relevant is not None:
+        q = q.filter(CurrentAffair.is_upsc_relevant == is_upsc_relevant)
     total = q.count()
     items = q.order_by(CurrentAffair.published_date.desc(), CurrentAffair.id.desc()).offset(skip).limit(limit).all()
     return {"items": items, "total": total}

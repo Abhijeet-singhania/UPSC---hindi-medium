@@ -26,9 +26,14 @@ from sqlalchemy.orm import Session
 
 from app.api.users import get_current_user
 from app.db.database import get_db
-from app.db.models import ContentChunk, CurrentAffair, User, UserRole
-from app.services import material_status, reindex_status
-from app.services.learning_profile_service import build_daily_plan, build_recommendations, get_profile
+from app.db.models import AiChatMessageRole, ContentChunk, CurrentAffair, User, UserRole
+from app.services import chat_service, material_status, reindex_status
+from app.schemas.ai_chat import (
+    ChatSessionCreate,
+    ChatSessionDetail,
+    ChatSessionSummary,
+    ChatSessionUpdate,
+)
 from app.services.rag_service import (
     build_context,
     find_related,
@@ -37,6 +42,7 @@ from app.services.rag_service import (
     refusal_message,
     retrieve,
 )
+from app.services.learning_profile_service import build_daily_plan, build_recommendations, get_profile
 
 router = APIRouter()
 
@@ -50,6 +56,7 @@ def _ensure_admin(user: User) -> None:
 
 class ChatRequest(BaseModel):
     message: str
+    session_id: Optional[int] = None
     language: Optional[str] = None     # override preferred_language
     gs_filter: Optional[str] = None    # e.g. "GS2"
     subject_filter: Optional[str] = None
@@ -66,10 +73,105 @@ class CitationOut(BaseModel):
 
 
 class ChatResponse(BaseModel):
+    session_id: int
     answer: str
     citations: list[CitationOut]
     retrieved_chunks: int
     blocked: bool = False
+
+
+# ── Chat sessions (history) ───────────────────────────────────────────────────
+
+@router.get("/sessions", response_model=list[ChatSessionSummary])
+def list_chat_sessions(
+    skip: int = 0,
+    limit: int = Query(50, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List the user's Ask-AI chat sessions, newest first."""
+    rows = chat_service.list_user_sessions(db, current_user.id, skip=skip, limit=limit)
+    return [ChatSessionSummary(**r) for r in rows]
+
+
+@router.post("/sessions", response_model=ChatSessionSummary)
+def create_chat_session(
+    body: ChatSessionCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Create an empty chat session."""
+    session = chat_service.create_session(
+        db,
+        current_user,
+        title=body.title or "New chat",
+        language=body.language,
+    )
+    return ChatSessionSummary(
+        id=session.id,
+        title=session.title,
+        language=session.language,
+        created_at=session.created_at,
+        updated_at=session.updated_at,
+        message_count=0,
+    )
+
+
+@router.get("/sessions/{session_id}", response_model=ChatSessionDetail)
+def get_chat_session(
+    session_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Load a chat session with full message history."""
+    session = chat_service.get_user_session(db, session_id, current_user.id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Chat session not found")
+    return ChatSessionDetail(
+        id=session.id,
+        title=session.title,
+        language=session.language,
+        created_at=session.created_at,
+        updated_at=session.updated_at,
+        messages=[chat_service.message_to_out(m) for m in session.messages],
+    )
+
+
+@router.patch("/sessions/{session_id}", response_model=ChatSessionSummary)
+def update_chat_session(
+    session_id: int,
+    body: ChatSessionUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    session = chat_service.get_user_session(db, session_id, current_user.id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Chat session not found")
+    if body.title is not None:
+        session.title = body.title.strip() or session.title
+    db.commit()
+    db.refresh(session)
+    count = len(session.messages)
+    return ChatSessionSummary(
+        id=session.id,
+        title=session.title,
+        language=session.language,
+        created_at=session.created_at,
+        updated_at=session.updated_at,
+        message_count=count,
+    )
+
+
+@router.delete("/sessions/{session_id}", status_code=204)
+def delete_chat_session(
+    session_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    session = chat_service.get_user_session(db, session_id, current_user.id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Chat session not found")
+    chat_service.delete_session(db, session)
 
 
 # ── Phase 2: Chat endpoint ────────────────────────────────────────────────────
@@ -93,9 +195,34 @@ def chat(
 
     language = request.language or current_user.preferred_language or "hi"
 
+    if request.session_id:
+        session = chat_service.get_user_session(db, request.session_id, current_user.id)
+        if not session:
+            raise HTTPException(status_code=404, detail="Chat session not found")
+    else:
+        session = chat_service.create_session(db, current_user, language=language)
+
+    history = chat_service.get_conversation_history(db, session.id)
+
+    chat_service.add_message(
+        db,
+        session,
+        role=AiChatMessageRole.USER,
+        content=request.message.strip(),
+    )
+
     if not is_upsc_relevant(request.message):
+        answer = refusal_message(language)
+        chat_service.add_message(
+            db,
+            session,
+            role=AiChatMessageRole.ASSISTANT,
+            content=answer,
+            blocked=True,
+        )
         return ChatResponse(
-            answer=refusal_message(language),
+            session_id=session.id,
+            answer=answer,
             citations=[],
             retrieved_chunks=0,
             blocked=True,
@@ -113,12 +240,21 @@ def chat(
     context, citations = build_context(chunks)
 
     if not context.strip():
-        # Fallback: answer without context if index is empty
-        answer = generate(request.message, "", language=language)
+        answer = generate(request.message, "", language=language, history=history)
     else:
-        answer = generate(request.message, context, language=language)
+        answer = generate(request.message, context, language=language, history=history)
+
+    chat_service.add_message(
+        db,
+        session,
+        role=AiChatMessageRole.ASSISTANT,
+        content=answer,
+        citations=citations,
+        retrieved_chunks=len(chunks),
+    )
 
     return ChatResponse(
+        session_id=session.id,
         answer=answer,
         citations=[CitationOut(**c) for c in citations],
         retrieved_chunks=len(chunks),
@@ -175,6 +311,7 @@ def get_recommendations(
         db.query(CurrentAffair.subject_tags)
         .filter(
             CurrentAffair.is_published == True,
+            CurrentAffair.is_upsc_relevant == True,
             CurrentAffair.published_date == date.today(),
         )
         .limit(5)

@@ -479,32 +479,34 @@ def run_ingestion(*, triggered_by: str = "scheduler") -> None:
 
             ai_data: Optional[dict] = None
 
-            if use_ai and ai_calls < CA_INGESTION_MAX_AI_ARTICLES:
-                try:
-                    if ai_calls > 0:
-                        time.sleep(CA_INGESTION_GEMINI_DELAY_SEC)
-                    _log("info", "Gemini call %d/%d for: %s", ai_calls + 1, CA_INGESTION_MAX_AI_ARTICLES, title[:60])
-                    ai_data = _process_with_gemini(
-                        api_key, title, full_text, model=gemini_model
-                    )
-                    ai_calls += 1
-                    if ai_data is None:
-                        _log("info", "Gemini: not UPSC-relevant, skipping: %s", title[:60])
-                        skipped += 1
-                        continue
-                    _log("info", "Gemini OK → %s (%s)", title[:50], ai_data.get("gs_paper", "?"))
-                except QuotaExhausted as exc:
-                    use_ai = False
-                    _log(
-                        "warning",
-                        "Gemini unavailable after %d call(s) on %r — saving rest without AI. %s",
-                        ai_calls,
-                        title[:50],
-                        str(exc)[:180],
-                    )
+            if not use_ai:
+                _log("info", "Skip (no GEMINI_API_KEY — UPSC relevance required): %s", title[:60])
+                skipped += 1
+                continue
 
-            if not ai_data and api_key:
-                raw_fallback += 1
+            try:
+                if ai_calls > 0:
+                    time.sleep(CA_INGESTION_GEMINI_DELAY_SEC)
+                _log("info", "Gemini screening %d for: %s", ai_calls + 1, title[:60])
+                ai_data = _process_with_gemini(
+                    api_key, title, full_text, model=gemini_model
+                )
+                ai_calls += 1
+                if ai_data is None:
+                    _log("info", "Gemini: not UPSC-relevant, skipping: %s", title[:60])
+                    skipped += 1
+                    continue
+                _log("info", "Gemini OK → %s (%s)", title[:50], ai_data.get("gs_paper", "?"))
+            except QuotaExhausted as exc:
+                use_ai = False
+                _log(
+                    "warning",
+                    "Gemini quota exhausted after %d call(s) — skipping remainder. %s",
+                    ai_calls,
+                    str(exc)[:180],
+                )
+                skipped += 1
+                continue
 
             summary, detailed_notes = _build_affair_text(title, full_text, ai_data)
 
@@ -517,13 +519,14 @@ def run_ingestion(*, triggered_by: str = "scheduler") -> None:
                 title=title,
                 summary=summary,
                 detailed_notes=detailed_notes,
-                syllabus_links=ai_data.get("syllabus_links") if ai_data else None,
+                syllabus_links=ai_data.get("syllabus_links"),
                 source_url=entry["url"],
                 source_name=entry["source"],
-                gs_paper=ai_data.get("gs_paper") if ai_data else None,
-                subject_tags=ai_data.get("subject_tags") if ai_data else None,
+                gs_paper=ai_data.get("gs_paper"),
+                subject_tags=ai_data.get("subject_tags"),
                 published_date=today,
                 is_published=False,
+                is_upsc_relevant=True,
                 language="en",
             )
             db.add(affair)

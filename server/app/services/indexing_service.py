@@ -282,7 +282,10 @@ def backfill_all(triggered_by: str = "system") -> dict:
 
     try:
         # --- Current Affairs ---
-        affairs = db.query(CurrentAffair).filter(CurrentAffair.is_published == True).all()
+        affairs = db.query(CurrentAffair).filter(
+            CurrentAffair.is_published == True,
+            CurrentAffair.is_upsc_relevant == True,
+        ).all()
         _log("info", f"Indexing {len(affairs)} published current affairs…")
         for item in affairs:
             try:

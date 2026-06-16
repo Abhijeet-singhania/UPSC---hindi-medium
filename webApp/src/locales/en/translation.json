@@ -413,6 +413,10 @@
     "dek": "Trained on the UPSC syllabus, fact-checked against PYQs and standard sources. Cites everything. Won't bluff. Tries to teach, not just answer.",
     "speedChip": "HAIKU 4.5 · < 800ms",
     "sessions": "SESSIONS",
+    "newChat": "New chat",
+    "noSessions": "Your chats will appear here",
+    "messages": "messages",
+    "deleteConfirm": "Delete this chat?",
     "aiCredits": "AI CREDITS · UNLIMITED",
     "proPlanInfo": "Pro plan · resets monthly",
     "suggestions": {
