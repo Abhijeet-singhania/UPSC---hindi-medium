@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -10,6 +11,8 @@ from sqlalchemy.orm import Session
 
 from app.db.models import AiChatMessage, AiChatMessageRole, AiChatSession, User
 from app.schemas.ai_chat import ChatMessageOut, CitationOut
+
+logger = logging.getLogger(__name__)
 
 _MAX_TITLE_LEN = 80
 _HISTORY_TURNS = 8
@@ -37,6 +40,7 @@ def create_session(
     db.add(session)
     db.commit()
     db.refresh(session)
+    logger.info("Chat session created id=%s user=%s title=%r", session.id, user.id, title)
     return session
 
 
@@ -76,6 +80,7 @@ def list_user_sessions(db: Session, user_id: int, *, skip: int = 0, limit: int =
 
 
 def delete_session(db: Session, session: AiChatSession) -> None:
+    logger.info("Deleting chat session id=%s user=%s", session.id, session.user_id)
     db.delete(session)
     db.commit()
 
@@ -106,6 +111,14 @@ def add_message(
         session.title = _title_from_message(content)
     db.commit()
     db.refresh(msg)
+    logger.debug(
+        "Chat message saved id=%s session=%s role=%s chars=%d blocked=%s",
+        msg.id,
+        session.id,
+        role.value,
+        len(content),
+        blocked,
+    )
     return msg
 
 

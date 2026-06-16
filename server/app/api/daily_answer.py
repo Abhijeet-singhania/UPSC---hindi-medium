@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime, timezone, date
+import logging
 import pytz
 
 from app.db.database import get_db
@@ -15,6 +16,7 @@ from app.services.reputation_service import add_reputation, apply_upvote_reputat
 from app.api.users import get_current_user
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 # ==================== Daily Questions (Admin) ====================
@@ -61,6 +63,14 @@ def create_daily_question(
     db.add(daily_question)
     db.commit()
     db.refresh(daily_question)
+    logger.info(
+        "Daily question created id=%s by=%s active=%s scheduled=%s title=%r",
+        daily_question.id,
+        current_user.id,
+        should_activate,
+        scheduled_date,
+        question_data.title[:50],
+    )
 
     return _format_daily_question(daily_question)
 

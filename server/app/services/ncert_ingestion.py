@@ -59,6 +59,15 @@ def ingest_document(
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"NCERT file not found: {file_path}")
 
+    logger.info(
+        "NCERT ingest start book=%r subject=%s gs=%s chapter=%s file=%s",
+        book_name,
+        subject,
+        gs_paper,
+        chapter,
+        os.path.basename(file_path),
+    )
+
     # ── Extract text ──────────────────────────────────────────────────────────
     ext = os.path.splitext(file_path)[1].lower()
     if ext == ".pdf":

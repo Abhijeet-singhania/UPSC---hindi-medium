@@ -137,6 +137,7 @@ def retrieve(
     Returns the top-k most semantically similar chunks to `query`.
     """
     k = top_k or settings.AI_RETRIEVAL_TOP_K
+    logger.info("RAG retrieve start top_k=%d lang=%s query_len=%d", k, language, len(query))
     query_vec = embed_single(query, task_type="RETRIEVAL_QUERY")
 
     # Build the base SQL — pgvector cosine distance operator <=>
@@ -196,6 +197,17 @@ def retrieve(
         c._similarity = getattr(row, "similarity", 0.0)
         chunks.append(c)
 
+    if chunks:
+        top_sim = getattr(chunks[0], "_similarity", 0.0)
+        logger.info(
+            "RAG retrieve done chunks=%d top_similarity=%.3f types=%s",
+            len(chunks),
+            float(top_sim),
+            {c.source_type for c in chunks},
+        )
+    else:
+        logger.info("RAG retrieve done chunks=0 (empty index or no matches)")
+
     return chunks
 
 
@@ -248,6 +260,12 @@ def build_context(chunks: list[ContentChunk]) -> tuple[str, list[dict]]:
         used += token_count
 
     context_text = "\n\n---\n\n".join(context_parts)
+    logger.info(
+        "RAG context built citations=%d tokens_used≈%d parts=%d",
+        len(citations),
+        used,
+        len(context_parts),
+    )
     return context_text, citations
 
 
@@ -278,12 +296,14 @@ def is_upsc_relevant(query: str) -> bool:
     """
     heuristic = _heuristic_upsc_relevance(query)
     if heuristic is not None:
+        logger.info("UPSC relevance heuristic=%s query=%r", heuristic, query[:80])
         return heuristic
 
     if not settings.GEMINI_API_KEY:
-        # Without AI, only block obvious off-topic; allow ambiguous questions
+        logger.info("UPSC relevance: no API key, allowing ambiguous query")
         return True
 
+    logger.info("UPSC relevance: calling Gemini classifier query=%r", query[:80])
     try:
         from google import genai
         from google.genai import types
@@ -301,7 +321,9 @@ def is_upsc_relevant(query: str) -> bool:
         )
         raw = (response.text or "").strip()
         data = json.loads(raw)
-        return bool(data.get("is_upsc_relevant", False))
+        relevant = bool(data.get("is_upsc_relevant", False))
+        logger.info("UPSC relevance Gemini result=%s reason=%s", relevant, data.get("reason", ""))
+        return relevant
     except Exception as exc:
         logger.warning("UPSC relevance check failed, allowing question: %s", exc)
         return True
@@ -320,6 +342,7 @@ def generate(
     Falls back to a helpful no-context message if Gemini is unavailable.
     """
     if not settings.GEMINI_API_KEY:
+        logger.warning("Generate skipped — GEMINI_API_KEY not set")
         return (
             "AI mentor is not configured. Please set GEMINI_API_KEY in the server environment "
             "to enable this feature."
@@ -338,6 +361,13 @@ def generate(
         f"Question: {query}\n\n"
         f"{lang_instruction}\n"
         f"If this question is NOT related to UPSC exam preparation, refuse politely."
+    )
+
+    logger.info(
+        "Gemini generate start lang=%s history_turns=%d context_chars=%d",
+        language,
+        len(history or []),
+        len(context),
     )
 
     for attempt in range(1, 4):
@@ -368,7 +398,9 @@ def generate(
                     max_output_tokens=2048,
                 ),
             )
-            return response.text or "I could not generate a response. Please try rephrasing your question."
+            text = response.text or "I could not generate a response. Please try rephrasing your question."
+            logger.info("Gemini generate done chars=%d attempt=%d", len(text), attempt)
+            return text
         except Exception as exc:
             err = str(exc)
             if "429" in err or "quota" in err.lower():

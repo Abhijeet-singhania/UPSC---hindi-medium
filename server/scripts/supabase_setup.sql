@@ -3,5 +3,8 @@
 
 CREATE EXTENSION IF NOT EXISTS vector;
 
--- After this, run migrations from your machine or CI:
---   cd server && alembic upgrade head
+-- Ask-AI chat history: paste contents of server/scripts/ensure_chat_tables.sql
+-- Or run: docker exec upsc_api alembic upgrade head
+
+-- Then run migrations from your machine or CI:
+--   docker exec upsc_api alembic upgrade head

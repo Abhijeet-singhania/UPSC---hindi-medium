@@ -60,6 +60,9 @@ class Settings(BaseSettings):
     AI_CHUNK_SIZE_TOKENS: int = 300
     AI_CHUNK_OVERLAP_TOKENS: int = 50
 
+    # Terminal log verbosity: DEBUG | INFO | WARNING | ERROR
+    LOG_LEVEL: str = "INFO"
+
     class Config:
         env_file = ".env"
         case_sensitive = True

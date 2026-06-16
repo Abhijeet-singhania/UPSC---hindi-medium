@@ -198,6 +198,8 @@ def index_source(
     if not text or not text.strip():
         return 0
 
+    logger.info("Index start %s:%s force=%s", source_type, source_id, force)
+
     # Split into chunks
     raw_chunks = split_into_chunks(text)
     if not raw_chunks:
@@ -226,7 +228,16 @@ def index_source(
         new_chunk_meta.append((idx, chunk_text, token_count, h))
 
     if not new_chunk_texts:
+        logger.info("Index skip %s:%s — no changed chunks", source_type, source_id)
         return 0  # nothing to update
+
+    logger.info(
+        "Index embedding %s:%s new_chunks=%d total_chunks=%d",
+        source_type,
+        source_id,
+        len(new_chunk_texts),
+        len(raw_chunks),
+    )
 
     # Embed all new chunks in one call (outside DB transaction)
     embeddings = embed_texts(new_chunk_texts)
@@ -256,7 +267,9 @@ def index_source(
             embedding=emb,
         ))
 
-    return atomic_replace_chunks(db, source_type, source_id, chunk_rows)
+    written = atomic_replace_chunks(db, source_type, source_id, chunk_rows)
+    logger.info("Index done %s:%s chunks_written=%d", source_type, source_id, written)
+    return written
 
 
 # ── Backfill all published content ───────────────────────────────────────────

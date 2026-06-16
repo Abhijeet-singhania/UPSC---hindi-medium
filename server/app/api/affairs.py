@@ -1,5 +1,6 @@
 from datetime import date, datetime, timezone
 from typing import List, Optional
+import logging
 import threading
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -17,6 +18,7 @@ from app.schemas.current_affair import (
 )
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 VALID_GS = {"GS1", "GS2", "GS3", "GS4", "Essay", "GS1+GS2", "GS1+GS3", "GS2+GS3"}
 VALID_DIFFICULTIES = {"easy", "medium", "hard"}
@@ -209,6 +211,14 @@ def create_affair(
     db.add(item)
     db.commit()
     db.refresh(item)
+    logger.info(
+        "CA created id=%s by user=%s published=%s upsc_relevant=%s title=%r",
+        item.id,
+        current_user.id,
+        item.is_published,
+        item.is_upsc_relevant,
+        item.title[:60],
+    )
 
     # Index immediately if published
     if item.is_published:
@@ -244,6 +254,13 @@ def update_affair(
 
     db.commit()
     db.refresh(item)
+    logger.info(
+        "CA updated id=%s published=%s upsc_relevant=%s by user=%s",
+        item.id,
+        item.is_published,
+        item.is_upsc_relevant,
+        current_user.id,
+    )
 
     # Re-index if published (handles newly-published items)
     if item.is_published:
@@ -303,6 +320,8 @@ def trigger_ingestion(current_user: User = Depends(get_current_user)):
     Admin/Moderator only.
     """
     _ensure_admin(current_user)
+
+    logger.info("CA ingestion triggered by admin user=%s", current_user.id)
 
     from app.services import ca_ingestion_status
     from app.services.ca_ingestion import run_ingestion

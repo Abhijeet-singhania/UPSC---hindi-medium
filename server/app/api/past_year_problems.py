@@ -6,6 +6,7 @@ import os
 import shutil
 import tempfile
 import threading
+import logging
 
 from app.db.database import get_db
 from app.db.models import PastYearProblem, PastYearExamType, User, UserRole
@@ -21,6 +22,7 @@ from app.api.users import get_current_user
 from app.services import pyq_import_status
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 VALID_EXAM_TYPES = {"prelims", "mains"}
 VALID_OPTIONS = {"A", "B", "C", "D"}
@@ -241,6 +243,15 @@ async def parse_pyq_admin(
             f_out.write(content)
         source_label = file.filename
 
+    logger.info(
+        "PYQ parse queued by user=%s year=%s exam=%s source=%s use_ai=%s",
+        current_user.id,
+        year,
+        exam_type,
+        source_label,
+        use_ai,
+    )
+
     def _run():
         from app.services.pyq_parser_service import extract_text, parse_pyq_document
 
@@ -306,6 +317,13 @@ def import_pyq_admin(
     if not body.questions:
         raise HTTPException(status_code=400, detail="No questions to import.")
 
+    logger.info(
+        "PYQ import start user=%s year=%s count=%d",
+        current_user.id,
+        body.year,
+        len(body.questions),
+    )
+
     for q in body.questions:
         if q.correct_option:
             _validate_option(q.correct_option)
@@ -333,6 +351,12 @@ def import_pyq_admin(
             f"Done — saved {result['saved']}, skipped {result['skipped']} duplicates",
         )
         pyq_import_status.complete(result)
+        logger.info(
+            "PYQ import done user=%s saved=%d skipped=%d",
+            current_user.id,
+            result["saved"],
+            result["skipped"],
+        )
         return result
     except Exception as exc:
         pyq_import_status.fail(str(exc))

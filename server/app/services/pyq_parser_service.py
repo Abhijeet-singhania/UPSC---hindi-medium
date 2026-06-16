@@ -307,6 +307,13 @@ def parse_pyq_document(
     """
     warnings: list[str] = []
     text = _clean_text(raw_text)
+    logger.info(
+        "PYQ parse start exam=%s year=%s chars=%d use_ai=%s",
+        exam_type,
+        year,
+        len(text),
+        use_ai,
+    )
 
     if not text:
         return {"parser": "none", "questions": [], "warnings": ["No text extracted."]}
@@ -344,6 +351,13 @@ def parse_pyq_document(
     for q in questions:
         q.setdefault("subject", default_subject)
         q.setdefault("language", language)
+
+    logger.info(
+        "PYQ parse done parser=%s questions=%d warnings=%d",
+        parser,
+        len(questions),
+        len(warnings),
+    )
 
     return {
         "parser": parser,

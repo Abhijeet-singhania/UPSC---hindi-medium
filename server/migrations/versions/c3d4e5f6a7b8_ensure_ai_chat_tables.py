@@ -1,31 +1,23 @@
-"""add ai chat history tables and is_upsc_relevant on current_affairs
+"""ensure ai chat tables exist (idempotent for Supabase)
 
-Revision ID: b2c3d4e5f6a7
-Revises: a1b2c3d4e5f6
-Create Date: 2026-06-10
+Revision ID: c3d4e5f6a7b8
+Revises: b2c3d4e5f6a7
+Create Date: 2026-06-16
+
+Safe to run when b2c3d4e5f6a7 was stamped but tables were never created.
+Uses raw SQL — no PostgreSQL ENUM type (role stored as VARCHAR).
 """
 from typing import Sequence, Union
 
 from alembic import op
 
-revision: str = "b2c3d4e5f6a7"
-down_revision: Union[str, None] = "a1b2c3d4e5f6"
+revision: str = "c3d4e5f6a7b8"
+down_revision: Union[str, None] = "b2c3d4e5f6a7"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.execute(
-        "ALTER TABLE current_affairs ADD COLUMN IF NOT EXISTS "
-        "is_upsc_relevant BOOLEAN NOT NULL DEFAULT FALSE"
-    )
-    op.execute(
-        "UPDATE current_affairs SET is_upsc_relevant = TRUE "
-        "WHERE gs_paper IS NOT NULL OR created_by IS NOT NULL"
-    )
-
-    # VARCHAR role — avoids PostgreSQL ENUM conflicts with SQLAlchemy create_all()
-    op.execute("DROP TYPE IF EXISTS aichatmessagerole")
     op.execute(
         """
         CREATE TABLE IF NOT EXISTS ai_chat_sessions (
@@ -64,5 +56,3 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.execute("DROP TABLE IF EXISTS ai_chat_messages")
     op.execute("DROP TABLE IF EXISTS ai_chat_sessions")
-    op.execute("DROP TYPE IF EXISTS aichatmessagerole")
-    op.execute("ALTER TABLE current_affairs DROP COLUMN IF EXISTS is_upsc_relevant")

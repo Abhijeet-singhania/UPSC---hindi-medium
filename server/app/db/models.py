@@ -411,7 +411,7 @@ class AiChatMessage(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     session_id = Column(Integer, ForeignKey("ai_chat_sessions.id"), nullable=False, index=True)
-    role = Column(Enum(AiChatMessageRole), nullable=False)
+    role = Column(Enum(AiChatMessageRole, native_enum=False, length=20), nullable=False)
     content = Column(Text, nullable=False)
     citations_json = Column(Text, nullable=True)
     retrieved_chunks = Column(Integer, nullable=True)

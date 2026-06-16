@@ -18,6 +18,7 @@ import os
 import shutil
 import tempfile
 import threading
+import logging
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
@@ -45,6 +46,7 @@ from app.services.rag_service import (
 from app.services.learning_profile_service import build_daily_plan, build_recommendations, get_profile
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 def _ensure_admin(user: User) -> None:
@@ -194,6 +196,13 @@ def chat(
         raise HTTPException(status_code=400, detail="Message cannot be empty")
 
     language = request.language or current_user.preferred_language or "hi"
+    logger.info(
+        "Chat request user=%s session=%s lang=%s msg_len=%d",
+        current_user.id,
+        request.session_id,
+        language,
+        len(request.message),
+    )
 
     if request.session_id:
         session = chat_service.get_user_session(db, request.session_id, current_user.id)
@@ -201,6 +210,7 @@ def chat(
             raise HTTPException(status_code=404, detail="Chat session not found")
     else:
         session = chat_service.create_session(db, current_user, language=language)
+        logger.info("Created new chat session id=%s for user=%s", session.id, current_user.id)
 
     history = chat_service.get_conversation_history(db, session.id)
 
@@ -212,6 +222,7 @@ def chat(
     )
 
     if not is_upsc_relevant(request.message):
+        logger.info("Chat blocked (off-topic) session=%s user=%s", session.id, current_user.id)
         answer = refusal_message(language)
         chat_service.add_message(
             db,
@@ -236,13 +247,28 @@ def chat(
         gs_paper=request.gs_filter,
         subject=request.subject_filter,
     )
+    logger.info("RAG retrieved %d chunks for session=%s", len(chunks), session.id)
 
     context, citations = build_context(chunks)
+    logger.info(
+        "Built context session=%s citations=%d context_chars=%d",
+        session.id,
+        len(citations),
+        len(context),
+    )
 
     if not context.strip():
+        logger.info("Generating answer without RAG context session=%s", session.id)
         answer = generate(request.message, "", language=language, history=history)
     else:
         answer = generate(request.message, context, language=language, history=history)
+
+    logger.info(
+        "Chat complete session=%s user=%s answer_chars=%d",
+        session.id,
+        current_user.id,
+        len(answer),
+    )
 
     chat_service.add_message(
         db,

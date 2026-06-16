@@ -10,8 +10,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import make_url
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+import logging
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 def _is_supabase_url(url: str) -> bool:
@@ -50,6 +53,11 @@ def _create_db_engine(*, pool_class=None):
     if connect_args:
         engine_kwargs["connect_args"] = connect_args
 
+    logger.info(
+        "Creating DB engine host=%s ssl=%s",
+        make_url(url).host or "?",
+        connect_args.get("sslmode", "default"),
+    )
     return create_engine(url, **engine_kwargs)
 
 

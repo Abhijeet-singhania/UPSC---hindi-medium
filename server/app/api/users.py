@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy import func as sqlfunc
 from sqlalchemy.orm import Session
 from typing import Optional
+import logging
 
 from app.db.database import get_db
 from app.db.models import User, SilentSession, Answer, DailyAnswer, MockTestAttempt
@@ -14,6 +15,7 @@ from app.config import settings
 from app.constants import API_V1_PREFIX, FLAWLESS_MIN_QUESTIONS
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{API_V1_PREFIX}/users/login-form")
 oauth2_scheme_optional = OAuth2PasswordBearer(
@@ -88,6 +90,7 @@ def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
+    logger.info("User registered id=%s email=%s", user.id, user.email)
     return user
 
 
@@ -96,6 +99,7 @@ def login_user(login_data: UserLogin, db: Session = Depends(get_db)):
     """Authenticate user and return access token."""
     user = db.query(User).filter(User.email == login_data.email).first()
     if not user or not verify_password(login_data.password, user.hashed_password):
+        logger.warning("Login failed for email=%s", login_data.email)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
@@ -103,6 +107,7 @@ def login_user(login_data: UserLogin, db: Session = Depends(get_db)):
         )
     
     access_token = create_access_token(data={"sub": user.email})
+    logger.info("Login success user=%s email=%s", user.id, user.email)
     return {"access_token": access_token, "token_type": "bearer"}
 
 

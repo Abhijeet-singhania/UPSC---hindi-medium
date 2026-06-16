@@ -81,6 +81,7 @@ def embed_texts(texts: list[str], task_type: str = "RETRIEVAL_DOCUMENT") -> list
     if not texts:
         return []
 
+    logger.info("Embedding %d texts task_type=%s", len(texts), task_type)
     results: list[list[float] | None] = [None] * len(texts)
     non_empty = [(i, t) for i, t in enumerate(texts) if t and t.strip()]
 
@@ -143,7 +144,9 @@ def embed_texts(texts: list[str], task_type: str = "RETRIEVAL_DOCUMENT") -> list
 
     # Fill None slots (empty inputs) with zero-vectors
     zero = [0.0] * EMBEDDING_DIM
-    return [r if r is not None else zero for r in results]
+    out = [r if r is not None else zero for r in results]
+    logger.info("Embedding complete vectors=%d dim=%d", len(out), EMBEDDING_DIM)
+    return out
 
 
 def embed_single(text: str, task_type: str = "RETRIEVAL_QUERY") -> list[float]:

@@ -3,17 +3,12 @@ import time
 import logging
 from contextlib import asynccontextmanager
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-)
-# Ensure app.* loggers (ingestion, scheduler) show in Docker/uvicorn output
-logging.getLogger("app").setLevel(logging.INFO)
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.exc import OperationalError
 
+from app.logging_config import configure_logging
+from app.middleware.request_logging import RequestLoggingMiddleware
 from app.api import router as api_router
 from app.db.database import engine, SessionLocal
 from app.db import models
@@ -21,6 +16,8 @@ from app.db.models import PastYearProblem, PastYearExamType
 from app.config import settings
 from app.services.scheduler import start_scheduler, stop_scheduler
 from app.api.silent_library import sync_active_room_from_db
+
+configure_logging(os.environ.get("LOG_LEVEL", settings.LOG_LEVEL))
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +59,63 @@ except Exception as _vec_exc:
     )
 
 models.Base.metadata.create_all(bind=engine)
+
+
+def _ensure_chat_tables() -> None:
+    """Create Ask-AI history tables if missing (Supabase / skipped migrations)."""
+    from sqlalchemy import inspect, text
+
+    try:
+        insp = inspect(engine)
+        names = set(insp.get_table_names())
+        if "ai_chat_sessions" in names and "ai_chat_messages" in names:
+            logger.info("AI chat tables present.")
+            return
+
+        logger.warning("AI chat tables missing — creating ai_chat_sessions / ai_chat_messages")
+        with engine.begin() as conn:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS ai_chat_sessions (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL REFERENCES users(id),
+                    title VARCHAR(255) NOT NULL DEFAULT 'New chat',
+                    language VARCHAR(5) NOT NULL DEFAULT 'hi',
+                    created_at TIMESTAMPTZ DEFAULT now(),
+                    updated_at TIMESTAMPTZ DEFAULT now()
+                )
+            """))
+            conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS ix_ai_chat_sessions_user_id "
+                "ON ai_chat_sessions (user_id)"
+            ))
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS ai_chat_messages (
+                    id SERIAL PRIMARY KEY,
+                    session_id INTEGER NOT NULL
+                        REFERENCES ai_chat_sessions(id) ON DELETE CASCADE,
+                    role VARCHAR(20) NOT NULL,
+                    content TEXT NOT NULL,
+                    citations_json TEXT,
+                    retrieved_chunks INTEGER,
+                    blocked BOOLEAN DEFAULT false,
+                    error BOOLEAN DEFAULT false,
+                    created_at TIMESTAMPTZ DEFAULT now()
+                )
+            """))
+            conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS ix_ai_chat_messages_session_id "
+                "ON ai_chat_messages (session_id)"
+            ))
+        logger.info("AI chat tables created successfully.")
+    except Exception as exc:
+        logger.error(
+            "Failed to create AI chat tables: %s — run: docker exec upsc_api alembic upgrade head "
+            "or execute server/scripts/ensure_chat_tables.sql in Supabase SQL Editor.",
+            exc,
+        )
+
+
+_ensure_chat_tables()
 
 # Dev convenience: add preferred_language if DB existed before migration
 try:
@@ -172,9 +226,12 @@ seed_demo_data_if_enabled()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Start background scheduler on startup; stop it on shutdown."""
+    logger.info("Application startup — syncing focus room, starting scheduler")
     sync_active_room_from_db()
     start_scheduler()
+    logger.info("Application ready")
     yield
+    logger.info("Application shutdown — stopping scheduler")
     stop_scheduler()
 
 
@@ -194,6 +251,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(RequestLoggingMiddleware)
 
 # Include API routes
 app.include_router(api_router, prefix="/api/v1")
