@@ -83,3 +83,27 @@ class PastYearProblemFiltersResponse(BaseModel):
     subjects: List[str]
     papers: List[str]
     exam_types: List[str]
+
+
+class ParsedPyqQuestion(BaseModel):
+    """One question extracted from a PYQ document (preview before import)."""
+    question_number: Optional[str] = None
+    question_text: str
+    option_a: Optional[str] = None
+    option_b: Optional[str] = None
+    option_c: Optional[str] = None
+    option_d: Optional[str] = None
+    correct_option: Optional[str] = None
+    explanation: Optional[str] = None
+    subject: Optional[str] = None
+    topic: Optional[str] = None
+    marks: Optional[int] = None
+    word_limit: Optional[int] = None
+
+
+class PyqImportRequest(BaseModel):
+    year: int
+    exam_type: str
+    paper: Optional[str] = None
+    language: str = "hi"
+    questions: List[ParsedPyqQuestion]

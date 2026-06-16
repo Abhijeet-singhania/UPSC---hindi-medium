@@ -29,7 +29,14 @@ from app.db.database import get_db
 from app.db.models import ContentChunk, CurrentAffair, User, UserRole
 from app.services import material_status, reindex_status
 from app.services.learning_profile_service import build_daily_plan, build_recommendations, get_profile
-from app.services.rag_service import build_context, find_related, generate, retrieve
+from app.services.rag_service import (
+    build_context,
+    find_related,
+    generate,
+    is_upsc_relevant,
+    refusal_message,
+    retrieve,
+)
 
 router = APIRouter()
 
@@ -62,6 +69,7 @@ class ChatResponse(BaseModel):
     answer: str
     citations: list[CitationOut]
     retrieved_chunks: int
+    blocked: bool = False
 
 
 # ── Phase 2: Chat endpoint ────────────────────────────────────────────────────
@@ -84,6 +92,14 @@ def chat(
         raise HTTPException(status_code=400, detail="Message cannot be empty")
 
     language = request.language or current_user.preferred_language or "hi"
+
+    if not is_upsc_relevant(request.message):
+        return ChatResponse(
+            answer=refusal_message(language),
+            citations=[],
+            retrieved_chunks=0,
+            blocked=True,
+        )
 
     chunks = retrieve(
         db,

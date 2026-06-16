@@ -1,7 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, File, Form, UploadFile
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from typing import List, Optional
+import os
+import shutil
+import tempfile
+import threading
 
 from app.db.database import get_db
 from app.db.models import PastYearProblem, PastYearExamType, User, UserRole
@@ -11,13 +15,17 @@ from app.schemas.past_year_problem import (
     PastYearProblemResponse,
     PastYearProblemTestResponse,
     PastYearProblemFiltersResponse,
+    PyqImportRequest,
 )
 from app.api.users import get_current_user
+from app.services import pyq_import_status
 
 router = APIRouter()
 
 VALID_EXAM_TYPES = {"prelims", "mains"}
 VALID_OPTIONS = {"A", "B", "C", "D"}
+_ALLOWED_PYQ_EXTENSIONS = {".pdf", ".txt", ".md"}
+_MAX_PYQ_FILE_MB = 50
 
 
 def _index_pyq_bg(problem_id: int) -> None:
@@ -173,6 +181,162 @@ def get_past_year_problem_filters(
         "papers": papers,
         "exam_types": exam_types,
     }
+
+
+@router.get("/admin/pyq-import-status")
+def get_pyq_import_status(current_user: User = Depends(get_current_user)):
+    """Poll PYQ parse/import job status (Admin/Moderator only)."""
+    _ensure_admin(current_user)
+    return pyq_import_status.get_snapshot()
+
+
+@router.post("/admin/parse-pyq", status_code=202)
+async def parse_pyq_admin(
+    year: int = Form(...),
+    exam_type: str = Form(...),
+    paper: Optional[str] = Form(None),
+    language: str = Form("hi"),
+    default_subject: Optional[str] = Form(None),
+    use_ai: str = Form("false"),
+    raw_text: Optional[str] = Form(None),
+    file: Optional[UploadFile] = File(None),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Parse a PYQ document (PDF/text upload or pasted text) into structured questions.
+
+    Runs in background; poll GET /admin/pyq-import-status for results.
+    """
+    _ensure_admin(current_user)
+    _parse_exam_type(exam_type)
+
+    if not file and not (raw_text and raw_text.strip()):
+        raise HTTPException(status_code=400, detail="Provide a file or paste question text.")
+
+    snap = pyq_import_status.get_snapshot()
+    if snap["status"] == "running":
+        raise HTTPException(
+            status_code=409,
+            detail="A PYQ parse is already running. Wait or check /admin/pyq-import-status.",
+        )
+
+    tmp_dir: Optional[str] = None
+    tmp_path: Optional[str] = None
+    source_label = "pasted text"
+
+    if file and file.filename:
+        _, ext = os.path.splitext(file.filename)
+        if ext.lower() not in _ALLOWED_PYQ_EXTENSIONS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported file type '{ext}'. Upload PDF, .txt, or .md.",
+            )
+        content = await file.read()
+        if len(content) > _MAX_PYQ_FILE_MB * 1024 * 1024:
+            raise HTTPException(status_code=413, detail=f"File too large (max {_MAX_PYQ_FILE_MB} MB).")
+        tmp_dir = tempfile.mkdtemp(prefix="upsc_pyq_")
+        safe_name = os.path.basename(file.filename).replace(" ", "_")
+        tmp_path = os.path.join(tmp_dir, safe_name)
+        with open(tmp_path, "wb") as f_out:
+            f_out.write(content)
+        source_label = file.filename
+
+    def _run():
+        from app.services.pyq_parser_service import extract_text, parse_pyq_document
+
+        use_ai_flag = str(use_ai).lower() in ("true", "1", "yes", "on")
+
+        try:
+            pyq_import_status.reset("parse")
+            pyq_import_status.append_log("info", f"Parsing PYQ — {source_label} ({year} {exam_type})")
+
+            if tmp_path:
+                text = extract_text(tmp_path)
+            else:
+                text = raw_text or ""
+
+            pyq_import_status.append_log("info", f"Extracted {len(text):,} characters")
+            result = parse_pyq_document(
+                text,
+                exam_type=exam_type,
+                year=year,
+                paper=paper,
+                language=language,
+                default_subject=default_subject,
+                use_ai=use_ai_flag,
+            )
+
+            for w in result.get("warnings") or []:
+                pyq_import_status.append_log("info", w)
+
+            qcount = len(result.get("questions") or [])
+            pyq_import_status.append_log("info", f"Parsed {qcount} questions via {result.get('parser', '?')}")
+            pyq_import_status.complete({
+                "parser": result.get("parser"),
+                "total": qcount,
+                "questions": result.get("questions") or [],
+                "warnings": result.get("warnings") or [],
+                "char_count": result.get("char_count"),
+                "year": year,
+                "exam_type": exam_type,
+                "paper": paper,
+                "language": language,
+            })
+        except Exception as exc:
+            pyq_import_status.append_log("error", str(exc))
+            pyq_import_status.fail(str(exc))
+        finally:
+            if tmp_dir:
+                shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    threading.Thread(target=_run, daemon=True, name="pyq-parse").start()
+    return {"message": "PYQ parse started", "status": "running"}
+
+
+@router.post("/admin/import-pyq")
+def import_pyq_admin(
+    body: PyqImportRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Bulk import parsed PYQ questions into the database (Admin/Moderator only)."""
+    _ensure_admin(current_user)
+    _parse_exam_type(body.exam_type)
+
+    if not body.questions:
+        raise HTTPException(status_code=400, detail="No questions to import.")
+
+    for q in body.questions:
+        if q.correct_option:
+            _validate_option(q.correct_option)
+
+    from app.services.pyq_parser_service import save_parsed_questions
+
+    pyq_import_status.reset("import")
+    pyq_import_status.append_log("info", f"Importing {len(body.questions)} questions…")
+
+    try:
+        result = save_parsed_questions(
+            db,
+            [q.model_dump() for q in body.questions],
+            year=body.year,
+            exam_type=body.exam_type,
+            paper=body.paper,
+            language=body.language,
+            created_by=current_user.id,
+        )
+        for pid in result.get("ids") or []:
+            _index_pyq_bg(pid)
+
+        pyq_import_status.append_log(
+            "info",
+            f"Done — saved {result['saved']}, skipped {result['skipped']} duplicates",
+        )
+        pyq_import_status.complete(result)
+        return result
+    except Exception as exc:
+        pyq_import_status.fail(str(exc))
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
 @router.get("/{problem_id}", response_model=PastYearProblemResponse)

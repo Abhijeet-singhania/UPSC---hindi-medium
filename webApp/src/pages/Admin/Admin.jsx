@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Newspaper, FlaskConical, PenTool, Settings2,
   Users, RefreshCw, CheckCircle2, XCircle, Trash2, Play, Clock,
   AlertTriangle, ChevronDown, ChevronUp, Plus, Shield, Zap,
-  Eye, EyeOff, RotateCcw, Activity, Database, Calendar, BookOpen
+  Eye, EyeOff, RotateCcw, Activity, Database, Calendar, BookOpen, FileText
 } from 'lucide-react';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
@@ -1298,6 +1298,298 @@ const StudyMaterialsTab = ({ token }) => {
   );
 };
 
+// ── Tab: PYQ Import ───────────────────────────────────────────────────────────
+
+const PyqImportTab = ({ token }) => {
+  const call = useAdminFetch(token);
+
+  const [year, setYear] = useState(new Date().getFullYear() - 1);
+  const [examType, setExamType] = useState('prelims');
+  const [paper, setPaper] = useState('');
+  const [language, setLanguage] = useState('hi');
+  const [defaultSubject, setDefaultSubject] = useState('');
+  const [useAi, setUseAi] = useState(false);
+  const [inputMode, setInputMode] = useState('file');
+  const [file, setFile] = useState(null);
+  const [rawText, setRawText] = useState('');
+  const [parsing, setParsing] = useState(false);
+  const [parseMsg, setParseMsg] = useState('');
+  const [pollKey, setPollKey] = useState(0);
+  const [importStatus, setImportStatus] = useState(null);
+  const [preview, setPreview] = useState([]);
+  const [selected, setSelected] = useState({});
+  const [importing, setImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    let timer;
+
+    const load = async () => {
+      try {
+        const data = await call('/past-year-problems/admin/pyq-import-status');
+        if (cancelled) return;
+        setImportStatus(data);
+
+        if (data.status === 'running') {
+          timer = setTimeout(load, 2000);
+        } else if (data.status === 'completed' && data.phase === 'parse' && data.result?.questions) {
+          const qs = data.result.questions;
+          setPreview(qs);
+          const sel = {};
+          qs.forEach((_, i) => { sel[i] = true; });
+          setSelected(sel);
+          setParseMsg(`✓ Parsed ${qs.length} questions (${data.result.parser})`);
+          setParsing(false);
+        } else if (data.status === 'failed' && data.phase === 'parse') {
+          setParseMsg(`✗ ${data.error || 'Parse failed'}`);
+          setParsing(false);
+        }
+      } catch {}
+    };
+
+    if (pollKey > 0) load();
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [call, pollKey]);
+
+  const handleParse = async (e) => {
+    e.preventDefault();
+    if (inputMode === 'file' && !file) return;
+    if (inputMode === 'text' && !rawText.trim()) return;
+
+    setParsing(true);
+    setParseMsg('');
+    setPreview([]);
+    setSelected({});
+
+    try {
+      const fd = new FormData();
+      fd.append('year', String(year));
+      fd.append('exam_type', examType);
+      if (paper) fd.append('paper', paper);
+      fd.append('language', language);
+      if (defaultSubject) fd.append('default_subject', defaultSubject);
+      fd.append('use_ai', useAi ? 'true' : 'false');
+
+      if (inputMode === 'file') {
+        fd.append('file', file);
+      } else {
+        fd.append('raw_text', rawText);
+      }
+
+      const res = await fetch(`${API_BASE}/api/v1/past-year-problems/admin/parse-pyq`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(formatApiError(err, res.status));
+      }
+
+      setPollKey((n) => n + 1);
+      setParseMsg('Parsing…');
+    } catch (err) {
+      setParseMsg(`✗ ${err.message}`);
+      setParsing(false);
+    }
+  };
+
+  const handleImport = async () => {
+    const questions = preview.filter((_, i) => selected[i]);
+    if (!questions.length) return;
+
+    setImporting(true);
+    setImportMsg('');
+    try {
+      const result = await call('/past-year-problems/admin/import-pyq', {
+        method: 'POST',
+        body: JSON.stringify({
+          year,
+          exam_type: examType,
+          paper: paper || null,
+          language,
+          questions,
+        }),
+      });
+      setImportMsg(`✓ Saved ${result.saved} questions (${result.skipped} duplicates skipped)`);
+      setPreview([]);
+      setSelected({});
+    } catch (err) {
+      setImportMsg(`✗ ${err.message}`);
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const toggleAll = (checked) => {
+    const sel = {};
+    preview.forEach((_, i) => { sel[i] = checked; });
+    setSelected(sel);
+  };
+
+  const inputCls = 'w-full bg-bg-surface border border-border-default rounded-lg px-3 py-2 text-[13px] text-text-primary focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-text-muted';
+  const selectedCount = Object.values(selected).filter(Boolean).length;
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-bg-panel border border-border-default rounded-xl p-5">
+        <div className="text-[12px] font-bold uppercase tracking-wider text-text-muted mb-4">
+          Import Past Year Questions
+        </div>
+        <p className="text-[12px] text-text-muted mb-4">
+          Upload a question paper (PDF or text) or paste raw text. Questions are parsed with regex;
+          enable AI parsing for messy or scanned PDFs.
+        </p>
+
+        <form onSubmit={handleParse} className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-[12px] text-text-muted mb-1">Year *</label>
+              <input type="number" required min={1990} max={2100} value={year}
+                onChange={(e) => setYear(Number(e.target.value))} className={inputCls} />
+            </div>
+            <div>
+              <label className="block text-[12px] text-text-muted mb-1">Exam *</label>
+              <select value={examType} onChange={(e) => setExamType(e.target.value)} className={inputCls}>
+                <option value="prelims">Prelims (MCQ)</option>
+                <option value="mains">Mains (Descriptive)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[12px] text-text-muted mb-1">Paper</label>
+              <input type="text" value={paper} onChange={(e) => setPaper(e.target.value)}
+                placeholder="e.g. GS Paper I, CSAT" className={inputCls} />
+            </div>
+            <div>
+              <label className="block text-[12px] text-text-muted mb-1">Default subject</label>
+              <select value={defaultSubject} onChange={(e) => setDefaultSubject(e.target.value)} className={inputCls}>
+                <option value="">Infer / none</option>
+                {SUBJECT_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[12px] text-text-muted mb-1">Language</label>
+              <select value={language} onChange={(e) => setLanguage(e.target.value)} className={inputCls}>
+                <option value="hi">Hindi</option>
+                <option value="en">English</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setInputMode('file')}
+              className={`px-3 py-1.5 rounded-lg text-[12px] font-medium border ${inputMode === 'file' ? 'bg-primary text-white border-primary' : 'border-border-default text-text-muted'}`}>
+              Upload file
+            </button>
+            <button type="button" onClick={() => setInputMode('text')}
+              className={`px-3 py-1.5 rounded-lg text-[12px] font-medium border ${inputMode === 'text' ? 'bg-primary text-white border-primary' : 'border-border-default text-text-muted'}`}>
+              Paste text
+            </button>
+          </div>
+
+          {inputMode === 'file' ? (
+            <div>
+              <label className="block text-[12px] text-text-muted mb-1">File (PDF, .txt, .md) *</label>
+              <input type="file" accept=".pdf,.txt,.md" onChange={(e) => setFile(e.target.files[0] || null)}
+                className="block w-full text-[13px] text-text-primary file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[12px] file:font-medium file:bg-[#fbefe9] file:text-primary" />
+            </div>
+          ) : (
+            <div>
+              <label className="block text-[12px] text-text-muted mb-1">Question paper text *</label>
+              <textarea rows={8} value={rawText} onChange={(e) => setRawText(e.target.value)}
+                placeholder="Paste numbered questions with (a)(b)(c)(d) options…"
+                className={`${inputCls} font-mono text-[12px]`} />
+            </div>
+          )}
+
+          <label className="flex items-center gap-2 text-[12px] text-text-muted cursor-pointer">
+            <input type="checkbox" checked={useAi} onChange={(e) => setUseAi(e.target.checked)} className="rounded" />
+            Use AI parsing (Gemini) — recommended for scanned or poorly formatted PDFs
+          </label>
+
+          <div className="flex items-center gap-3">
+            <ActionBtn variant="primary" disabled={parsing || (inputMode === 'file' ? !file : !rawText.trim())}>
+              {parsing ? <RefreshCw size={13} className="animate-spin" /> : <Play size={13} />}
+              {parsing ? 'Parsing…' : 'Parse questions'}
+            </ActionBtn>
+            {parseMsg && (
+              <span className={`text-[12px] ${parseMsg.startsWith('✓') ? 'text-emerald-600' : parseMsg.startsWith('✗') ? 'text-red-600' : 'text-text-muted'}`}>
+                {parseMsg}
+              </span>
+            )}
+          </div>
+        </form>
+
+        {importStatus?.status === 'running' && importStatus.phase === 'parse' && (
+          <div className="mt-4 bg-[#1a1a1a] text-[#e8e8e8] rounded-lg p-3 max-h-32 overflow-y-auto font-mono text-[11px]">
+            {(importStatus.logs || []).slice(-8).map((line, i) => (
+              <div key={i}><span className="text-[#666]">{line.ts?.slice(11, 19)} </span>{line.message}</div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {preview.length > 0 && (
+        <div className="bg-bg-panel border border-border-default rounded-xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-[12px] font-bold uppercase tracking-wider text-text-muted">
+              Preview ({preview.length} questions)
+            </div>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => toggleAll(true)} className="text-[11px] text-primary">Select all</button>
+              <span className="text-text-muted">·</span>
+              <button type="button" onClick={() => toggleAll(false)} className="text-[11px] text-text-muted">Clear</button>
+            </div>
+          </div>
+
+          <div className="space-y-3 max-h-[50vh] overflow-y-auto">
+            {preview.map((q, i) => (
+              <div key={i} className={`border rounded-lg p-3 text-[12px] ${selected[i] ? 'border-primary/40 bg-bg-surface' : 'border-border-default opacity-60'}`}>
+                <label className="flex gap-2 cursor-pointer">
+                  <input type="checkbox" checked={!!selected[i]} onChange={(e) => setSelected((s) => ({ ...s, [i]: e.target.checked }))} className="mt-1" />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-text-primary mb-1">
+                      {q.question_number || `Q${i + 1}`}
+                      {q.subject && <span className="text-text-muted font-normal ml-2">· {q.subject}</span>}
+                    </div>
+                    <div className="text-text-primary whitespace-pre-wrap">{q.question_text}</div>
+                    {examType === 'prelims' && (q.option_a || q.option_b) && (
+                      <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1 text-text-muted">
+                        {['A', 'B', 'C', 'D'].map((letter) => {
+                          const opt = q[`option_${letter.toLowerCase()}`];
+                          if (!opt) return null;
+                          return <div key={letter}>({letter.toLowerCase()}) {opt}</div>;
+                        })}
+                      </div>
+                    )}
+                    {q.correct_option && (
+                      <div className="mt-1 text-emerald-600">Answer: {q.correct_option}</div>
+                    )}
+                  </div>
+                </label>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-3 mt-4 pt-3 border-t border-border-default">
+            <ActionBtn variant="primary" onClick={handleImport} disabled={importing || selectedCount === 0}>
+              {importing ? <RefreshCw size={13} className="animate-spin" /> : <Database size={13} />}
+              {importing ? 'Importing…' : `Import ${selectedCount} to database`}
+            </ActionBtn>
+            {importMsg && (
+              <span className={`text-[12px] ${importMsg.startsWith('✓') ? 'text-emerald-600' : 'text-red-600'}`}>
+                {importMsg}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── Main Admin Page ───────────────────────────────────────────────────────────
 
 const TABS = [
@@ -1306,6 +1598,7 @@ const TABS = [
   { id: 'quiz', label: 'Quiz Bank', icon: <FlaskConical size={15} /> },
   { id: 'daily', label: 'Daily Questions', icon: <PenTool size={15} /> },
   { id: 'materials', label: 'Study Materials', icon: <BookOpen size={15} /> },
+  { id: 'pyq', label: 'PYQ Import', icon: <FileText size={15} /> },
   { id: 'jobs', label: 'Jobs & System', icon: <Settings2 size={15} /> },
   { id: 'users', label: 'Users', icon: <Users size={15} /> },
 ];
@@ -1370,6 +1663,7 @@ const Admin = () => {
           {activeTab === 'quiz' && <QuizTab token={token} />}
           {activeTab === 'daily' && <DailyTab token={token} />}
           {activeTab === 'materials' && <StudyMaterialsTab token={token} />}
+          {activeTab === 'pyq' && <PyqImportTab token={token} />}
           {activeTab === 'jobs' && <JobsTab token={token} />}
           {activeTab === 'users' && <UsersTab token={token} />}
         </div>
