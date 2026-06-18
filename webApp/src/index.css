@@ -1,11 +1,11 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
   --color-primary: var(--c-primary);
   --color-primary-hover: var(--c-primary-hover);
   --color-primary-light: var(--c-primary-light);
-  
+
   /* Semantic Backgrounds */
   --color-bg-base: var(--bg-base);
   --color-bg-panel: var(--bg-panel);
@@ -31,127 +31,316 @@
 
   /* Fonts */
   --font-serif: var(--font-serif);
+  --font-display: var(--font-display);
   --font-sans: var(--font-sans);
+  --font-devanagari: var(--font-devanagari);
+
+  /* Type Scale */
+  --text-display: clamp(56px, 8vw, 104px);
+  --text-display-sm: clamp(40px, 5vw, 72px);
+  --text-h1: clamp(28px, 3.5vw, 44px);
+  --text-h2: clamp(22px, 2.5vw, 32px);
+  --text-stat: clamp(48px, 6vw, 80px);
+  --text-body: 17px;
+  --text-small: 14px;
+  --text-label: 12px;
+
+  /* GS Paper Colors */
+  --color-gs1: var(--c-gs1);
+  --color-gs2: var(--c-gs2);
+  --color-gs3: var(--c-gs3);
+  --color-gs4: var(--c-gs4);
+
+  /* Ink Blue secondary */
+  --color-ink-blue: var(--c-ink-blue);
+
+  /* Glow */
+  --shadow-glow-primary: var(--glow-primary);
 }
 
 :root, .dark {
-  /* Brand Colors */
-  --c-primary: #D4613C; /* The terracotta orange */
-  --c-primary-hover: #e47551;
-  --c-primary-light: #f5e4df;
+  /* ── Brand: Saffron Gold — Ashok Chakra, Indian flag, authority ── */
+  --c-primary:       #C4902A;
+  --c-primary-hover: #D4A03A;
+  --c-primary-light: rgba(196,144,42,0.12);
 
-  /* Semantic Theme Colors (Defaulting to Dark) */
-  --bg-base: #11100F;
-  --bg-panel: #1C1B18;
-  --bg-panel-hover: #292825;
-  --bg-surface: #2B2A27;
-  --bg-surface-dark: #181715;
+  /* ── Secondary: India Ink Blue — government stationery ── */
+  --c-ink-blue:  #3B6CC4;
 
-  --border-default: #2f2d2a;
-  --border-muted: #3A3935;
-  --border-strong: #716F6C;
+  /* ── Backgrounds: deep navy-black, not warm brown ── */
+  --bg-base:         #08090D;   /* near-black with blue undertone */
+  --bg-panel:        #0E1019;   /* sidebar/navigation surface */
+  --bg-panel-hover:  #141820;   /* hover state */
+  --bg-surface:      #141820;   /* card surface */
+  --bg-surface-dark: #0A0C12;   /* deeper cards */
+  --bg-elevated:     #1B2030;   /* modals, elevated cards */
 
-  --text-primary: #EBEAE8;
-  --text-secondary: #A3A19E;
-  --text-muted: #716F6C;
-  
-  /* Backgrounds (Legacy/Fallbacks) */
-  --bg-sidebar: #1C1B18;
-  --bg-sidebar-hover: #292825;
-  --bg-main: #11100F; /* Updated to dark for default */
-  --bg-card: #1C1B18;
-  --bg-card-dark: #121110;
-  --bg-tag-green: #e6f3eb;
-  --bg-tag-orange: #fbefe9;
-  --bg-table-header: #121110;
-  
-  /* Texts (Legacy/Fallbacks) */
-  --text-dark: #EBEAE8; /* Flipped for dark default */
-  --text-light: #EBEAE8; 
-  --text-light-muted: #A3A19E;
-  --text-green: #2B7A4B;
-  
-  /* Borders (Legacy/Fallbacks) */
-  --border-color: #2f2d2a;
-  --border-sidebar: #2f2d2a;
-  
-  /* Fonts */
-  --font-serif: 'Playfair Display', serif;
-  --font-sans: 'Inter', sans-serif;
-  
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
-  
-  /* Graph / Heatmap */
-  --heat-1: #fbefe9;
-  --heat-2: #efa98d;
-  --heat-3: #D4613C;
-  --heat-4: #a84728;
-  --heat-5: #6d2c16;
+  /* ── Text: cool parchment ── */
+  --text-primary:   #E8ECF4;
+  --text-secondary: #8A95A8;
+  --text-muted:     #545D70;
+
+  /* ── Borders: gold-tinted, thin ── */
+  --border-default: rgba(196,144,42,0.12);
+  --border-muted:   rgba(196,144,42,0.07);
+  --border-strong:  rgba(196,144,42,0.28);
+
+  /* Legacy/Fallbacks */
+  --bg-sidebar:       #0E1019;
+  --bg-sidebar-hover: #141820;
+  --bg-main:          #08090D;
+  --bg-card:          #141820;
+  --bg-card-dark:     #0A0C12;
+  --bg-tag-green:     rgba(45,138,94,0.15);
+  --bg-tag-orange:    rgba(196,144,42,0.12);
+  --bg-table-header:  #0A0C12;
+
+  --text-dark:        #E8ECF4;
+  --text-light:       #E8ECF4;
+  --text-light-muted: #8A95A8;
+  --text-green:       #2D8A5E;
+
+  --border-color:   rgba(196,144,42,0.12);
+  --border-sidebar: rgba(196,144,42,0.15);
+
+  /* ── Fonts ── */
+  --font-display:    'Cormorant Garamond', serif;
+  --font-serif:      'Cormorant Garamond', serif;
+  --font-sans:       'DM Sans', sans-serif;
+  --font-devanagari: 'Noto Sans Devanagari', 'DM Sans', sans-serif;
+
+  /* ── Shadows: deep, authoritative ── */
+  --shadow-sm:         0 1px 2px rgba(0,0,0,0.4);
+  --shadow-md:         0 1px 0 rgba(255,255,255,0.03) inset, 0 4px 16px rgba(0,0,0,0.5);
+  --shadow-card:       0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px rgba(196,144,42,0.06);
+  --shadow-card-hover: 0 1px 0 rgba(255,255,255,0.05) inset, 0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(196,144,42,0.2);
+  --shadow-glow-primary: 0 0 60px rgba(196,144,42,0.15);
+  --shadow-glow-stat:    0 0 40px rgba(196,144,42,0.1);
+
+  /* ── Heatmap ── */
+  --heat-1: rgba(196,144,42,0.08);
+  --heat-2: rgba(196,144,42,0.25);
+  --heat-3: rgba(196,144,42,0.5);
+  --heat-4: rgba(196,144,42,0.75);
+  --heat-5: #C4902A;
+
+  /* ── GS Paper Colors: authoritative, distinct ── */
+  --c-gs1: #C4902A;   /* History/Society — saffron gold */
+  --c-gs2: #3B6CC4;   /* Polity/Governance — ink blue */
+  --c-gs3: #2D8A5E;   /* Economy/Environment — forest green */
+  --c-gs4: #9B4ECA;   /* Ethics — deep purple */
+
+  /* ── Depth / Glow ── */
+  --border-glass: rgba(196,144,42,0.1);
+  --glow-primary: 0 0 30px rgba(196,144,42,0.2);
 }
 
 .light {
-  /* Semantic Theme Colors (Light) */
-  --bg-base: #FDFBF8;
-  --bg-panel: #FFFFFF;
-  --bg-panel-hover: #F7F5F2;
-  --bg-surface: #FDFBF8;
+  --bg-base:         #F6F4EE;
+  --bg-panel:        #FFFFFF;
+  --bg-panel-hover:  #F0EDE6;
+  --bg-surface:      #F6F4EE;
   --bg-surface-dark: #FFFFFF;
 
-  --border-default: #Eeece9;
-  --border-muted: #E2E0DD;
-  --border-strong: #C4C2BF;
+  --border-default: rgba(160,120,40,0.15);
+  --border-muted:   rgba(160,120,40,0.08);
+  --border-strong:  rgba(160,120,40,0.35);
 
-  --text-primary: #201E1C;
-  --text-secondary: #575653;
-  --text-muted: #807E7B;
-  
-  /* Backgrounds (Legacy/Fallbacks) */
-  --bg-sidebar: #FFFFFF;
-  --bg-sidebar-hover: #F7F5F2;
-  --bg-main: #FDFBF8;
-  --bg-card: #FFFFFF;
-  --bg-card-dark: #FFFFFF;
-  
-  /* Texts (Legacy/Fallbacks) */
-  --text-dark: #201E1C;
-  --text-light: #201E1C;
-  --text-light-muted: #716F6C;
-  
-  /* Borders (Legacy/Fallbacks) */
-  --border-color: #Eeece9;
-  --border-sidebar: #Eeece9;
+  --text-primary:   #1A1C24;
+  --text-secondary: #4A5068;
+  --text-muted:     #7A8090;
+
+  --bg-sidebar:       #FFFFFF;
+  --bg-sidebar-hover: #F0EDE6;
+  --bg-main:          #F6F4EE;
+  --bg-card:          #FFFFFF;
+  --bg-card-dark:     #FFFFFF;
+
+  --text-dark:        #1A1C24;
+  --text-light:       #1A1C24;
+  --text-light-muted: #7A8090;
+
+  --border-color:   rgba(160,120,40,0.15);
+  --border-sidebar: rgba(160,120,40,0.15);
 }
+
+/* ═══════════════════════════════════════════════════
+   BASE STYLES
+═══════════════════════════════════════════════════ */
 
 body {
   font-family: var(--font-sans);
   color: var(--text-primary);
   background-color: var(--bg-base);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: var(--text-body);
+  line-height: 1.7;
+  position: relative;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-serif);
+/* Subtle grid texture — like government technical drawings */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 1;
+  background-image:
+    linear-gradient(rgba(196,144,42,0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(196,144,42,0.035) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* Atmospheric top glow — very faint saffron at the apex */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    ellipse 90% 45% at 50% -5%,
+    rgba(196, 144, 42, 0.06) 0%,
+    transparent 70%
+  );
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+body[lang="hi"], body.lang-hi {
+  font-family: var(--font-devanagari);
+}
+
+/* ═══════════════════════════════════════════════════
+   TYPOGRAPHY
+═══════════════════════════════════════════════════ */
+
+/* Display / major headings — Cormorant Garamond: scholarly, constitutional */
+h1, h2 {
+  font-family: 'Cormorant Garamond', serif;
   font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
 }
 
-/* Global Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 4px;
+/* UI headings — DM Sans: clean, readable at small sizes */
+h3, h4, h5, h6 {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
 }
-::-webkit-scrollbar-track {
-  background: transparent;
+
+/* Overline / section label */
+.overline {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
+
+/* ═══════════════════════════════════════════════════
+   UTILITY CLASSES
+═══════════════════════════════════════════════════ */
+
+/* Gradient text — saffron to gold */
+.text-gradient-brand {
+  background: linear-gradient(135deg, #C4902A 0%, #E8BC5A 60%, #C4902A 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-gradient-gold {
+  background: linear-gradient(135deg, #E8BC5A 0%, #C4902A 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Premium card — flat document surface */
+.card-premium {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-card);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.card-premium:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card-hover);
+  border-color: rgba(196,144,42,0.28);
+}
+
+/* Glow ring */
+.ring-glow {
+  box-shadow: var(--shadow-glow-primary);
+}
+
+/* Stat number */
+.stat-number {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: var(--text-stat);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+/* Ornamental divider — gazette style */
+.divider-ornament {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+.divider-ornament::before,
+.divider-ornament::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-default);
+}
+
+/* ═══════════════════════════════════════════════════
+   ANIMATIONS
+═══════════════════════════════════════════════════ */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.5s cubic-bezier(0.4,0,0.2,1), transform 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+}
+
+/* ═══════════════════════════════════════════════════
+   SCROLLBAR
+═══════════════════════════════════════════════════ */
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(212, 97, 60, 0.5); /* var(--color-primary) with 50% opacity */
+  background: rgba(196,144,42,0.4);
   border-radius: 9999px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: #D4613C; /* var(--color-primary) */
-}
+::-webkit-scrollbar-thumb:hover { background: #C4902A; }
 
 html {
   scrollbar-width: thin;
-  scrollbar-color: #D4613C transparent;
+  scrollbar-color: #C4902A transparent;
 }

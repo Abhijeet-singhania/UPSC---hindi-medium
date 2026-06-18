@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { PenLine, ThumbsUp, ChevronDown, ChevronUp, Loader2, AlertCircle, CheckCircle2, RefreshCw, BookOpen, Sparkles } from 'lucide-react';
 import { useApi } from '../../hooks/useApi';
+import { PageHeader, Card } from '../../components/ui';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
@@ -107,14 +108,10 @@ const AnswerWriting = () => {
 
   return (
     <div className="flex flex-col gap-6 max-w-[1100px] w-full mx-auto">
-      {/* Header */}
-      <div>
-        <div className="text-[11px] tracking-[2px] text-primary font-bold mb-2 uppercase">Daily Practice</div>
-        <h1 className="text-3xl font-serif text-text-primary mb-1">Answer Writing</h1>
-        <p className="text-text-secondary text-[14px]">
-          Write structured answers to UPSC-style questions and learn from peer responses.
-        </p>
-      </div>
+      <PageHeader
+        title="Answer Writing"
+        subtitle="Write structured answers to UPSC-style questions and learn from peer responses."
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
         {/* Left: Question List */}

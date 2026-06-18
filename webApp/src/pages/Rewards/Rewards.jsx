@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Trophy, Check, X, Loader2, Crown } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchProfile } from '../../store/slices/authSlice';
+import { PageHeader, Badge, Card, ProgressBar, Reveal } from '../../components/ui';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 
@@ -15,16 +16,6 @@ const BADGE_DEFS = [
   { key: "cabinet",     name: "Cabinet",      desc: "Reach Mentor rank (1 000 pts).",                rarity: "Mythic",    total: 1000, progressKey: "reputation" },
 ];
 
-const PageHeader = ({ kicker, title, dek, right }) => (
-  <div className="mb-8">
-    <div className="flex justify-between items-start mb-2">
-      <div className="text-[12px] tracking-[3px] text-primary uppercase font-bold mb-4">{kicker}</div>
-      {right}
-    </div>
-    <h1 className="text-4xl font-serif text-text-primary mb-4 leading-tight">{title}</h1>
-    <p className="text-lg text-text-secondary max-w-2xl">{dek}</p>
-  </div>
-);
 
 // Fallback levels while loading from API
 const FALLBACK_LEVELS = [
@@ -130,10 +121,9 @@ const Rewards = () => {
   return (
     <div className="flex flex-col gap-6 max-w-[1200px] mx-auto w-full">
       <PageHeader
-        kicker="THE LADDER · 5 LEVELS · 5 RANKS"
-        title={<>From Aspirant to <em className="text-primary not-italic font-serif font-medium">Cabinet Secretary</em>.</>}
-        dek="Earn cosmetics, badges, and titles for the work you'd do anyway. Streaks matter. Mistake-logs matter more. No pay-to-win — none of this is sold."
-        right={<div className="bg-primary/10 border border-primary text-primary px-3 py-1.5 rounded-full text-[11px] font-semibold flex items-center gap-2 shadow-sm"><Trophy size={14}/> {currentLevel.rank} · {reputation} pts</div>}
+        title={<>From Aspirant to <em className="text-primary not-italic">Cabinet Secretary</em>.</>}
+        subtitle="Earn cosmetics, badges, and titles for the work you'd do anyway. Streaks matter."
+        action={<div className="bg-primary/10 border border-primary/30 text-primary px-3 py-1.5 rounded-full text-[11px] font-semibold flex items-center gap-2"><Trophy size={13}/> {currentLevel.rank} · {reputation} pts</div>}
       />
 
       {/* Grid container */}

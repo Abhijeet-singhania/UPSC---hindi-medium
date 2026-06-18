@@ -6,6 +6,7 @@ import {
   CheckCircle2, Coffee, FlameIcon, Activity, Loader2,
   Volume2, VolumeX, Music, SkipBack, SkipForward, ListMusic, Plus, Trash2,
 } from 'lucide-react';
+import { PageHeader } from '../../components/ui';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 
@@ -794,11 +795,7 @@ const Wellbeing = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div>
-        <h2 className="font-serif text-[24px] font-semibold">{t('wellbeing.subtitle')}</h2>
-        <p className="text-text-muted text-[13px] mt-1">{t('wellbeing.desc')}</p>
-      </div>
+      <PageHeader title={t('wellbeing.subtitle')} subtitle={t('wellbeing.desc')} />
 
       {/* Focus Room */}
       <FocusRoom />

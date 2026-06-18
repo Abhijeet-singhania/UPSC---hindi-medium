@@ -6,6 +6,7 @@ import {
   Loader2, AlertCircle, Send, Trophy
 } from 'lucide-react';
 import { useApi } from '../../hooks/useApi';
+import { PageHeader, Badge, Reveal } from '../../components/ui';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 
@@ -481,19 +482,19 @@ const Community = () => {
         />
       )}
 
-      <div className="mb-6 flex items-start justify-between gap-4">
-        <div>
-          <h2 className="font-serif text-[28px] font-semibold text-text-primary mb-1">{t('community.title')}</h2>
-          <p className="text-text-muted text-[13px]">{t('community.subtitle')}</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setShowAskModal(true)}
-          className="bg-primary hover:bg-primary-hover text-white border-none py-2 px-4 rounded-md text-[13px] font-medium flex items-center gap-2 transition-colors cursor-pointer shrink-0"
-        >
-          <Plus size={16} /> Ask Question
-        </button>
-      </div>
+      <PageHeader
+        title={t('community.title')}
+        subtitle={t('community.subtitle')}
+        action={
+          <button
+            type="button"
+            onClick={() => setShowAskModal(true)}
+            className="bg-primary hover:bg-primary-hover text-white border-none py-2 px-4 rounded-lg text-[13px] font-medium flex items-center gap-2 transition-colors cursor-pointer shrink-0"
+          >
+          <Plus size={15} /> Ask Question
+          </button>
+        }
+      />
 
       <div className="flex gap-8 items-start">
         <div className="flex-1 min-w-0">

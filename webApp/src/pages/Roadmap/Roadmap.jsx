@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, ChevronRight, ChevronDown, ChevronUp, Sparkles, Clock, Loader2 } from 'lucide-react';
+import { PageHeader, Reveal } from '../../components/ui';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 
@@ -82,10 +83,7 @@ const Roadmap = () => {
 
       {/* Roadmap Header Phase Progress */}
       <div>
-         <div className="mb-6">
-           <h2 className="text-[28px] font-serif font-semibold mb-1">{t('roadmap.title')}</h2>
-           <p className="text-text-muted text-[13px]">{t('roadmap.subtitle')}</p>
-         </div>
+         <PageHeader title={t('roadmap.title')} subtitle={t('roadmap.subtitle')} />
          <div className="grid grid-cols-4 gap-4">
            <div className="bg-bg-panel border border-border-default p-5 rounded-xl flex flex-col min-h-[140px] shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
               <span className="text-[10px] tracking-[1px] font-semibold uppercase mb-3 text-[#2B7A4B]">{t('roadmap.phase1')}</span>

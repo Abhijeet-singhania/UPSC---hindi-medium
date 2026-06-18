@@ -133,28 +133,58 @@ export function parseAiBlocks(text) {
 
 export function AiMessageContent({ text, onCitationClick }) {
   const blocks = parseAiBlocks(text || '');
-
   if (blocks.length === 0) return null;
 
   return (
-    <div className="space-y-4">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
       {blocks.map((block, i) => {
         if (block.type === 'heading') {
-          const Tag = block.level <= 2 ? 'h3' : 'h4';
-          const cls =
-            block.level <= 2
-              ? 'font-serif text-[17px] md:text-[18px] font-semibold text-text-primary tracking-tight'
-              : 'text-[14px] font-semibold text-text-primary mt-1';
+          if (block.level <= 2) {
+            return (
+              <h3
+                key={i}
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: '20px',
+                  fontWeight: 600,
+                  letterSpacing: '-0.01em',
+                  color: 'var(--text-primary)',
+                  lineHeight: 1.3,
+                  marginTop: i > 0 ? '10px' : 0,
+                }}
+              >
+                {renderInline(block.text, onCitationClick)}
+              </h3>
+            );
+          }
           return (
-            <Tag key={i} className={cls}>
+            <h4
+              key={i}
+              style={{
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: '14px',
+                fontWeight: 600,
+                color: 'var(--text-primary)',
+                marginTop: i > 0 ? '6px' : 0,
+              }}
+            >
               {renderInline(block.text, onCitationClick)}
-            </Tag>
+            </h4>
           );
         }
 
         if (block.type === 'p') {
           return (
-            <p key={i} className="text-[14px] md:text-[15px] leading-[1.75] text-text-secondary">
+            <p
+              key={i}
+              style={{
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: '15px',
+                lineHeight: 1.8,
+                color: 'var(--text-secondary)',
+                margin: 0,
+              }}
+            >
               {renderInline(block.text, onCitationClick)}
             </p>
           );
@@ -162,11 +192,29 @@ export function AiMessageContent({ text, onCitationClick }) {
 
         if (block.type === 'ul') {
           return (
-            <ul key={i} className="space-y-2.5 pl-0 list-none m-0">
+            <ul key={i} style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {block.items.map((item, j) => (
-                <li key={j} className="flex gap-3 text-[14px] leading-[1.7] text-text-secondary">
-                  <span className="mt-2 w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                  <span>{renderInline(item, onCitationClick)}</span>
+                <li key={j} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                  <span
+                    style={{
+                      marginTop: '9px',
+                      width: '5px',
+                      height: '5px',
+                      borderRadius: '50%',
+                      background: '#C4902A',
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontFamily: "'DM Sans', sans-serif",
+                      fontSize: '15px',
+                      lineHeight: 1.75,
+                      color: 'var(--text-secondary)',
+                    }}
+                  >
+                    {renderInline(item, onCitationClick)}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -175,13 +223,40 @@ export function AiMessageContent({ text, onCitationClick }) {
 
         if (block.type === 'ol') {
           return (
-            <ol key={i} className="space-y-2.5 pl-0 list-none m-0 counter-reset-none">
+            <ol key={i} style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {block.items.map((item, j) => (
-                <li key={j} className="flex gap-3 text-[14px] leading-[1.7] text-text-secondary">
-                  <span className="shrink-0 w-6 h-6 rounded-lg bg-primary/10 text-primary text-[11px] font-bold flex items-center justify-center mt-0.5">
+                <li key={j} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                  <span
+                    style={{
+                      flexShrink: 0,
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '8px',
+                      background: 'rgba(196,144,42,0.1)',
+                      border: '1px solid rgba(196,144,42,0.15)',
+                      color: '#C4902A',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginTop: '2px',
+                      fontFamily: "'DM Sans', sans-serif",
+                    }}
+                  >
                     {j + 1}
                   </span>
-                  <span className="flex-1 pt-0.5">{renderInline(item, onCitationClick)}</span>
+                  <span
+                    style={{
+                      fontFamily: "'DM Sans', sans-serif",
+                      fontSize: '15px',
+                      lineHeight: 1.75,
+                      color: 'var(--text-secondary)',
+                      flex: 1,
+                    }}
+                  >
+                    {renderInline(item, onCitationClick)}
+                  </span>
                 </li>
               ))}
             </ol>
@@ -189,7 +264,17 @@ export function AiMessageContent({ text, onCitationClick }) {
         }
 
         if (block.type === 'hr') {
-          return <hr key={i} className="border-0 h-px bg-border-default my-2" />;
+          return (
+            <hr
+              key={i}
+              style={{
+                border: 'none',
+                height: '1px',
+                background: 'var(--border-default)',
+                margin: '6px 0',
+              }}
+            />
+          );
         }
 
         return null;

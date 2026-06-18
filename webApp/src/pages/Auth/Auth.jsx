@@ -72,24 +72,66 @@ const Auth = () => {
     visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }
   };
 
-  return (
-    <div className="min-h-screen bg-bg-base flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans relative overflow-hidden">
-      {/* Background aesthetics */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-[#BFA532]/10 blur-[100px] pointer-events-none" />
+  const brandFeatures = [
+    { label: 'AI-powered personalised study plan' },
+    { label: 'Adaptive Prelims MCQ engine with PYQs' },
+    { label: 'Live Silent Library — study with peers' },
+    { label: 'Hindi & English content, both GS & Optional' },
+    { label: 'Streak tracking, leaderboard & rewards' },
+  ];
 
-      <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
-        <h2 className="text-center text-3xl font-serif font-bold text-text-primary mb-2">Drishti</h2>
-        <h2 className="mt-2 text-center text-2xl font-bold tracking-tight text-text-primary">
-          {mode === 'login' ? t('auth.login') : (registerStep === 1 ? t('auth.register') : t('auth.step2Title'))}
-        </h2>
-        {mode === 'register' && registerStep === 2 && (
-          <p className="text-center text-text-secondary mt-2 text-sm">{t('auth.step2Sub')}</p>
-        )}
+  return (
+    <div className="min-h-screen bg-bg-base flex font-sans relative overflow-hidden">
+      {/* Background glow */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/8 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-[#BFA532]/8 blur-[100px] pointer-events-none" />
+
+      {/* Brand panel — left 45% */}
+      <div className="hidden lg:flex lg:w-[45%] flex-col justify-between p-12 border-r border-border-default relative z-10">
+        <div>
+          <div className="font-serif text-2xl text-text-primary font-semibold mb-16 tracking-tight">Drishti</div>
+          <p className="text-[11px] tracking-[2.5px] text-primary uppercase font-medium mb-4">UPSC Hindi Medium</p>
+          <h2 className="font-serif text-[40px] text-text-primary leading-[1.1] mb-6">
+            The complete UPSC<br />prep platform.
+          </h2>
+          <p className="text-text-secondary text-[15px] leading-[1.7] mb-10 max-w-sm">
+            Built for Hindi medium aspirants — every resource you need in one focused dashboard.
+          </p>
+          <ul className="flex flex-col gap-3">
+            {brandFeatures.map((f, i) => (
+              <li key={i} className="flex items-start gap-3 text-[14px] text-text-secondary">
+                <span className="w-4 h-4 rounded-full border border-primary/50 flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                </span>
+                {f.label}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="text-[11px] text-text-muted">
+          Trusted by aspirants across India
+        </div>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10">
-        <div className="bg-bg-panel py-8 px-4 shadow-[0_8px_30px_rgb(0,0,0,0.4)] sm:rounded-2xl sm:px-10 border border-border-default">
+      {/* Form panel — right 55% */}
+      <div className="flex-1 flex flex-col justify-center px-6 py-12 sm:px-12 lg:px-16 relative z-10">
+        {/* Mobile brand header */}
+        <div className="lg:hidden mb-8 text-center">
+          <div className="font-serif text-2xl text-text-primary font-semibold mb-1">Drishti</div>
+          <p className="text-text-muted text-[13px]">UPSC Hindi Medium prep platform</p>
+        </div>
+
+        <div className="w-full max-w-[420px] mx-auto">
+          <div className="mb-8">
+            <h2 className="font-serif text-[26px] font-semibold text-text-primary leading-tight">
+              {mode === 'login' ? t('auth.login') : (registerStep === 1 ? t('auth.register') : t('auth.step2Title'))}
+            </h2>
+            {mode === 'register' && registerStep === 2 && (
+              <p className="text-text-muted text-[14px] mt-1">{t('auth.step2Sub')}</p>
+            )}
+          </div>
+
+        <div className="bg-bg-panel rounded-2xl border border-border-default p-8 shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
           
           {mode === 'login' && (
             <motion.form key="login" initial="hidden" animate="visible" variants={itemVariants} className="space-y-6" onSubmit={handleFinish}>
@@ -239,6 +281,7 @@ const Auth = () => {
             </motion.form>
           )}
 
+        </div>
         </div>
       </div>
     </div>

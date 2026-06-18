@@ -3,7 +3,7 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useSelector } from 'react-redux';
-import { Compass, Edit3, Activity, ArrowRight, Check, X, Target, BookOpen, Sparkles, Library, Swords, Trophy, Users } from 'lucide-react';
+import { Compass, Edit3, Activity, ArrowRight, Check, X, Target, BookOpen, Sparkles, Library, Swords, Trophy, Users, Zap } from 'lucide-react';
 import LanguageToggle from '../../components/common/LanguageToggle';
 import { getStoredLanguage } from '../../utils/language';
 
@@ -18,11 +18,27 @@ const useLiveNumber = (initial, variance, intervalMs) => {
   return num;
 };
 
+const testimonials = [
+  { quote: "I was struggling with consistency. The streak tracking and adaptive prelims lab completely changed my daily routine.", name: "Rahul K.", detail: "Cleared Prelims 2024" },
+  { quote: "The peer review format in the community section helped me refine my Mains structure immensely. My GS3 score jumped 20 points.", name: "Priya M.", detail: "Mains 2023 Candidate" },
+  { quote: "Ask AI gave me UPSC-specific answers — not generic. It cites the syllabus point, which was invaluable for GS2 governance prep.", name: "Suresh R.", detail: "IFoS 2024 Prelims Cleared" },
+  { quote: "Silent Library helped me stay accountable. Seeing 3,000 people studying alongside me was incredibly motivating.", name: "Ananya T.", detail: "UPSC Aspirant · Delhi" },
+  { quote: "The heatmap accountability changed everything. I stopped making excuses once I could see my own gaps in black and white.", name: "Deepak V.", detail: "Optional: Geography" },
+  { quote: "The roadmap feature broke down GS1 into weekly chunks. For the first time, the syllabus didn't feel impossible.", name: "Meghna S.", detail: "Second attempt, Mains 2024" },
+];
+
 const Welcome = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const containerRef = useRef(null);
   const { isAuthenticated } = useSelector((state) => state.auth);
+  const [navScrolled, setNavScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setNavScrolled(window.scrollY > 60);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
@@ -42,9 +58,9 @@ const Welcome = () => {
   const minutesToday = useLiveNumber(1438420, 800, 1800);
 
   const deepDiveCards = [
-    { icon: <Compass size={40} className="text-[#BFA532] mb-4" />, title: t('welcome.featDetail1Title'), desc: t('welcome.featDetail1Sub') },
-    { icon: <Edit3 size={40} className="text-primary mb-4" />, title: t('welcome.featDetail2Title'), desc: t('welcome.featDetail2Sub') },
-    { icon: <Activity size={40} className="text-[#2B7A4B] mb-4" />, title: t('welcome.featDetail3Title'), desc: t('welcome.featDetail3Sub') },
+    { icon: <Compass size={40} className="mb-4" style={{ color: '#C4902A' }} />, title: t('welcome.featDetail1Title'), desc: t('welcome.featDetail1Sub') },
+    { icon: <Edit3 size={40} className="mb-4" style={{ color: '#3B6CC4' }} />, title: t('welcome.featDetail2Title'), desc: t('welcome.featDetail2Sub') },
+    { icon: <Activity size={40} className="mb-4" style={{ color: '#2D8A5E' }} />, title: t('welcome.featDetail3Title'), desc: t('welcome.featDetail3Sub') },
   ];
 
   // Parallax transforms based on scroll
@@ -67,16 +83,58 @@ const Welcome = () => {
   return (
     <div ref={containerRef} className="bg-bg-base text-text-primary font-sans relative">
       
-      {/* Background aesthetic blobs/gradients (Parallaxed) */}
-      <motion.div style={{ y: bgBlob1Y }} className="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/20 blur-[120px] pointer-events-none z-0" />
-      <motion.div style={{ y: bgBlob2Y }} className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-[#BFA532]/10 blur-[100px] pointer-events-none z-0" />
+      {/* No blobs — the grid texture from index.css handles the atmosphere */}
       
-      {/* Top Navbar items */}
-      <nav className="fixed top-0 w-full p-8 flex justify-between items-center z-50 max-w-[1440px] left-1/2 -translate-x-1/2 bg-gradient-to-b from-[#11100F] to-transparent">
-        <div className="font-serif text-2xl text-text-primary font-semibold">Drishti</div>
+      {/* Top Navbar */}
+      <nav
+        className={`fixed top-0 w-full px-8 py-4 flex justify-between items-center z-50 max-w-[1440px] left-1/2 -translate-x-1/2 transition-all duration-300`}
+        style={navScrolled ? {
+          background: 'rgba(8,9,13,0.92)',
+          backdropFilter: 'blur(16px)',
+          borderBottom: '1px solid rgba(196,144,42,0.12)',
+        } : {
+          background: 'linear-gradient(180deg, rgba(8,9,13,0.85) 0%, transparent 100%)',
+        }}
+      >
+        <div className="flex flex-col leading-none">
+          <span
+            style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: '24px',
+              fontWeight: 700,
+              letterSpacing: '-0.02em',
+              lineHeight: 1,
+              background: 'linear-gradient(135deg, #C4902A 0%, #E8BC5A 60%, #C4902A 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}
+          >Drishti</span>
+          <span
+            style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: '9px',
+              fontWeight: 500,
+              letterSpacing: '0.22em',
+              textTransform: 'uppercase',
+              color: 'var(--text-muted)',
+              opacity: 0.6,
+              marginTop: '2px',
+            }}
+          >Civil Services</span>
+        </div>
         <div className="flex items-center gap-4">
           <LanguageToggle value={getStoredLanguage()} />
-          <button onClick={handleStart} className="bg-white/5 border border-white/10 text-text-primary px-6 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition cursor-pointer">
+          <button
+            onClick={handleStart}
+            className="px-6 py-2 rounded-lg text-sm font-medium transition cursor-pointer"
+            style={{
+              background: 'rgba(196,144,42,0.08)',
+              border: '1px solid rgba(196,144,42,0.2)',
+              color: '#C4902A',
+              fontFamily: "'DM Sans', sans-serif",
+            }}
+          >
             {t('welcome.login')}
           </button>
         </div>
@@ -86,20 +144,106 @@ const Welcome = () => {
       <section className="min-h-screen flex flex-col justify-center px-8 relative z-10 max-w-[1200px] mx-auto overflow-hidden py-32">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <motion.div style={{ y: heroY, opacity: heroOpacity }} className="pt-20">
-            <motion.div initial={{y: 20, opacity: 0}} animate={{y: 0, opacity: 1}} className="text-[12px] tracking-[3px] text-primary uppercase font-bold mb-4">
-               PREMIUM PREPARATION
+            {/* Kicker / overline */}
+            <motion.div
+              initial={{ y: 16, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              className="inline-flex items-center gap-2 mb-6"
+              style={{
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: '11px',
+                fontWeight: 600,
+                letterSpacing: '0.18em',
+                textTransform: 'uppercase',
+                color: '#C4902A',
+              }}
+            >
+              <span style={{ display: 'inline-block', width: '24px', height: '1px', background: '#C4902A', opacity: 0.6 }} />
+              UPSC Hindi Medium · AI-powered preparation
             </motion.div>
-            <motion.h1 initial={{y: 20, opacity: 0}} animate={{y: 0, opacity: 1}} transition={{delay: 0.1}} className="text-5xl lg:text-7xl font-serif text-text-primary mb-6 leading-[1.1]">
-              {t('welcome.heroTitle')}
+
+            {/* Display headline — Cormorant Garamond */}
+            <motion.h1
+              initial={{ y: 24, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              style={{
+                fontFamily: "'Cormorant Garamond', serif",
+                fontSize: 'clamp(56px, 8vw, 104px)',
+                fontWeight: 600,
+                letterSpacing: '-0.02em',
+                lineHeight: 0.95,
+                marginBottom: '28px',
+              }}
+            >
+              {t('welcome.heroTitle').split(' ').map((word, i, arr) => {
+                const isLast = i === arr.length - 1;
+                return (
+                  <span key={i}>
+                    {isLast ? (
+                      <span style={{
+                        background: 'linear-gradient(135deg, #E8BC5A 0%, #C4902A 60%, #E8BC5A 100%)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        backgroundClip: 'text',
+                      }}>
+                        {word}
+                      </span>
+                    ) : (
+                      word
+                    )}
+                    {!isLast && ' '}
+                  </span>
+                );
+              })}
             </motion.h1>
-            <motion.p initial={{y: 20, opacity: 0}} animate={{y: 0, opacity: 1}} transition={{delay: 0.2}} className="text-lg text-text-secondary mb-10 max-w-md leading-relaxed">
+
+            {/* 1px rule — editorial separator */}
+            <motion.div
+              initial={{ scaleX: 0, opacity: 0 }}
+              animate={{ scaleX: 1, opacity: 1 }}
+              transition={{ delay: 0.18, duration: 0.5 }}
+              style={{
+                height: '1px',
+                background: 'linear-gradient(90deg, rgba(196,144,42,0.4), transparent)',
+                marginBottom: '24px',
+                transformOrigin: 'left',
+              }}
+            />
+
+            <motion.p
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="mb-10 max-w-md leading-relaxed"
+              style={{ fontSize: '18px', color: 'var(--text-secondary)', fontFamily: "'DM Sans', sans-serif" }}
+            >
               {t('welcome.heroSub')}
             </motion.p>
-            <motion.div initial={{y: 20, opacity: 0}} animate={{y: 0, opacity: 1}} transition={{delay: 0.3}}>
-              <button onClick={handleStart} className="group flex items-center gap-3 bg-primary text-text-primary text-base font-semibold px-8 py-4 rounded-xl hover:bg-primary-hover shadow-lg shadow-primary/30 transition-all cursor-pointer">
-                 {t('welcome.getStarted')}
-                 <ArrowRight className="group-hover:translate-x-1 transition-transform" size={18} />
+
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="flex items-center gap-4 flex-wrap"
+            >
+              <button
+                onClick={handleStart}
+                className="group flex items-center gap-3 text-[15px] font-semibold px-8 py-4 rounded-xl transition-all cursor-pointer hover:opacity-90 hover:-translate-y-px"
+                style={{
+                  background: 'linear-gradient(135deg, #C4902A 0%, #8B6010 100%)',
+                  color: '#fff',
+                  boxShadow: '0 4px 24px rgba(196,144,42,0.35)',
+                  border: 'none',
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+              >
+                {t('welcome.getStarted')}
+                <ArrowRight className="group-hover:translate-x-1 transition-transform" size={18} />
               </button>
+              <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: "'DM Sans', sans-serif" }}>
+                Free forever · No credit card
+              </span>
             </motion.div>
           </motion.div>
 
@@ -111,47 +255,93 @@ const Welcome = () => {
 
       {/* Features Grid Section */}
       <section id="features" className="py-24 px-8 relative z-10 max-w-[1200px] mx-auto flex flex-col justify-center">
-        <div className="text-[12px] tracking-[3px] text-primary uppercase font-bold mb-4">
+        <div
+          className="mb-4 flex items-center gap-3"
+          style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#C4902A' }}
+        >
+          <span style={{ display: 'inline-block', width: '20px', height: '1px', background: '#C4902A', opacity: 0.6 }} />
           FEATURES
         </div>
-        <h2 className="text-4xl lg:text-5xl font-serif text-text-primary mb-12 leading-tight max-w-3xl">
-          Seven instruments, one clean dashboard.
+        <h2
+          className="mb-12 leading-tight max-w-3xl"
+          style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: 'clamp(36px, 5vw, 60px)',
+            fontWeight: 600,
+            letterSpacing: '-0.02em',
+            lineHeight: 1.05,
+            color: 'var(--text-primary)',
+          }}
+        >
+          Seven instruments, one disciplined dashboard.
         </h2>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
-          <FeatureCard col="lg:col-span-6" tone="rust" tag="01 · PYQ VAULT" title="Past Year Questions, decoded." body="Every PYQ from 2011 onward — tagged by topic, scored by difficulty, with full step-by-step explanations and the option-elimination logic toppers actually use." stat="14,200 questions · 1,847 topics" icon={<Target size={20} />} />
-          <FeatureCard col="lg:col-span-6" tone="indigo" tag="02 · CURATED LESSONS" title="Lessons that read like essays, watch like cinema." body="Twelve-minute deep-dives. Hand-picked by educators who topped the same paper. No 4-hour video bloat." stat="320+ lessons · weekly drops" icon={<BookOpen size={20} />} />
-          <FeatureCard col="lg:col-span-4" tone="moss" tag="03 · ASK AI" title="A mentor who's read every NCERT." body="Trained on the syllabus, fact-checked against PYQs. Ask anything. Cite always." stat="< 800ms response" icon={<Sparkles size={20} />} />
-          <FeatureCard col="lg:col-span-4" tone="gold" tag="04 · SILENT LIBRARY" title="Never study alone." body="A live, anonymous reading room. See the focus session counter rise as the country wakes up." stat="3,184 active · 24/7" icon={<Library size={20} />} />
-          <FeatureCard col="lg:col-span-4" tone="rust" tag="05 · 1V1 DUELS" title="Quiz duels in real time." body="60-second match. Same questions. Anonymous. Climb the national ladder." stat="217 in queue" icon={<Swords size={20} />} />
-          <FeatureCard col="lg:col-span-7" tone="ink" tag="06 · RANKS & REWARDS" title="From Aspirant to Cabinet Secretary, 81 levels in between." body="Earn cosmetic themes, badges, and titles for the work you'd do anyway. Streaks matter. Mistake-logs matter more." stat="8 ranks · 240 badges" icon={<Trophy size={20} />} />
-          <FeatureCard col="lg:col-span-5" tone="indigo" tag="07 · COMMUNITY" title="An aspirant-only square." body="Anonymous if you want. Verified-aspirant only. Resources, vents, mistake-logs, study squads." stat="Verified-only · zero ads" icon={<Users size={20} />} />
+          {[
+            { col: "lg:col-span-6", tone: "rust",   tag: "01 · PYQ VAULT",       title: "Past Year Questions, decoded.",                   body: "Every PYQ from 2011 onward — tagged by topic, scored by difficulty, with full step-by-step explanations and the option-elimination logic toppers actually use.", stat: "14,200 questions · 1,847 topics", icon: <Target size={20} /> },
+            { col: "lg:col-span-6", tone: "indigo", tag: "02 · CURATED LESSONS",  title: "Lessons that read like essays, watch like cinema.", body: "Twelve-minute deep-dives. Hand-picked by educators who topped the same paper. No 4-hour video bloat.", stat: "320+ lessons · weekly drops", icon: <BookOpen size={20} /> },
+            { col: "lg:col-span-4", tone: "moss",   tag: "03 · ASK AI",           title: "A mentor who's read every NCERT.",                 body: "Trained on the syllabus, fact-checked against PYQs. Ask anything. Cite always.", stat: "< 800ms response", icon: <Sparkles size={20} /> },
+            { col: "lg:col-span-4", tone: "gold",   tag: "04 · SILENT LIBRARY",   title: "Never study alone.",                              body: "A live, anonymous reading room. See the focus session counter rise as the country wakes up.", stat: "3,184 active · 24/7", icon: <Library size={20} /> },
+            { col: "lg:col-span-4", tone: "rust",   tag: "05 · 1V1 DUELS",        title: "Quiz duels in real time.",                        body: "60-second match. Same questions. Anonymous. Climb the national ladder.", stat: "217 in queue", icon: <Swords size={20} /> },
+            { col: "lg:col-span-7", tone: "ink",    tag: "06 · RANKS & REWARDS",  title: "From Aspirant to Cabinet Secretary, 81 levels in between.", body: "Earn cosmetic themes, badges, and titles for the work you'd do anyway. Streaks matter. Mistake-logs matter more.", stat: "8 ranks · 240 badges", icon: <Trophy size={20} /> },
+            { col: "lg:col-span-5", tone: "indigo", tag: "07 · COMMUNITY",        title: "An aspirant-only square.",                        body: "Anonymous if you want. Verified-aspirant only. Resources, vents, mistake-logs, study squads.", stat: "Verified-only · zero ads", icon: <Users size={20} /> },
+          ].map((card, i) => (
+            <motion.div
+              key={card.tag}
+              className={card.col}
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.1 }}
+              transition={{ duration: 0.55, delay: (i % 3) * 0.08, ease: [0.4, 0, 0.2, 1] }}
+            >
+              <FeatureCard col="" {...card} />
+            </motion.div>
+          ))}
         </div>
       </section>
 
       {/* Deep Dive Section (Parallax) */}
       <section className="py-32 px-8 relative z-10 max-w-[1200px] mx-auto flex flex-col justify-center">
         <motion.div style={{ y: deepDiveTextY, opacity: deepDiveTextOpacity }} className="text-center mb-24 cursor-default">
-          <h2 className="text-4xl lg:text-6xl font-serif text-text-primary mb-4">{t('welcome.deepDiveTitle')}</h2>
-          <p className="text-xl text-text-secondary max-w-2xl mx-auto">{t('welcome.deepDiveSub')}</p>
+          <h2
+            className="mb-4"
+            style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: 'clamp(36px, 6vw, 72px)',
+              fontWeight: 600,
+              letterSpacing: '-0.02em',
+              color: 'var(--text-primary)',
+            }}
+          >{t('welcome.deepDiveTitle')}</h2>
+          <p style={{ fontSize: '20px', color: 'var(--text-secondary)', maxWidth: '40rem', margin: '0 auto', fontFamily: "'DM Sans', sans-serif" }}>{t('welcome.deepDiveSub')}</p>
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <motion.div style={{ y: card1Y }} className="bg-bg-surface-dark border border-border-default p-10 rounded-3xl h-[350px] shadow-2xl flex flex-col items-center text-center justify-center cursor-default">
-            {deepDiveCards[0].icon}
-            <h3 className="text-2xl font-serif text-text-primary mb-3">{deepDiveCards[0].title}</h3>
-            <p className="text-text-secondary">{deepDiveCards[0].desc}</p>
-          </motion.div>
-          <motion.div style={{ y: card2Y }} className="bg-bg-surface-dark border border-border-default p-10 rounded-3xl h-[350px] shadow-2xl flex flex-col items-center text-center justify-center cursor-default">
-            {deepDiveCards[1].icon}
-            <h3 className="text-2xl font-serif text-text-primary mb-3">{deepDiveCards[1].title}</h3>
-            <p className="text-text-secondary">{deepDiveCards[1].desc}</p>
-          </motion.div>
-          <motion.div style={{ y: card3Y }} className="bg-bg-surface-dark border border-border-default p-10 rounded-3xl h-[350px] shadow-2xl flex flex-col items-center text-center justify-center cursor-default">
-            {deepDiveCards[2].icon}
-            <h3 className="text-2xl font-serif text-text-primary mb-3">{deepDiveCards[2].title}</h3>
-            <p className="text-text-secondary">{deepDiveCards[2].desc}</p>
-          </motion.div>
+          {[card1Y, card2Y, card3Y].map((yTransform, idx) => (
+            <motion.div
+              key={idx}
+              className="p-10 rounded-2xl h-[350px] flex flex-col items-center text-center justify-center cursor-default"
+              style={{
+                y: yTransform,
+                background: 'var(--bg-surface)',
+                border: '1px solid rgba(196,144,42,0.14)',
+                boxShadow: 'var(--shadow-card)',
+              }}
+            >
+              {deepDiveCards[idx].icon}
+              <h3
+                className="mb-3"
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: '24px',
+                  fontWeight: 600,
+                  letterSpacing: '-0.01em',
+                  color: 'var(--text-primary)',
+                }}
+              >{deepDiveCards[idx].title}</h3>
+              <p style={{ color: 'var(--text-secondary)', fontFamily: "'DM Sans', sans-serif", fontSize: '15px', lineHeight: 1.6 }}>{deepDiveCards[idx].desc}</p>
+            </motion.div>
+          ))}
         </div>
       </section>
 
@@ -159,10 +349,23 @@ const Welcome = () => {
       <section className="py-32 px-8 relative z-10 max-w-[1200px] mx-auto flex flex-col justify-center">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
           <div className="lg:col-span-5 lg:sticky lg:top-32">
-            <div className="text-[12px] tracking-[3px] text-primary uppercase font-bold mb-4">
+            <div
+              className="mb-4 flex items-center gap-3"
+              style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#C4902A' }}
+            >
+              <span style={{ display: 'inline-block', width: '20px', height: '1px', background: '#C4902A', opacity: 0.6 }} />
               {t('welcome.specimenKicker')}
             </div>
-            <h2 className="text-4xl lg:text-5xl font-serif text-text-primary mb-6 leading-tight">
+            <h2
+              className="mb-6 leading-tight"
+              style={{
+                fontFamily: "'Cormorant Garamond', serif",
+                fontSize: 'clamp(30px, 4vw, 52px)',
+                fontWeight: 600,
+                letterSpacing: '-0.02em',
+                color: 'var(--text-primary)',
+              }}
+            >
               {t('welcome.specimenTitle')}
             </h2>
             <p className="text-lg text-text-secondary mb-8 leading-relaxed">
@@ -186,14 +389,28 @@ const Welcome = () => {
       </section>
 
       {/* Silent Library Section */}
-      <section className="py-32 relative z-10 bg-bg-surface-dark border-y border-border-default">
+      <section className="py-32 relative z-10 border-y" style={{ background: 'var(--bg-panel)', borderColor: 'rgba(196,144,42,0.12)' }}>
         <div className="max-w-[1200px] mx-auto px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
-              <div className="text-[12px] tracking-[3px] text-text-secondary uppercase font-bold mb-4">
+              <div
+                className="mb-4 flex items-center gap-3"
+                style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#C4902A' }}
+              >
+                <span style={{ display: 'inline-block', width: '20px', height: '1px', background: '#C4902A', opacity: 0.6 }} />
                 {t('welcome.libKicker')}
               </div>
-              <h2 className="text-4xl lg:text-5xl font-serif text-text-primary mb-6 leading-tight" dangerouslySetInnerHTML={{ __html: t('welcome.libTitle') }} />
+              <h2
+                className="mb-6 leading-tight"
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: 'clamp(30px, 4vw, 56px)',
+                  fontWeight: 600,
+                  letterSpacing: '-0.02em',
+                  color: 'var(--text-primary)',
+                }}
+                dangerouslySetInnerHTML={{ __html: t('welcome.libTitle') }}
+              />
               <p className="text-lg text-text-secondary mb-10 leading-relaxed max-w-md">
                 {t('welcome.libSub')}
               </p>
@@ -209,61 +426,180 @@ const Welcome = () => {
         </div>
       </section>
 
-      {/* Testimonials Section Parallaxed */}
-      <section className="py-32 px-8 relative z-10 bg-gradient-to-b from-transparent to-[#181715] flex flex-col gap-12 justify-center cursor-default">
-        <motion.div style={{ y: testSectionY }} className="max-w-[1200px] mx-auto w-full">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl lg:text-5xl font-serif text-text-primary">{t('welcome.testimonialTitle')}</h2>
-          </div>
-          <div className="flex flex-col md:flex-row gap-8 justify-center">
-            <div className="bg-bg-surface p-8 rounded-2xl md:w-1/3 relative border border-border-muted">
-              <div className="text-4xl text-primary font-serif absolute top-4 left-4 opacity-50">"</div>
-              <p className="text-text-primary relative z-10 italic mt-4">"I was struggling with consistency. The streak tracking and adaptive prelims lab completely changed my daily routine."</p>
-              <div className="mt-6 border-t border-border-muted pt-4">
-                <p className="font-semibold text-text-primary">Rahul K.</p>
-                <p className="text-xs text-text-secondary">Cleared Prelims 2024</p>
+      {/* Testimonials — auto-scroll marquee */}
+      <section className="py-24 relative z-10 overflow-hidden cursor-default" style={{ background: 'var(--bg-surface-dark)' }}>
+        <div className="text-center mb-12 px-8">
+          <p
+            style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: '10px',
+              fontWeight: 600,
+              letterSpacing: '0.2em',
+              textTransform: 'uppercase',
+              color: '#C4902A',
+              marginBottom: '12px',
+            }}
+          >What aspirants say</p>
+          <h2
+            style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: 'clamp(28px, 4vw, 44px)',
+              fontWeight: 600,
+              letterSpacing: '-0.02em',
+              color: 'var(--text-primary)',
+            }}
+          >{t('welcome.testimonialTitle')}</h2>
+        </div>
+        {/* Marquee track — duplicated for seamless loop */}
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-bg-base to-transparent z-10 pointer-events-none" />
+          <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-[#181715] to-transparent z-10 pointer-events-none" />
+          <div
+            className="flex gap-5"
+            style={{
+              width: 'max-content',
+              animation: 'marquee-left 40s linear infinite',
+            }}
+          >
+            {[...testimonials, ...testimonials].map((item, i) => (
+              <div
+                key={i}
+                className="w-[300px] shrink-0 rounded-xl p-6"
+                style={{
+                  background: 'var(--bg-surface)',
+                  border: '1px solid rgba(196,144,42,0.12)',
+                  boxShadow: 'var(--shadow-card)',
+                }}
+              >
+                <div
+                  className="leading-none mb-3"
+                  style={{
+                    fontFamily: "'Cormorant Garamond', serif",
+                    fontSize: '40px',
+                    fontWeight: 700,
+                    background: 'linear-gradient(135deg, #E8BC5A, #C4902A)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                    opacity: 0.7,
+                  }}
+                >"</div>
+                <p
+                  className="mb-5 italic"
+                  style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.7, fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  {item.quote}
+                </p>
+                <div className="pt-4" style={{ borderTop: '1px solid rgba(196,144,42,0.1)' }}>
+                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: '13px', color: 'var(--text-primary)' }}>{item.name}</p>
+                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', color: 'var(--text-muted)' }}>{item.detail}</p>
+                </div>
               </div>
-            </div>
-            <div className="bg-bg-panel p-8 rounded-2xl md:w-1/3 relative border border-border-default mt-8 md:mt-16 shadow-2xl">
-              <div className="text-4xl text-[#BFA532] font-serif absolute top-4 left-4 opacity-50">"</div>
-              <p className="text-text-secondary relative z-10 italic mt-4">"The peer review format in the community section helped me refine my Mains structure immensely. My GS3 score jumped 20 points."</p>
-              <div className="mt-6 border-t border-border-default pt-4">
-                <p className="font-semibold text-text-primary">Priya M.</p>
-                <p className="text-xs text-text-secondary">Mains 2023 Candidate</p>
-              </div>
-            </div>
+            ))}
           </div>
-        </motion.div>
+        </div>
+        <style>{`
+          @keyframes marquee-left {
+            from { transform: translateX(0); }
+            to { transform: translateX(-50%); }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .flex[style*="marquee-left"] { animation: none; }
+          }
+        `}</style>
       </section>
 
-      {/* Footer CTA Section Parallaxed */}
-      <section className="min-h-[80vh] py-32 flex flex-col items-center justify-center relative z-10 bg-bg-base overflow-hidden cursor-default px-8">
-        <motion.div style={{ scale: ctaScale }} className="relative z-10 w-full max-w-[1000px] bg-primary rounded-3xl p-8 lg:p-14 overflow-hidden shadow-2xl">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_30%,_rgba(255,255,255,0.15),_transparent_60%)]" />
+      {/* Footer CTA Section */}
+      <section className="min-h-[80vh] py-32 flex flex-col items-center justify-center relative z-10 overflow-hidden cursor-default px-8">
+        <motion.div
+          style={{
+            scale: ctaScale,
+            background: 'linear-gradient(135deg, #C4902A 0%, #8B6010 100%)',
+            boxShadow: '0 20px 60px rgba(196,144,42,0.3)',
+          }}
+          className="relative z-10 w-full max-w-[1000px] rounded-2xl p-8 lg:p-14 overflow-hidden"
+        >
+          <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 80% 30%, rgba(255,255,255,0.12), transparent 60%)' }} />
           <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
-              <div className="text-[12px] tracking-[3px] text-text-primary/70 uppercase font-bold mb-4">
+              <div
+                className="mb-4"
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  letterSpacing: '0.2em',
+                  textTransform: 'uppercase',
+                  color: 'rgba(255,255,255,0.65)',
+                }}
+              >
                 {t('welcome.ctaKicker')}
               </div>
-              <h2 className="text-4xl lg:text-5xl font-serif text-text-primary mb-6 leading-tight" dangerouslySetInnerHTML={{ __html: t('welcome.ctaTitle2') }} />
-              <p className="text-text-primary/80 text-lg mb-8 max-w-md">
+              <h2
+                className="mb-6 leading-tight"
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: 'clamp(32px, 4vw, 52px)',
+                  fontWeight: 600,
+                  letterSpacing: '-0.02em',
+                  color: '#fff',
+                }}
+                dangerouslySetInnerHTML={{ __html: t('welcome.ctaTitle2') }}
+              />
+              <p className="mb-8 max-w-md" style={{ color: 'rgba(255,255,255,0.8)', fontSize: '18px', fontFamily: "'DM Sans', sans-serif" }}>
                 {t('welcome.ctaSub2')}
               </p>
               <div className="flex flex-wrap gap-4">
-                <button onClick={handleStart} className="bg-bg-panel text-primary px-8 py-4 rounded-xl text-base font-semibold hover:bg-gray-100 transition shadow-lg cursor-pointer flex items-center gap-2">
+                <button
+                  onClick={handleStart}
+                  className="flex items-center gap-2 px-8 py-4 rounded-xl text-base font-semibold transition shadow-lg cursor-pointer hover:opacity-90"
+                  style={{
+                    background: 'var(--bg-panel)',
+                    color: '#C4902A',
+                    fontFamily: "'DM Sans', sans-serif",
+                    border: 'none',
+                  }}
+                >
                   {t('welcome.beginFree')} <ArrowRight size={16} />
                 </button>
-                <button onClick={handleStart} className="border border-white/40 text-text-primary px-8 py-4 rounded-xl text-base font-semibold hover:bg-white/10 transition cursor-pointer">
+                <button
+                  onClick={handleStart}
+                  className="px-8 py-4 rounded-xl text-base font-semibold transition cursor-pointer hover:bg-white/15"
+                  style={{
+                    border: '1px solid rgba(255,255,255,0.4)',
+                    color: '#fff',
+                    fontFamily: "'DM Sans', sans-serif",
+                    background: 'transparent',
+                  }}
+                >
                   {t('welcome.seePro')}
                 </button>
               </div>
             </div>
-            <div className="bg-black/20 border border-white/20 rounded-2xl p-6 font-mono text-sm text-text-primary shadow-inner">
-              <div className="flex justify-between mb-4 opacity-70 text-xs">
+            <div
+              className="rounded-xl p-6 font-mono text-sm"
+              style={{
+                background: 'rgba(0,0,0,0.25)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                color: '#fff',
+              }}
+            >
+              <div className="flex justify-between mb-4 text-xs" style={{ opacity: 0.7 }}>
                 <span>{t('welcome.cdLabel1')}</span>
-                <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" /> {t('welcome.cdLabel2')}</span>
+                <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-red-400 animate-pulse" /> {t('welcome.cdLabel2')}</span>
               </div>
-              <div className="text-5xl lg:text-7xl font-serif leading-none mb-6">184<span className="text-xl lg:text-2xl opacity-60 font-sans">d</span> 06<span className="text-xl lg:text-2xl opacity-60 font-sans">h</span></div>
+              <div
+                className="leading-none mb-6"
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: 'clamp(48px, 7vw, 80px)',
+                  fontWeight: 700,
+                  letterSpacing: '-0.04em',
+                }}
+              >
+                184<span className="opacity-60" style={{ fontSize: '0.35em', fontFamily: "'DM Sans', sans-serif", verticalAlign: 'middle' }}>d</span>{' '}
+                06<span className="opacity-60" style={{ fontSize: '0.35em', fontFamily: "'DM Sans', sans-serif", verticalAlign: 'middle' }}>h</span>
+              </div>
               <div className="flex flex-col gap-3">
                 <Row k={t('welcome.cdAspirants')} v="11,84,210" />
                 <Row k={t('welcome.cdSeats')} v="1,056" />
@@ -282,7 +618,14 @@ const Welcome = () => {
 /* --- Sub Components --- */
 
 const HeroPanel = ({ active, queueDuel, minutesToday, t }) => (
-  <div className="bg-bg-panel/80 backdrop-blur-md border border-border-default rounded-2xl p-6 font-mono text-xs flex flex-col gap-4 relative overflow-hidden shadow-2xl h-full">
+  <div
+    className="rounded-xl p-6 font-mono text-xs flex flex-col gap-4 relative overflow-hidden h-full"
+    style={{
+      background: 'var(--bg-surface)',
+      border: '1px solid rgba(196,144,42,0.16)',
+      boxShadow: 'var(--shadow-card)',
+    }}
+  >
     <div className="flex justify-between items-center">
       <span className="flex items-center gap-2 text-text-secondary text-[10px] tracking-widest uppercase">
         <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" /> {t('welcome.liveMissionControl')}
@@ -414,14 +757,16 @@ const LibraryViz = ({ active, t }) => {
     return arr;
   }, []);
   return (
-    <div className="relative aspect-square bg-primary/5 border border-primary/20 rounded-3xl overflow-hidden p-5 flex-1 w-full max-w-md mx-auto">
+    <div className="relative aspect-square rounded-2xl overflow-hidden p-5 flex-1 w-full max-w-md mx-auto"
+      style={{ background: 'var(--bg-surface)', border: '1px solid rgba(196,144,42,0.14)', boxShadow: 'var(--shadow-card)' }}
+    >
       <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full">
-        <circle cx="50" cy="50" r="46" stroke="rgba(212, 97, 60, 0.2)" strokeDasharray="0.5 1.5" fill="none" />
-        <circle cx="50" cy="50" r="34" stroke="rgba(212, 97, 60, 0.2)" strokeDasharray="0.5 1.5" fill="none" />
-        <circle cx="50" cy="50" r="22" stroke="rgba(212, 97, 60, 0.2)" strokeDasharray="0.5 1.5" fill="none" />
-        <circle cx="50" cy="50" r="10" stroke="rgba(212, 97, 60, 0.3)" fill="none" />
+        <circle cx="50" cy="50" r="46" stroke="rgba(196,144,42,0.15)" strokeDasharray="0.5 1.5" fill="none" />
+        <circle cx="50" cy="50" r="34" stroke="rgba(196,144,42,0.15)" strokeDasharray="0.5 1.5" fill="none" />
+        <circle cx="50" cy="50" r="22" stroke="rgba(196,144,42,0.15)" strokeDasharray="0.5 1.5" fill="none" />
+        <circle cx="50" cy="50" r="10" stroke="rgba(196,144,42,0.25)" fill="none" />
         {dots.map((d, i) => (
-          <circle key={i} cx={d.x} cy={d.y} r={d.d * 0.18} fill="var(--color-primary, #D4613C)" opacity={d.a}>
+          <circle key={i} cx={d.x} cy={d.y} r={d.d * 0.18} fill="#C4902A" opacity={d.a * 0.7}>
             <animate attributeName="opacity" values={`${d.a};${d.a * 0.3};${d.a}`} dur="3s" repeatCount="indefinite" begin={`${d.delay}s`} />
           </circle>
         ))}
@@ -444,35 +789,116 @@ const LibraryViz = ({ active, t }) => {
 
 const DarkStat = ({ n, label, live }) => (
   <div>
-    <div className="font-mono text-2xl md:text-3xl font-medium text-text-primary flex items-center">
-      {live && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse mr-2" />}
-      {n}
+    <div className="flex items-center gap-2 mb-1">
+      {live && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />}
+      <span
+        style={{
+          fontFamily: "'Cormorant Garamond', serif",
+          fontSize: 'clamp(36px, 4vw, 52px)',
+          fontWeight: 700,
+          letterSpacing: '-0.03em',
+          lineHeight: 1,
+          background: 'linear-gradient(135deg, #E8BC5A 0%, #C4902A 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+        }}
+      >
+        {n}
+      </span>
     </div>
-    <div className="text-[11px] text-text-secondary mt-1 font-mono tracking-widest uppercase">{label}</div>
+    <div
+      style={{
+        fontFamily: "'DM Sans', sans-serif",
+        fontSize: '11px',
+        fontWeight: 500,
+        letterSpacing: '0.16em',
+        textTransform: 'uppercase',
+        color: 'var(--text-secondary)',
+        marginTop: '4px',
+      }}
+    >{label}</div>
   </div>
 );
 
 const FeatureCard = ({ col, tag, title, body, stat, icon, tone }) => {
   const toneMap = {
-    rust: { bg: "bg-bg-surface-dark", accent: "text-primary", border: "border-border-default", dotBg: "bg-bg-surface" },
-    indigo: { bg: "bg-bg-surface-dark", accent: "text-indigo-400", border: "border-border-default", dotBg: "bg-bg-surface" },
-    moss: { bg: "bg-bg-surface-dark", accent: "text-[#2B7A4B]", border: "border-border-default", dotBg: "bg-bg-surface" },
-    gold: { bg: "bg-bg-surface-dark", accent: "text-[#BFA532]", border: "border-border-default", dotBg: "bg-bg-surface" },
-    ink: { bg: "bg-gradient-to-br from-[#2a2926] to-[#1f1e1b]", accent: "text-primary", border: "border-border-muted", dotBg: "bg-white/10" }
+    rust:   { accentColor: '#C4902A', accentAlpha: 'rgba(196,144,42,', iconBg: 'rgba(196,144,42,0.1)'  },
+    indigo: { accentColor: '#3B6CC4', accentAlpha: 'rgba(59,108,196,',  iconBg: 'rgba(59,108,196,0.1)'  },
+    moss:   { accentColor: '#2D8A5E', accentAlpha: 'rgba(45,138,94,',   iconBg: 'rgba(45,138,94,0.1)'   },
+    gold:   { accentColor: '#C4902A', accentAlpha: 'rgba(196,144,42,',  iconBg: 'rgba(196,144,42,0.08)' },
+    ink:    { accentColor: '#9B4ECA', accentAlpha: 'rgba(155,78,202,',  iconBg: 'rgba(155,78,202,0.1)'  },
   };
-  const t = toneMap[tone] || toneMap.rust;
-  
+  const tc = toneMap[tone] || toneMap.rust;
+
   return (
-    <div className={`${col} ${t.bg} border ${t.border} p-6 lg:p-8 rounded-3xl flex flex-col gap-4 text-text-primary min-h-[200px] shadow-lg hover:border-white/20 transition-all cursor-default`}>
+    <div
+      className="rounded-2xl flex flex-col gap-4 min-h-[200px] p-6 lg:p-8 cursor-default"
+      style={{
+        background: 'var(--bg-surface)',
+        border: `1px solid ${tc.accentAlpha}0.15)`,
+        boxShadow: 'var(--shadow-card)',
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.transform = 'translateY(-1px)';
+        e.currentTarget.style.borderColor = `${tc.accentAlpha}0.28)`;
+        e.currentTarget.style.boxShadow = 'var(--shadow-card-hover)';
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.transform = '';
+        e.currentTarget.style.borderColor = `${tc.accentAlpha}0.15)`;
+        e.currentTarget.style.boxShadow = 'var(--shadow-card)';
+      }}
+    >
       <div className="flex items-center justify-between">
-        <span className={`text-[10px] tracking-[2px] uppercase font-bold ${t.accent}`}>{tag}</span>
-        <span className={`w-10 h-10 rounded-xl ${t.dotBg} flex items-center justify-center ${t.accent}`}>
+        <span
+          style={{
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: '10px',
+            fontWeight: 600,
+            letterSpacing: '0.18em',
+            textTransform: 'uppercase',
+            color: tc.accentColor,
+          }}
+        >{tag}</span>
+        <span
+          className="w-9 h-9 rounded-xl flex items-center justify-center"
+          style={{ background: tc.iconBg, color: tc.accentColor }}
+        >
           {icon}
         </span>
       </div>
-      <h3 className="text-2xl font-serif text-text-primary leading-tight">{title}</h3>
-      <p className="text-sm text-text-secondary leading-relaxed">{body}</p>
-      <div className={`mt-auto pt-4 border-t border-dashed border-border-default font-mono text-[11px] text-text-muted tracking-widest uppercase`}>
+      <h3
+        className="leading-tight"
+        style={{
+          fontFamily: "'Cormorant Garamond', serif",
+          fontSize: '22px',
+          fontWeight: 600,
+          color: 'var(--text-primary)',
+          letterSpacing: '-0.01em',
+        }}
+      >{title}</h3>
+      <p
+        style={{
+          fontSize: '14px',
+          color: 'var(--text-secondary)',
+          lineHeight: 1.7,
+          fontFamily: "'DM Sans', sans-serif",
+        }}
+      >{body}</p>
+      <div
+        className="mt-auto pt-4"
+        style={{
+          borderTop: `1px solid ${tc.accentAlpha}0.12)`,
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: '11px',
+          fontWeight: 500,
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          color: 'var(--text-muted)',
+        }}
+      >
         {stat}
       </div>
     </div>

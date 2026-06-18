@@ -7,6 +7,7 @@ import { useApi } from '../../hooks/useApi';
 import { fetchProfile } from '../../store/slices/authSlice';
 import LanguageToggle from '../../components/common/LanguageToggle';
 import { applyLanguage, normalizeLanguage } from '../../utils/language';
+import { PageHeader } from '../../components/ui';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 
@@ -94,10 +95,7 @@ const Settings = () => {
 
   return (
     <div className="max-w-[1000px] mx-auto w-full p-2 md:p-6 flex flex-col gap-8">
-      <div className="mb-4">
-        <h1 className="text-3xl font-serif text-text-primary mb-2">{t('settings.title')}</h1>
-        <p className="text-text-secondary">{t('common.manageAccount')}</p>
-      </div>
+      <PageHeader title={t('settings.title')} subtitle={t('common.manageAccount')} />
 
       <div className="flex flex-col md:flex-row gap-8 items-start">
 
