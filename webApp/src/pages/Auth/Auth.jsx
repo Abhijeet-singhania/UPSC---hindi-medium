@@ -131,7 +131,7 @@ const Auth = () => {
             )}
           </div>
 
-        <div className="bg-bg-panel rounded-2xl border border-border-default p-8 shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
+        <div className="cc-panel rounded-2xl border border-border-default p-8 shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
           
           {mode === 'login' && (
             <motion.form key="login" initial="hidden" animate="visible" variants={itemVariants} className="space-y-6" onSubmit={handleFinish}>

@@ -344,3 +344,249 @@ html {
   scrollbar-width: thin;
   scrollbar-color: #C4902A transparent;
 }
+
+/* ═══════════════════════════════════════════
+   NEUMORPHISM UTILITIES (Soft UI)
+   ═══════════════════════════════════════════ */
+
+:root, .dark {
+  --nm-bg: var(--bg-surface);
+  --nm-shadow-out: 8px 8px 20px rgba(0, 0, 0, 0.65), -8px -8px 20px rgba(255, 255, 255, 0.02);
+  --nm-shadow-in: inset 5px 5px 12px rgba(0, 0, 0, 0.55), inset -5px -5px 12px rgba(255, 255, 255, 0.015);
+  --nm-shadow-btn: 5px 5px 12px rgba(0, 0, 0, 0.5), -5px -5px 12px rgba(255, 255, 255, 0.02);
+}
+
+.light {
+  --nm-bg: #F6F4EE;
+  --nm-shadow-out: 8px 8px 20px rgba(160, 120, 40, 0.12), -8px -8px 20px rgba(255, 255, 255, 0.85);
+  --nm-shadow-in: inset 5px 5px 12px rgba(160, 120, 40, 0.08), inset -5px -5px 12px rgba(255, 255, 255, 0.7);
+  --nm-shadow-btn: 5px 5px 12px rgba(160, 120, 40, 0.1), -5px -5px 12px rgba(255, 255, 255, 0.8);
+}
+
+.neumorphic-card {
+  background: var(--nm-bg);
+  box-shadow: var(--nm-shadow-out);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.01);
+  transition: box-shadow 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), 
+              transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.neumorphic-card-hover:hover {
+  transform: translateY(-4px) scale(1.015);
+  box-shadow: var(--nm-shadow-out), 0 4px 20px rgba(196,144,42,0.08);
+}
+
+.neumorphic-inset {
+  background: var(--nm-bg);
+  box-shadow: var(--nm-shadow-in);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.01);
+}
+
+.neumorphic-btn {
+  background: var(--nm-bg);
+  box-shadow: var(--nm-shadow-btn);
+  border: 1px solid rgba(255, 255, 255, 0.01);
+  transition: box-shadow 0.2s cubic-bezier(0.25, 0.8, 0.25, 1), 
+              transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.neumorphic-btn:hover {
+  transform: scale(1.025);
+  box-shadow: var(--nm-shadow-btn), 0 2px 10px rgba(196,144,42,0.05);
+}
+
+.neumorphic-btn:active {
+  box-shadow: var(--nm-shadow-in);
+  transform: scale(0.96);
+}
+
+/* ═══════════════════════════════════════════
+   COMMAND CENTER / MISSION CONTROL DESIGN SYSTEM
+   ═══════════════════════════════════════════ */
+
+:root, .dark {
+  --cc-panel-bg: #0C0E14;
+  --cc-panel-border: rgba(196,144,42,0.12);
+  --cc-panel-border-hover: rgba(196,144,42,0.35);
+  --cc-inset-bg: #080A10;
+  --cc-glow: 0 0 20px rgba(196,144,42,0.08);
+  --cc-glow-hover: 0 0 30px rgba(196,144,42,0.15), 0 0 0 1px rgba(196,144,42,0.25);
+  --cc-status-bg: rgba(196,144,42,0.06);
+  --cc-danger: #EF4444;
+  --cc-success: #2D8A5E;
+  --cc-mono: 'DM Sans', 'Courier New', monospace;
+}
+
+.light {
+  --cc-panel-bg: #FFFFFF;
+  --cc-panel-border: rgba(160,120,40,0.12);
+  --cc-panel-border-hover: rgba(160,120,40,0.3);
+  --cc-inset-bg: #F0EDE6;
+  --cc-glow: 0 1px 4px rgba(160,120,40,0.06);
+  --cc-glow-hover: 0 2px 16px rgba(160,120,40,0.12), 0 0 0 1px rgba(160,120,40,0.2);
+  --cc-status-bg: rgba(160,120,40,0.06);
+}
+
+/* Console Panel — sharp, technical, authoritative */
+.cc-panel {
+  background: var(--cc-panel-bg);
+  border: 1px solid var(--cc-panel-border);
+  border-radius: 12px;
+  box-shadow: var(--cc-glow);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.cc-panel-hover:hover {
+  border-color: var(--cc-panel-border-hover);
+  box-shadow: var(--cc-glow-hover);
+}
+
+/* Recessed data readout */
+.cc-inset {
+  background: var(--cc-inset-bg);
+  border: 1px solid var(--cc-panel-border);
+  border-radius: 10px;
+}
+
+/* Console button */
+.cc-btn {
+  background: var(--cc-panel-bg);
+  border: 1px solid var(--cc-panel-border);
+  border-radius: 10px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.cc-btn:hover {
+  border-color: var(--cc-panel-border-hover);
+  box-shadow: 0 0 12px rgba(196,144,42,0.1);
+}
+
+.cc-btn:active {
+  transform: scale(0.97);
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.3);
+}
+
+/* Status pill — compact inline indicator */
+.cc-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  background: var(--cc-status-bg);
+  border: 1px solid var(--cc-panel-border);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* Pulsing live dot */
+.cc-pulse {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #C4902A;
+  animation: cc-pulse-anim 2s ease-in-out infinite;
+}
+
+@keyframes cc-pulse-anim {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(196,144,42,0.5); }
+  50% { box-shadow: 0 0 0 6px rgba(196,144,42,0); }
+}
+
+/* Section label — console style */
+.cc-section-label {
+  font-family: var(--font-sans);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Monospace readout text */
+.cc-mono {
+  font-family: var(--cc-mono);
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Mission Clock digit styling */
+.cc-clock-digit {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  background: linear-gradient(135deg, #E8ECF4 0%, #C4902A 70%, #E8BC5A 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.light .cc-clock-digit {
+  background: linear-gradient(135deg, #1A1C24 0%, #C4902A 70%, #8B6010 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Status strip */
+.cc-status-strip {
+  background: var(--cc-inset-bg);
+  border-bottom: 1px solid var(--cc-panel-border);
+  padding: 6px 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-size: 11px;
+  color: var(--text-muted);
+  overflow-x: auto;
+}
+
+.light .cc-status-strip {
+  background: #F0EDE6;
+}
+
+/* GS Mastery Ring colors */
+.cc-ring-gs1 { stroke: #C4902A; }
+.cc-ring-gs2 { stroke: #3B6CC4; }
+.cc-ring-gs3 { stroke: #2D8A5E; }
+.cc-ring-gs4 { stroke: #9B4ECA; }
+
+/* ═══════════════════════════════════════════
+   TEXT MAGNIFYING & INTERACTIVE HOVER EFFECTS
+   ═══════════════════════════════════════════ */
+
+/* Smooth magnifying transition for target texts */
+.zoom-target,
+.neumorphic-card-hover p,
+.neumorphic-card-hover h3,
+.neumorphic-card-hover li,
+.neumorphic-card-hover span.font-black,
+.neumorphic-card-hover div.font-bold {
+  display: inline-block;
+  transition: transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1), 
+              color 0.25s ease, 
+              text-shadow 0.25s ease;
+  transform-origin: center;
+}
+
+/* Magnify the text behind the cursor when hovered directly */
+.zoom-target:hover,
+.neumorphic-card-hover p:hover,
+.neumorphic-card-hover h3:hover,
+.neumorphic-card-hover li:hover,
+.neumorphic-card-hover span.font-black:hover,
+.neumorphic-card-hover div.font-bold:hover {
+  transform: scale(1.08) !important; /* Physically zoom the text content */
+  color: #C4902A !important; /* Accentuate text in primary gold */
+  text-shadow: 0 0 10px rgba(196,144,42,0.15);
+  z-index: 50;
+}
+
+

@@ -133,7 +133,7 @@ const Rewards = () => {
         <div className="flex flex-col gap-6">
           
           {/* Profile Card */}
-          <div className="bg-bg-panel border border-border-default rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+          <div className="cc-panel rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
             <div className="bg-bg-surface-dark text-text-primary p-8 md:p-10 flex flex-col md:flex-row items-center md:items-start gap-8 relative overflow-hidden">
               <div className="absolute inset-0 opacity-[0.06] bg-[radial-gradient(600px_200px_at_30%_50%,_var(--color-primary),_transparent_70%)]" />
               
@@ -166,7 +166,7 @@ const Rewards = () => {
             </div>
 
             {/* XP progress bar to next level */}
-            <div className="p-6 md:px-8 md:py-6 bg-bg-panel-hover">
+            <div className="p-6 md:px-8 md:py-6 cc-panel-hover">
               <div className="flex justify-between font-mono text-[11px] text-text-muted mb-2">
                 <span>{currentLevel.name.toUpperCase()} · {reputation} XP</span>
                 {nextLevel && <span>{toNext} XP to {nextLevel.name}</span>}
@@ -181,7 +181,7 @@ const Rewards = () => {
           </div>
 
           {/* Rank Ladder */}
-          <div className="bg-bg-panel border border-border-default rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden">
+          <div className="cc-panel rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden">
             <div className="px-6 py-5 border-b border-border-default">
               <div className="text-[10px] text-text-muted tracking-[2px] uppercase mb-1">THE LADDER</div>
               <h3 className="font-serif text-[22px] font-medium text-text-primary">Five ranks. The hierarchy is the journey.</h3>
@@ -192,7 +192,7 @@ const Rewards = () => {
           </div>
 
           {/* Badges grid */}
-          <div className="bg-bg-panel border border-border-default rounded-2xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+          <div className="cc-panel rounded-2xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
             <div className="flex flex-col sm:flex-row justify-between sm:items-end mb-6 gap-4">
               <div>
                 <div className="text-[10px] text-text-muted tracking-[2px] uppercase mb-1">TROPHY ROOM</div>
@@ -207,7 +207,7 @@ const Rewards = () => {
           </div>
 
           {/* Live Leaderboard */}
-          <div className="bg-bg-panel border border-border-default rounded-2xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+          <div className="cc-panel rounded-2xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
             <div className="text-[10px] text-text-muted tracking-[2px] uppercase mb-2">LIVE LEADERBOARD</div>
             <h3 className="font-serif text-[22px] font-medium text-text-primary mb-5">Reputation Rankings</h3>
             {loadingBoard ? (
@@ -221,7 +221,7 @@ const Rewards = () => {
                 {leaderboard.map((entry, i) => {
                   const isMe = user?.id && entry.user_id === user.id;
                   return (
-                    <div key={entry.user_id} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isMe ? 'bg-primary/8 border border-primary/20' : 'bg-bg-panel-hover'}`}>
+                    <div key={entry.user_id} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isMe ? 'bg-primary/8 border border-primary/20' : 'cc-panel-hover'}`}>
                       <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0 ${
                         i === 0 ? 'bg-[#BFA532] text-white' : i === 1 ? 'bg-[#a0a0a0] text-white' : i === 2 ? 'bg-[#cd7f32] text-white' : 'bg-bg-surface text-text-muted'
                       }`}>
@@ -245,13 +245,13 @@ const Rewards = () => {
               <div className="mt-4 pt-4 border-t border-border-default">
                 <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2">Your rankings</div>
                 <div className="grid grid-cols-2 gap-2 text-[12px]">
-                  <div className="bg-bg-panel-hover px-3 py-2 rounded-lg">
+                  <div className="cc-panel-hover px-3 py-2 rounded-lg">
                     <div className="text-text-muted">Reputation rank</div>
                     <div className="font-semibold text-text-primary">
                       #{userRankings.reputation?.rank ?? '—'}
                     </div>
                   </div>
-                  <div className="bg-bg-panel-hover px-3 py-2 rounded-lg">
+                  <div className="cc-panel-hover px-3 py-2 rounded-lg">
                     <div className="text-text-muted">Study time rank</div>
                     <div className="font-semibold text-text-primary">
                       #{userRankings.study_alltime?.rank ?? '—'}
@@ -266,7 +266,7 @@ const Rewards = () => {
 
         {/* Sidebar */}
         <aside className="flex flex-col gap-6">
-          <div className="bg-bg-panel border border-border-default rounded-2xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+          <div className="cc-panel rounded-2xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
             <div className="text-[10px] text-text-muted tracking-[2px] uppercase mb-2">YOUR STATS</div>
             <div className="flex flex-col gap-3 mt-3">
               <div className="flex justify-between items-center">
@@ -291,7 +291,7 @@ const Rewards = () => {
           </div>
 
           {/* Study time leaderboard */}
-          <div className="bg-bg-panel border border-border-default rounded-2xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+          <div className="cc-panel rounded-2xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
             <div className="text-[10px] text-text-muted tracking-[2px] uppercase mb-4">TOP STUDIERS · ALL TIME</div>
             {studyBoard.length === 0 && !loadingBoard ? (
               <p className="text-[12px] text-text-muted">No study time data yet.</p>
@@ -311,7 +311,7 @@ const Rewards = () => {
             )}
           </div>
 
-          <div className="bg-bg-panel border border-border-default rounded-2xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+          <div className="cc-panel rounded-2xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
             <div className="text-[10px] text-text-muted tracking-[2px] uppercase mb-2">COSMETICS · UNLOCKED</div>
             <p className="text-xs text-text-secondary leading-relaxed mb-4">Ranks unlock dashboard themes and avatar frames. None of this is sold.</p>
             <div className="grid grid-cols-3 gap-2">
@@ -324,7 +324,7 @@ const Rewards = () => {
                 { t: "Service", lock: "Lvl 81" },
               ].map((c, i) => (
                 <div key={i} className={`aspect-[1/1] rounded-xl p-2 flex flex-col justify-end text-[9px] font-mono tracking-widest relative overflow-hidden ${
-                  c.lock ? "bg-bg-panel-hover text-text-muted border border-border-default" :
+                  c.lock ? "cc-panel-hover text-text-muted border border-border-default" :
                   i === 1 ? "bg-gradient-to-br from-primary to-[#BFA532] text-white border-[2px] border-primary" :
                   i === 0 ? "bg-bg-surface-dark text-text-primary border border-border-muted" :
                   "bg-gradient-to-br from-indigo-500 to-indigo-900 text-white border border-border-default"
@@ -365,7 +365,7 @@ const RankLadder = ({ currentRank }) => {
             <div className={`relative w-9 h-9 rounded-full flex items-center justify-center font-mono text-[11px] font-bold mx-auto border-2 ${
               passed ? "bg-primary border-primary text-white shadow-[0_0_12px_rgba(212,97,60,0.4)]" :
               active ? "bg-bg-surface-dark border-bg-surface-dark text-text-primary shadow-md ring-2 ring-primary ring-offset-1" :
-              "bg-bg-panel border-border-default text-text-muted"
+              "cc-panel border-border-default text-text-muted"
             }`}>
               {passed ? <Check size={14} strokeWidth={2.5} /> : i + 1}
             </div>
@@ -400,7 +400,7 @@ const BadgeCard = ({ b }) => {
   const progressBarStyle = { width: `${(b.progress/b.total)*100}%`, background: colorHex };
 
   return (
-    <div className={`p-4 rounded-xl border flex flex-col gap-2 relative transition-all ${earned ? 'bg-bg-panel shadow-sm hover:-translate-y-1 hover:shadow-md' : 'bg-bg-panel-hover opacity-85'}`} style={borderStyle}>
+    <div className={`p-4 rounded-xl border flex flex-col gap-2 relative transition-all ${earned ? 'cc-panel shadow-sm hover:-translate-y-1 hover:shadow-md' : 'cc-panel-hover opacity-85'}`} style={borderStyle}>
       <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${earned ? 'text-white shadow-sm' : 'text-text-muted'}`} style={iconBgStyle}>
         {earned ? <Trophy size={22} /> : <X size={22} />}
       </div>

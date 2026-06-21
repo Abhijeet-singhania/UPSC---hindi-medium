@@ -107,7 +107,7 @@ const StudyContent = () => {
         <div className="flex gap-6 items-start">
           {/* Left topics nav — sticky */}
           <div className="hidden md:block w-[220px] shrink-0 sticky top-[72px]">
-            <div className="bg-bg-panel border border-border-default rounded-xl overflow-hidden">
+            <div className="cc-panel rounded-xl overflow-hidden">
               <NavItem label={t('studyContent.gsPaper1')} gsKey="gs1" expanded={expandedSection === 'gs1'} onToggle={() => toggle('gs1')} />
               <NavItem label={t('studyContent.gsPaper2')} gsKey="gs2" expanded={expandedSection === 'gs2'} onToggle={() => toggle('gs2')} />
               <NavItem label={t('studyContent.gsPaper3')} gsKey="gs3" expanded={expandedSection === 'gs3'} onToggle={() => toggle('gs3')}>
@@ -134,7 +134,7 @@ const StudyContent = () => {
 
           {/* Main reader — F-pattern: max-w 680px, generous line-height */}
           <div className="flex-1 min-w-0">
-            <div className="bg-bg-panel border border-border-default rounded-xl">
+            <div className="cc-panel rounded-xl">
               {/* Article header */}
               <div className="px-8 pt-8 pb-6 border-b border-border-default">
                 <div className="flex items-center gap-2 mb-4 text-[13px] text-text-muted">

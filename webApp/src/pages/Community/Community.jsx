@@ -3,10 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import {
   MessageCircle, ThumbsUp, ThumbsDown, Plus, X,
-  Loader2, AlertCircle, Send, Trophy
+  Loader2, AlertCircle, Send, Trophy, ArrowLeft, Sparkles
 } from 'lucide-react';
 import { useApi } from '../../hooks/useApi';
-import { PageHeader, Badge, Reveal } from '../../components/ui';
+import { PageHeader } from '../../components/ui';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 
@@ -27,60 +27,70 @@ const formatError = (err, fallback) => {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-const QuestionCard = ({ question, isSelected, userVote = 0, onSelect, onVote }) => (
+const QuestionCardMasonry = ({ question, userVote = 0, onSelect, onVote }) => (
   <div
     onClick={() => onSelect(question)}
-    className={`bg-bg-panel border rounded-xl p-5 cursor-pointer transition-all ${
-      isSelected ? 'border-primary bg-primary/5' : 'border-border-default hover:bg-bg-panel-hover'
-    }`}
+    className="cc-panel p-6 cursor-pointer hover:cc-panel-hover transition-all group break-inside-avoid mb-5"
   >
-    <div className="flex items-start justify-between gap-3 mb-2">
-      <h4 className="font-medium text-text-primary text-[14px] leading-snug flex-1">{question.title}</h4>
+    <div className="flex items-start justify-between gap-3 mb-3">
+      <h4 className="font-serif font-bold text-text-primary text-[18px] leading-[1.3] group-hover:text-primary transition-colors flex-1">{question.title}</h4>
       {question.is_solved && (
         <span className="text-[10px] font-bold tracking-wider uppercase bg-[#EBF5F0] text-[#2B7A4B] px-2 py-0.5 rounded shrink-0">
           Solved
         </span>
       )}
     </div>
+    
+    {question.content && question.content !== question.title && (
+      <p className="text-[13px] text-text-secondary leading-relaxed mb-4 line-clamp-4">
+        {question.content}
+      </p>
+    )}
+
     {question.tags && question.tags.length > 0 && (
-      <div className="flex flex-wrap gap-1 mb-2">
+      <div className="flex flex-wrap gap-1.5 mb-4">
         {question.tags.map(tag => (
-          <span key={tag} className="text-[10px] bg-bg-surface text-text-muted px-1.5 py-0.5 rounded border border-border-default">
+          <span key={tag} className="text-[10px] bg-bg-surface text-text-muted px-2 py-0.5 rounded border border-border-default">
             {tag}
           </span>
         ))}
       </div>
     )}
-    <div className="flex items-center gap-4 text-[12px] text-text-muted">
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onVote(question.id, userVote === 1 ? 0 : 1);
-        }}
-        title={userVote === 1 ? 'Remove upvote' : 'Upvote question'}
-        className={`flex items-center gap-1 px-2 py-1 rounded-lg transition cursor-pointer ${
-          userVote === 1
-            ? 'bg-primary/10 text-primary border border-primary/30'
-            : 'hover:text-primary hover:bg-primary/5 border border-transparent'
-        }`}
-      >
-        <ThumbsUp size={12} /> {question.upvotes}
-      </button>
-      <span className="flex items-center gap-1"><MessageCircle size={12} /> {question.answer_count} answers</span>
+    
+    <div className="flex items-center justify-between mt-2 pt-3 border-t border-dashed border-border-default">
+      <div className="flex items-center gap-4 text-[12px] text-text-muted">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onVote(question.id, userVote === 1 ? 0 : 1);
+          }}
+          title={userVote === 1 ? 'Remove upvote' : 'Upvote question'}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition cursor-pointer ${
+            userVote === 1
+              ? 'bg-primary/10 text-primary border border-primary/30'
+              : 'hover:text-primary hover:bg-primary/5 border border-transparent'
+          }`}
+        >
+          <ThumbsUp size={13} /> <span className="font-medium">{question.upvotes}</span>
+        </button>
+      </div>
+      <span className="flex items-center gap-1.5 text-[12px] text-text-muted font-medium">
+        <MessageCircle size={13} /> {question.answer_count}
+      </span>
     </div>
   </div>
 );
 
 const AnswerCard = ({ answer, onVote, userVote = 0 }) => (
-  <div className={`border rounded-xl p-5 bg-bg-panel transition-all ${answer.is_accepted ? 'border-[#2B7A4B]/50 bg-[#EBF5F0]/20' : 'border-border-default'}`}>
-    <div className="flex items-start justify-between mb-3">
-      <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[11px] font-semibold shrink-0">
+  <div className={`border rounded-2xl p-6 cc-panel transition-all ${answer.is_accepted ? 'border-[#2B7A4B]/50 bg-[#EBF5F0]/20' : 'border-border-default'}`}>
+    <div className="flex items-start justify-between mb-4">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[13px] font-bold shrink-0">
           {initials(answer.author?.name)}
         </div>
         <div>
-          <div className="text-[13px] font-medium text-text-primary flex items-center gap-1.5">
+          <div className="text-[14px] font-bold text-text-primary flex items-center gap-2">
             {answer.is_accepted && (
               <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider bg-[#EBF5F0] text-[#2B7A4B] px-2 py-0.5 rounded">
                 ✓ Accepted
@@ -88,37 +98,37 @@ const AnswerCard = ({ answer, onVote, userVote = 0 }) => (
             )}
             {answer.author?.name || 'Aspirant'}
           </div>
-          <div className="text-[11px] text-text-muted">{answer.author?.reputation ?? 0} reputation</div>
+          <div className="text-[11px] text-text-muted mt-0.5">{answer.author?.reputation ?? 0} reputation</div>
         </div>
       </div>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1.5">
         <button
           type="button"
           onClick={() => onVote(answer.id, userVote === 1 ? 0 : 1)}
           title={userVote === 1 ? 'Remove upvote' : 'Upvote'}
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12px] font-medium transition cursor-pointer ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition cursor-pointer ${
             userVote === 1
               ? 'bg-primary/10 text-primary border border-primary/30'
               : 'text-text-muted hover:text-primary hover:bg-primary/5 border border-transparent'
           }`}
         >
-          <ThumbsUp size={13} /> {answer.upvotes}
+          <ThumbsUp size={14} /> {answer.upvotes}
         </button>
         <button
           type="button"
           onClick={() => onVote(answer.id, userVote === -1 ? 0 : -1)}
           title={userVote === -1 ? 'Remove downvote' : 'Downvote'}
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12px] font-medium transition cursor-pointer ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition cursor-pointer ${
             userVote === -1
               ? 'bg-red-50 text-red-500 border border-red-200'
               : 'text-text-muted hover:text-red-400 hover:bg-red-50/50 border border-transparent'
           }`}
         >
-          <ThumbsDown size={13} /> {answer.downvotes}
+          <ThumbsDown size={14} /> {answer.downvotes}
         </button>
       </div>
     </div>
-    <p className="text-[13px] text-text-primary leading-relaxed whitespace-pre-wrap">{answer.content}</p>
+    <p className="text-[14px] text-text-secondary leading-relaxed whitespace-pre-wrap">{answer.content}</p>
   </div>
 );
 
@@ -150,46 +160,46 @@ const AskModal = ({ onClose, onSubmit, submitting }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4">
-      <div className="bg-bg-panel border border-border-default rounded-2xl w-full max-w-[600px] shadow-2xl">
+      <div className="cc-panel rounded-2xl w-full max-w-[600px] shadow-2xl">
         <div className="flex items-center justify-between p-6 border-b border-border-default">
-          <h3 className="font-serif text-[20px] font-medium text-text-primary">Ask a Question</h3>
+          <h3 className="font-serif text-[20px] font-bold text-text-primary">Ask the Community</h3>
           <button type="button" onClick={onClose} className="text-text-muted hover:text-text-primary transition cursor-pointer">
             <X size={20} />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5">
           <div>
-            <label className="text-sm font-medium text-text-primary block mb-2">Question title *</label>
+            <label className="text-sm font-bold text-text-primary block mb-2">Question title *</label>
             <input
               type="text"
               value={title}
               onChange={e => setTitle(e.target.value)}
               placeholder="What is the difference between a Money Bill and a Finance Bill?"
-              className="w-full bg-bg-surface border border-border-default rounded-lg px-4 py-2.5 text-text-primary focus:outline-none focus:border-primary transition text-[14px]"
+              className="w-full cc-inset border border-border-default rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-primary transition text-[14px]"
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-text-primary block mb-2">Details (optional)</label>
+            <label className="text-sm font-bold text-text-primary block mb-2">Details (optional)</label>
             <textarea
               value={content}
               onChange={e => setContent(e.target.value)}
               rows={4}
               placeholder="Add context, what you've already tried, or specific doubts..."
-              className="w-full bg-bg-surface border border-border-default rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-primary transition resize-none text-[13px]"
+              className="w-full cc-inset border border-border-default rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-primary transition resize-none text-[13px]"
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-text-primary block mb-2">Tags</label>
+            <label className="text-sm font-bold text-text-primary block mb-2">Tags</label>
             <div className="flex flex-wrap gap-2">
               {COMMON_TAGS.map(tag => (
                 <button
                   key={tag}
                   type="button"
                   onClick={() => toggleTag(tag)}
-                  className={`text-[12px] px-3 py-1 rounded-full border transition cursor-pointer ${
+                  className={`text-[12px] px-3 py-1.5 rounded-full border transition cursor-pointer font-medium ${
                     selectedTags.includes(tag)
                       ? 'bg-primary/10 border-primary text-primary'
-                      : 'bg-bg-surface border-border-default text-text-secondary hover:border-text-muted'
+                      : 'cc-inset border-border-default text-text-secondary hover:border-text-muted'
                   }`}
                 >
                   {tag}
@@ -210,20 +220,20 @@ const AskModal = ({ onClose, onSubmit, submitting }) => {
             </label>
           </div>
           {error && <p className="text-red-500 text-[13px]">{error}</p>}
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="flex justify-end gap-3 pt-4 border-t border-border-default mt-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2 rounded-lg border border-border-default text-text-secondary hover:bg-bg-panel-hover transition cursor-pointer text-sm"
+              className="px-5 py-2.5 rounded-lg border border-border-default text-text-secondary hover:cc-panel-hover transition cursor-pointer text-sm font-medium"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="bg-primary hover:bg-primary-hover text-white px-5 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition cursor-pointer disabled:opacity-60"
+              className="bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 transition cursor-pointer disabled:opacity-60 shadow-[0_0_15px_rgba(212,97,60,0.3)]"
             >
-              {submitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+              {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
               {submitting ? 'Posting...' : 'Post Question'}
             </button>
           </div>
@@ -271,7 +281,7 @@ const Community = () => {
     useApi(`${API_BASE}/api/v1/answers/:answerId/accept`);
 
   const fetchQuestions = useCallback(() => {
-    loadQuestions({ queryParams: { tag: activeTag || undefined, limit: 20 } }).catch(() => {});
+    loadQuestions({ queryParams: { tag: activeTag || undefined, limit: 30 } }).catch(() => {});
   }, [activeTag, loadQuestions]);
 
   useEffect(() => { fetchQuestions(); }, [fetchQuestions]);
@@ -482,228 +492,255 @@ const Community = () => {
         />
       )}
 
-      <PageHeader
-        title={t('community.title')}
-        subtitle={t('community.subtitle')}
-        action={
-          <button
-            type="button"
-            onClick={() => setShowAskModal(true)}
-            className="bg-primary hover:bg-primary-hover text-white border-none py-2 px-4 rounded-lg text-[13px] font-medium flex items-center gap-2 transition-colors cursor-pointer shrink-0"
+      {/* When a question is selected, hide the header and show a "Back to feed" nav instead */}
+      {!selectedQuestion && (
+        <PageHeader
+          title={t('community.title')}
+          subtitle="Explore the Masonry feed of doubts and discussions."
+          action={
+            <button
+              type="button"
+              onClick={() => setShowAskModal(true)}
+              className="bg-primary hover:bg-primary-hover text-white border-none py-2.5 px-5 rounded-lg text-[14px] font-bold flex items-center gap-2 transition shadow-[0_0_15px_rgba(212,97,60,0.3)] cursor-pointer shrink-0"
+            >
+            <Plus size={16} /> Ask Question
+            </button>
+          }
+        />
+      )}
+
+      {selectedQuestion && (
+        <div className="mb-6 flex items-center gap-4">
+          <button 
+            onClick={() => setSelectedQuestion(null)}
+            className="flex items-center gap-2 text-text-muted hover:text-primary transition font-medium text-[14px] cursor-pointer"
           >
-          <Plus size={15} /> Ask Question
+            <ArrowLeft size={16} /> Back to Feed
           </button>
-        }
-      />
+        </div>
+      )}
 
       <div className="flex gap-8 items-start">
         <div className="flex-1 min-w-0">
-          <div className="flex gap-8 border-b border-border-default mb-6">
-            {[
-              { id: 'feed', label: t('community.tabFeed') },
-            ].map(tab => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={`bg-transparent border-none py-3 text-[14px] font-medium relative cursor-pointer ${activeTab === tab.id ? 'text-primary' : 'text-text-muted'}`}
-              >
-                {tab.label}
-                {activeTab === tab.id && <span className="absolute bottom-[-1px] left-0 w-full h-[2px] bg-primary" />}
-              </button>
-            ))}
-          </div>
-
-          {activeTab === 'feed' && (
+          
+          {/* Main Feed View */}
+          {!selectedQuestion && (
             <>
-              <div className="flex gap-2 mb-6 flex-wrap">
-                <button
-                  type="button"
-                  onClick={() => setActiveTag('')}
-                  className={`border py-1.5 px-4 rounded-full text-[13px] cursor-pointer transition-colors ${
-                    activeTag === '' ? 'bg-bg-surface-dark border-border-muted text-text-primary' : 'bg-bg-panel border-border-default text-text-muted hover:bg-bg-panel-hover'
-                  }`}
-                >
-                  All
-                </button>
-                {COMMON_TAGS.slice(0, 6).map(tag => (
+              <div className="flex gap-8 border-b border-border-default mb-6">
+                {[
+                  { id: 'feed', label: 'Discovery Feed' },
+                ].map(tab => (
                   <button
-                    key={tag}
+                    key={tab.id}
                     type="button"
-                    onClick={() => setActiveTag(tag === activeTag ? '' : tag)}
-                    className={`border py-1.5 px-4 rounded-full text-[13px] cursor-pointer transition-colors ${
-                      activeTag === tag ? 'bg-primary/10 border-primary text-primary' : 'bg-bg-panel border-border-default text-text-muted hover:bg-bg-panel-hover'
-                    }`}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`bg-transparent border-none py-3 text-[14px] font-medium relative cursor-pointer ${activeTab === tab.id ? 'text-primary' : 'text-text-muted'}`}
                   >
-                    {tag}
+                    {tab.label}
+                    {activeTab === tab.id && <span className="absolute bottom-[-1px] left-0 w-full h-[2px] bg-primary" />}
                   </button>
                 ))}
               </div>
 
-              {voteError && (
-                <div className="mb-4 px-4 py-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-[12px]">
-                  {voteError}
-                </div>
-              )}
+              {activeTab === 'feed' && (
+                <>
+                  <div className="flex gap-2 mb-8 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTag('')}
+                      className={`py-1.5 px-4 rounded-full text-[12px] font-medium cursor-pointer transition border ${
+                        activeTag === '' ? 'bg-bg-surface-dark border-border-muted text-text-primary' : 'cc-inset border-border-default text-text-muted hover:border-text-muted'
+                      }`}
+                    >
+                      All
+                    </button>
+                    {COMMON_TAGS.slice(0, 6).map(tag => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => setActiveTag(tag === activeTag ? '' : tag)}
+                        className={`py-1.5 px-4 rounded-full text-[12px] font-medium cursor-pointer transition border ${
+                          activeTag === tag ? 'bg-primary/10 border-primary text-primary' : 'cc-inset border-border-default text-text-muted hover:border-text-muted'
+                        }`}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
 
-              <div className="flex gap-5">
-                <div className="w-[340px] shrink-0 flex flex-col gap-3">
+                  {voteError && (
+                    <div className="mb-4 px-4 py-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-[12px]">
+                      {voteError}
+                    </div>
+                  )}
+
                   {loadingQuestions && (
-                    <div className="flex items-center gap-2 text-text-muted text-sm py-4">
-                      <Loader2 size={14} className="animate-spin" /> Loading questions...
+                    <div className="flex items-center justify-center gap-2 text-text-muted text-sm py-12">
+                      <Loader2 size={18} className="animate-spin" /> Loading feed...
                     </div>
                   )}
                   {questionsError && !loadingQuestions && (
-                    <div className="flex items-center gap-2 text-red-500 text-sm py-4">
-                      <AlertCircle size={14} /> Failed to load questions.
+                    <div className="flex items-center justify-center gap-2 text-red-500 text-sm py-12">
+                      <AlertCircle size={18} /> Failed to load feed.
                     </div>
                   )}
                   {!loadingQuestions && questions.length === 0 && !questionsError && (
-                    <div className="bg-bg-panel border border-border-default rounded-xl p-6 text-center">
-                      <MessageCircle size={28} className="text-text-muted opacity-40 mx-auto mb-3" />
-                      <p className="text-[14px] font-medium text-text-primary mb-1">No questions yet</p>
-                      <p className="text-[12px] text-text-muted">Be the first to ask a question!</p>
+                    <div className="cc-panel rounded-2xl p-12 text-center">
+                      <MessageCircle size={36} className="text-text-muted opacity-40 mx-auto mb-4" />
+                      <p className="text-[16px] font-bold text-text-primary mb-2">The community is quiet</p>
+                      <p className="text-[14px] text-text-muted">Be the first to spark a discussion!</p>
                     </div>
                   )}
-                  {questions.map(q => (
-                    <QuestionCard
-                      key={q.id}
-                      question={q}
-                      isSelected={selectedQuestion?.id === q.id}
-                      userVote={questionVotes[q.id] ?? q.user_vote ?? 0}
-                      onSelect={qItem => { setSelectedQuestion(qItem); setAcceptError(''); setVoteError(''); }}
-                      onVote={handleQuestionVote}
-                    />
-                  ))}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  {!selectedQuestion ? (
-                    <div className="bg-bg-panel border border-border-default rounded-xl p-8 text-center text-text-muted text-[13px]">
-                      Select a question to view and answer.
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-4">
-                      <div className="bg-bg-panel border border-border-default rounded-xl p-6">
-                        <h3 className="font-serif text-[20px] font-medium text-text-primary mb-3 leading-snug">
-                          {selectedQuestion.title}
-                        </h3>
-                        {selectedQuestion.content && selectedQuestion.content !== selectedQuestion.title && (
-                          <p className="text-[14px] text-text-secondary leading-relaxed mb-4">{selectedQuestion.content}</p>
-                        )}
-                        {selectedQuestion.tags && selectedQuestion.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {selectedQuestion.tags.map(tag => (
-                              <span key={tag} className="text-[10px] bg-bg-surface text-text-muted px-2 py-0.5 rounded border border-border-default">
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="bg-bg-panel border border-border-default rounded-xl p-5">
-                        <h4 className="font-medium text-[14px] text-text-primary mb-3">Your Answer</h4>
-                        <textarea
-                          value={answerText}
-                          onChange={e => setAnswerText(e.target.value.slice(0, 2000))}
-                          rows={4}
-                          maxLength={2000}
-                          placeholder="Write a clear, structured answer..."
-                          className="w-full bg-bg-surface border border-border-default rounded-lg px-4 py-3 text-[13px] text-text-primary focus:outline-none focus:border-primary transition resize-none"
-                        />
-                        <div className={`text-[11px] text-right mt-1 font-mono ${answerText.length >= 1900 ? 'text-red-500' : 'text-text-muted'}`}>
-                          {answerText.length} / 2000
-                        </div>
-                        {answerError && <p className="text-red-500 text-[12px] mt-2">{answerError}</p>}
-                        <div className="flex justify-end mt-3">
-                          <button
-                            type="button"
-                            onClick={handlePostAnswer}
-                            disabled={postingAnswer || !answerText.trim()}
-                            className="bg-primary hover:bg-primary-hover text-white py-2 px-4 rounded-lg text-[13px] font-medium flex items-center gap-2 transition cursor-pointer disabled:opacity-60"
-                          >
-                            {postingAnswer ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
-                            {postingAnswer ? 'Posting...' : 'Post Answer'}
-                          </button>
-                        </div>
-                      </div>
-
-                      <div>
-                        {acceptError && (
-                          <div className="mb-3 px-4 py-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-[12px]">
-                            {acceptError}
-                          </div>
-                        )}
-                        <div className="text-[12px] text-text-muted mb-3 font-semibold uppercase tracking-wider">
-                          {answers.length} {answers.length === 1 ? 'Answer' : 'Answers'}
-                        </div>
-                        {loadingAnswers && (
-                          <div className="flex items-center gap-2 text-text-muted text-sm">
-                            <Loader2 size={14} className="animate-spin" /> Loading answers...
-                          </div>
-                        )}
-                        <div className="flex flex-col gap-3">
-                          {answers.map(ans => (
-                            <div key={ans.id}>
-                              <AnswerCard
-                                answer={ans}
-                                onVote={handleVote}
-                                userVote={userVotes[ans.id] ?? ans.user_vote ?? 0}
-                              />
-                              {user?.id && selectedQuestion.user_id === user.id && !ans.is_accepted && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleAccept(ans.id)}
-                                  className="text-[11px] text-text-muted hover:text-[#2B7A4B] mt-1 ml-1 cursor-pointer flex items-center gap-1 transition"
-                                >
-                                  ✓ Mark as accepted answer
-                                </button>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+                  
+                  {/* Masonry Grid Implementation */}
+                  <div className="columns-1 md:columns-2 gap-5 w-full">
+                    {questions.map(q => (
+                      <QuestionCardMasonry
+                        key={q.id}
+                        question={q}
+                        userVote={questionVotes[q.id] ?? q.user_vote ?? 0}
+                        onSelect={qItem => { setSelectedQuestion(qItem); setAcceptError(''); setVoteError(''); window.scrollTo({top:0, behavior:'smooth'}); }}
+                        onVote={handleQuestionVote}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
             </>
           )}
 
-          {activeTab !== 'feed' && (
-            <div className="bg-bg-panel border border-border-default rounded-xl p-10 text-center text-text-muted text-[13px]">
-              Coming soon in the next release.
+          {/* Detailed Question View */}
+          {selectedQuestion && (
+            <div className="flex flex-col gap-6">
+              <div className="cc-panel rounded-2xl p-8">
+                <h3 className="font-serif text-[28px] font-bold text-text-primary mb-4 leading-snug">
+                  {selectedQuestion.title}
+                </h3>
+                {selectedQuestion.content && selectedQuestion.content !== selectedQuestion.title && (
+                  <p className="text-[15px] text-text-secondary leading-relaxed mb-6 whitespace-pre-wrap">{selectedQuestion.content}</p>
+                )}
+                
+                <div className="flex items-center justify-between border-t border-dashed border-border-default pt-4 mt-2">
+                  <div className="flex flex-wrap gap-2">
+                    {selectedQuestion.tags && selectedQuestion.tags.map(tag => (
+                      <span key={tag} className="text-[11px] bg-bg-surface text-text-muted px-2.5 py-1 rounded border border-border-default font-medium">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                  
+                  <div className="flex gap-2">
+                     <button
+                        type="button"
+                        onClick={() => handleQuestionVote(selectedQuestion.id, (questionVotes[selectedQuestion.id] ?? selectedQuestion.user_vote) === 1 ? 0 : 1)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition cursor-pointer text-[13px] font-medium ${
+                          (questionVotes[selectedQuestion.id] ?? selectedQuestion.user_vote) === 1
+                            ? 'bg-primary/10 text-primary border border-primary/30'
+                            : 'cc-inset border-border-default text-text-muted hover:text-primary hover:border-primary/50'
+                        }`}
+                      >
+                        <ThumbsUp size={14} /> {selectedQuestion.upvotes}
+                      </button>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                {acceptError && (
+                  <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-[13px] font-medium">
+                    {acceptError}
+                  </div>
+                )}
+                <div className="text-[13px] text-text-primary mb-4 font-bold tracking-wide flex items-center gap-2">
+                  <MessageCircle size={16} className="text-primary"/> 
+                  {answers.length} {answers.length === 1 ? 'Answer' : 'Answers'}
+                </div>
+                
+                {loadingAnswers && (
+                  <div className="flex items-center justify-center gap-2 text-text-muted text-sm py-8">
+                    <Loader2 size={16} className="animate-spin" /> Loading answers...
+                  </div>
+                )}
+                
+                <div className="flex flex-col gap-4">
+                  {answers.map(ans => (
+                    <div key={ans.id} className="relative">
+                      <AnswerCard
+                        answer={ans}
+                        onVote={handleVote}
+                        userVote={userVotes[ans.id] ?? ans.user_vote ?? 0}
+                      />
+                      {user?.id && selectedQuestion.user_id === user.id && !ans.is_accepted && (
+                        <button
+                          type="button"
+                          onClick={() => handleAccept(ans.id)}
+                          className="absolute top-6 right-20 text-[11px] font-bold uppercase tracking-widest text-text-muted hover:text-[#2B7A4B] cursor-pointer flex items-center gap-1 transition bg-bg-base px-2 py-1 rounded"
+                        >
+                          ✓ Accept
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="cc-panel rounded-2xl p-6 mt-2 border-t-4 border-t-primary">
+                <h4 className="font-bold text-[16px] text-text-primary mb-3">Contribute your Answer</h4>
+                <textarea
+                  value={answerText}
+                  onChange={e => setAnswerText(e.target.value.slice(0, 2000))}
+                  rows={4}
+                  maxLength={2000}
+                  placeholder="Share your knowledge and earn reputation points..."
+                  className="w-full cc-inset border border-border-default rounded-xl px-4 py-3 text-[14px] text-text-primary focus:outline-none focus:border-primary transition resize-none"
+                />
+                <div className={`text-[11px] text-right mt-1 font-mono ${answerText.length >= 1900 ? 'text-red-500' : 'text-text-muted'}`}>
+                  {answerText.length} / 2000
+                </div>
+                {answerError && <p className="text-red-500 text-[13px] font-medium mt-2">{answerError}</p>}
+                <div className="flex justify-end mt-4">
+                  <button
+                    type="button"
+                    onClick={handlePostAnswer}
+                    disabled={postingAnswer || !answerText.trim()}
+                    className="bg-primary hover:bg-primary-hover text-white py-2.5 px-6 rounded-xl text-[14px] font-bold flex items-center gap-2 transition cursor-pointer disabled:opacity-60 shadow-[0_0_15px_rgba(212,97,60,0.2)]"
+                  >
+                    {postingAnswer ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+                    {postingAnswer ? 'Posting...' : 'Post Answer'}
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
 
-        <div className="w-[280px] shrink-0 flex flex-col gap-6">
+        {/* Right Sidebar: Leaderboard */}
+        <div className="w-[300px] shrink-0 flex flex-col gap-6 hidden lg:flex">
           <div>
-            <h4 className="font-serif font-semibold text-[16px] mb-4 text-text-primary flex items-center gap-2">
-              <Trophy size={16} className="text-primary" /> {t('community.ldrTitle')}
+            <h4 className="font-serif font-bold text-[18px] mb-4 text-text-primary flex items-center gap-2">
+              <Trophy size={18} className="text-primary" /> {t('community.ldrTitle')}
             </h4>
-            <div className="bg-bg-panel border border-border-default rounded-xl p-4 shadow-sm">
+            <div className="cc-panel rounded-2xl p-5 shadow-sm">
               {leaderboard.length === 0 && (
-                <p className="text-[12px] text-text-muted text-center py-2">No leaderboard data yet.</p>
+                <p className="text-[13px] text-text-muted text-center py-4">No leaderboard data yet.</p>
               )}
               {leaderboard.map((entry, i) => (
-                <div key={entry.user_id} className={`flex items-center gap-3 ${i > 0 ? 'border-t border-border-default mt-3 pt-3' : ''}`}>
-                  <span className="text-text-muted text-xs w-6 shrink-0 font-medium">#{entry.rank}</span>
-                  <div className="w-7 h-7 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[11px] font-semibold shrink-0">
+                <div key={entry.user_id} className={`flex items-center gap-3 ${i > 0 ? 'border-t border-border-default mt-4 pt-4' : ''}`}>
+                  <span className="text-text-muted text-[13px] w-6 shrink-0 font-bold">#{entry.rank}</span>
+                  <div className="w-8 h-8 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[12px] font-bold shrink-0">
                     {initials(entry.name)}
                   </div>
-                  <span className="font-medium flex-1 text-sm text-text-primary truncate">{entry.name}</span>
-                  <span className="text-xs text-primary font-bold">{entry.score} pts</span>
+                  <span className="font-bold flex-1 text-[14px] text-text-primary truncate">{entry.name}</span>
+                  <span className="text-[12px] text-primary font-black tracking-wide">{entry.score} pts</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="bg-primary/8 border border-primary/20 rounded-xl p-5">
-            <div className="text-[10px] tracking-widest text-primary/70 font-bold uppercase mb-2">Community tip</div>
-            <p className="text-[12px] text-text-secondary leading-relaxed">
-              Earn reputation by giving helpful answers. Reach 200 points to become a Contributor.
+          <div className="bg-primary/10 border border-primary/20 rounded-2xl p-6">
+            <div className="text-[11px] tracking-widest text-primary font-black uppercase mb-3 flex items-center gap-1.5"><Sparkles size={14}/> Reputation Goal</div>
+            <p className="text-[13px] text-text-primary leading-relaxed font-medium">
+              Earn reputation by providing helpful, accepted answers. Reach <span className="text-primary font-bold">200 points</span> to unlock the <span className="underline decoration-primary decoration-2 underline-offset-2">Contributor</span> rank!
             </p>
           </div>
         </div>

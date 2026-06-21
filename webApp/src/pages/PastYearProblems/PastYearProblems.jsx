@@ -52,7 +52,7 @@ const MCQPanel = ({ problem, attempt, onAttempt }) => {
           const isSelected = selected === char;
           const isCorrect = correct === char;
 
-          let ring = 'border-border-default hover:bg-bg-panel-hover';
+          let ring = 'border-border-default hover:cc-panel-hover';
           let circleCls = 'border-border-default text-text-muted';
 
           if (revealed) {
@@ -112,7 +112,7 @@ const MCQPanel = ({ problem, attempt, onAttempt }) => {
         {(revealed || selected) && (
           <button
             onClick={reset}
-            className="flex items-center gap-1.5 border border-border-default text-text-muted py-2 px-3 rounded-lg text-[12px] hover:bg-bg-panel-hover transition cursor-pointer"
+            className="flex items-center gap-1.5 border border-border-default text-text-muted py-2 px-3 rounded-lg text-[12px] hover:cc-panel-hover transition cursor-pointer"
           >
             <RotateCcw size={13} /> Try again
           </button>
@@ -144,7 +144,7 @@ const MainsPanel = ({ problem, attempt, onAttempt }) => {
         </div>
         <button
           onClick={() => onAttempt(null)}
-          className="flex items-center gap-1.5 border border-border-default text-text-muted py-2 px-3 rounded-lg text-[12px] hover:bg-bg-panel-hover transition cursor-pointer w-fit"
+          className="flex items-center gap-1.5 border border-border-default text-text-muted py-2 px-3 rounded-lg text-[12px] hover:cc-panel-hover transition cursor-pointer w-fit"
         >
           <RotateCcw size={13} /> Edit answer
         </button>
@@ -295,7 +295,7 @@ const PastYearProblems = () => {
           <p className="text-text-muted text-[13px]">{t('pastYearProblems.subtitle')}</p>
         </div>
         {attempted > 0 && (
-          <div className="flex items-center gap-2 bg-bg-panel border border-border-default rounded-xl px-4 py-2.5 text-[12px]">
+          <div className="flex items-center gap-2 cc-panel rounded-xl px-4 py-2.5 text-[12px]">
             <Trophy size={14} className="text-primary" />
             <span className="text-text-muted">Session:</span>
             <span className="font-medium text-text-primary">{correct}/{attempted} correct</span>
@@ -306,7 +306,7 @@ const PastYearProblems = () => {
       <div className="flex gap-5 items-start">
         {/* ── Left: Filters ── */}
         <div className="w-[240px] shrink-0 flex flex-col gap-3">
-          <div className="bg-bg-panel border border-border-default rounded-xl p-4 shadow-sm">
+          <div className="cc-panel rounded-xl p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
               <Search size={14} className="text-text-muted shrink-0" />
               <input
@@ -369,14 +369,14 @@ const PastYearProblems = () => {
                 className={`w-full flex items-center gap-2 py-1.5 px-3 rounded-md text-[12px] border transition cursor-pointer ${
                   showBookmarksOnly
                     ? 'bg-primary/10 border-primary text-primary'
-                    : 'bg-bg-surface border-border-default text-text-muted hover:bg-bg-panel-hover'
+                    : 'bg-bg-surface border-border-default text-text-muted hover:cc-panel-hover'
                 }`}
               >
                 <Bookmark size={13} /> Bookmarks only {bookmarks.size > 0 && `(${bookmarks.size})`}
               </button>
               <button
                 onClick={resetFilters}
-                className="w-full py-1.5 px-3 rounded-md text-[12px] border border-border-default text-text-muted bg-bg-surface hover:bg-bg-panel-hover transition cursor-pointer"
+                className="w-full py-1.5 px-3 rounded-md text-[12px] border border-border-default text-text-muted bg-bg-surface hover:cc-panel-hover transition cursor-pointer"
               >
                 Clear filters
               </button>
@@ -385,7 +385,7 @@ const PastYearProblems = () => {
 
           {/* Mini session stats */}
           {attempted > 0 && (
-            <div className="bg-bg-panel border border-border-default rounded-xl p-4 text-[12px]">
+            <div className="cc-panel rounded-xl p-4 text-[12px]">
               <div className="text-text-muted mb-2 font-semibold uppercase tracking-wider text-[10px]">Session</div>
               <div className="flex justify-between mb-1">
                 <span className="text-text-muted">Attempted</span>
@@ -428,7 +428,7 @@ const PastYearProblems = () => {
           )}
 
           {!isLoadingProblems && problems.length === 0 && (
-            <div className="bg-bg-panel border border-border-default rounded-xl p-5 text-[13px] text-text-muted text-center">
+            <div className="cc-panel rounded-xl p-5 text-[13px] text-text-muted text-center">
               {showBookmarksOnly ? 'No bookmarked questions.' : t('pastYearProblems.noData')}
             </div>
           )}
@@ -447,7 +447,7 @@ const PastYearProblems = () => {
                   className={`text-left rounded-xl p-3 border transition-all cursor-pointer relative ${
                     idx === selectedIdx
                       ? 'border-primary bg-primary/5'
-                      : 'border-border-default bg-bg-panel hover:bg-bg-panel-hover'
+                      : 'border-border-default cc-panel hover:cc-panel-hover'
                   }`}
                 >
                   {/* Status dot */}
@@ -481,11 +481,11 @@ const PastYearProblems = () => {
         {/* ── Right: Interactive detail panel ── */}
         <div className="flex-1 min-w-0">
           {!selectedProblem ? (
-            <div className="bg-bg-panel border border-border-default rounded-xl p-10 text-center text-text-muted text-[13px]">
+            <div className="cc-panel rounded-xl p-10 text-center text-text-muted text-[13px]">
               {t('pastYearProblems.selectProblem')}
             </div>
           ) : (
-            <div className="bg-bg-panel border border-border-default rounded-xl shadow-sm overflow-hidden">
+            <div className="cc-panel rounded-xl shadow-sm overflow-hidden">
               {/* Panel header */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-border-default">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -597,14 +597,14 @@ const PastYearProblems = () => {
                     <button
                       onClick={() => setSelectedIdx(i => Math.max(0, i - 1))}
                       disabled={selectedIdx === 0}
-                      className="flex items-center gap-1.5 border border-border-default text-text-muted py-2 px-3 rounded-lg text-[12px] hover:bg-bg-panel-hover transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="flex items-center gap-1.5 border border-border-default text-text-muted py-2 px-3 rounded-lg text-[12px] hover:cc-panel-hover transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       <ChevronLeft size={14} /> Prev
                     </button>
                     <button
                       onClick={() => setSelectedIdx(i => Math.min(problems.length - 1, i + 1))}
                       disabled={selectedIdx >= problems.length - 1}
-                      className="flex items-center gap-1.5 border border-border-default text-text-muted py-2 px-3 rounded-lg text-[12px] hover:bg-bg-panel-hover transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="flex items-center gap-1.5 border border-border-default text-text-muted py-2 px-3 rounded-lg text-[12px] hover:cc-panel-hover transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       Next <ChevronRight size={14} />
                     </button>
@@ -615,7 +615,7 @@ const PastYearProblems = () => {
 
                   <button
                     onClick={postToCommunity}
-                    className="flex items-center gap-2 text-[12px] text-text-muted border border-border-default py-2 px-3 rounded-lg hover:bg-bg-panel-hover hover:text-primary transition cursor-pointer"
+                    className="flex items-center gap-2 text-[12px] text-text-muted border border-border-default py-2 px-3 rounded-lg hover:cc-panel-hover hover:text-primary transition cursor-pointer"
                   >
                     <MessageCircle size={14} /> Ask in Community
                   </button>

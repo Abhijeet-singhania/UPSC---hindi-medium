@@ -108,7 +108,7 @@ const Settings = () => {
               className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-lg transition-colors cursor-pointer ${
                 activeTab === tab.id
                   ? 'bg-primary text-text-primary shadow-sm'
-                  : 'text-text-secondary hover:bg-bg-panel-hover hover:text-text-primary'
+                  : 'text-text-secondary hover:cc-panel-hover hover:text-text-primary'
               }`}
             >
               <div className={activeTab === tab.id ? 'text-white' : 'text-text-muted'}>
@@ -124,7 +124,7 @@ const Settings = () => {
         {/* Content Area */}
         <div className="flex-1">
           {activeTab === 'profile' && (
-            <form onSubmit={handleSave} className="bg-bg-panel border border-border-default rounded-2xl shadow-sm overflow-hidden">
+            <form onSubmit={handleSave} className="cc-panel rounded-2xl shadow-sm overflow-hidden">
               <div className="p-6 border-b border-border-default">
                 <h2 className="text-xl font-serif text-text-primary font-medium">{t('settings.profile')}</h2>
               </div>
@@ -219,7 +219,7 @@ const Settings = () => {
             <div className="flex flex-col gap-6">
 
               {/* Language Preferences */}
-              <div className="bg-bg-panel border border-border-default rounded-2xl shadow-sm overflow-hidden">
+              <div className="cc-panel rounded-2xl shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-border-default flex items-center gap-3">
                   <Globe className="text-primary" size={20} />
                   <h2 className="text-xl font-serif text-text-primary font-medium">{t('settings.language')}</h2>
@@ -240,7 +240,7 @@ const Settings = () => {
               </div>
 
               {/* Theme Preferences */}
-              <div className="bg-bg-panel border border-border-default rounded-2xl shadow-sm overflow-hidden">
+              <div className="cc-panel rounded-2xl shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-border-default flex items-center gap-3">
                   <Palette className="text-primary" size={20} />
                   <h2 className="text-xl font-serif text-text-primary font-medium">{t('settings.theme')}</h2>
@@ -253,7 +253,7 @@ const Settings = () => {
                       className={`flex items-center gap-3 px-5 py-3 rounded-xl border transition-all cursor-pointer ${
                         theme === 'light'
                           ? 'bg-primary/10 border-primary text-primary shadow-sm'
-                          : 'bg-bg-surface border-border-default text-text-secondary hover:border-text-muted hover:bg-bg-panel-hover'
+                          : 'bg-bg-surface border-border-default text-text-secondary hover:border-text-muted hover:cc-panel-hover'
                       }`}
                     >
                       <span className="font-medium text-base">{t('settings.lightMode')}</span>
@@ -264,7 +264,7 @@ const Settings = () => {
                       className={`flex items-center gap-3 px-5 py-3 rounded-xl border transition-all cursor-pointer ${
                         theme === 'dark'
                           ? 'bg-primary/10 border-primary text-primary shadow-sm'
-                          : 'bg-bg-surface border-border-default text-text-secondary hover:border-text-muted hover:bg-bg-panel-hover'
+                          : 'bg-bg-surface border-border-default text-text-secondary hover:border-text-muted hover:cc-panel-hover'
                       }`}
                     >
                       <span className="font-medium text-base">{t('settings.darkMode')}</span>

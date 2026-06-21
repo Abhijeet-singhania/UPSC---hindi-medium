@@ -109,7 +109,7 @@ const MCQPanel = ({ problem, attempt, onAttempt, testMode = false }) => {
           const isSelected = selected === char;
           const isCorrect = correct === char;
 
-          let ring = 'border-border-default hover:bg-bg-panel-hover cursor-pointer';
+          let ring = 'border-border-default hover:cc-panel-hover cursor-pointer';
           let circleCls = 'border-border-default text-text-muted';
 
           if (!testMode && revealed) {
@@ -160,7 +160,7 @@ const MCQPanel = ({ problem, attempt, onAttempt, testMode = false }) => {
           {(revealed || selected) && (
             <button
               onClick={() => onAttempt(null)}
-              className="flex items-center gap-1.5 border border-border-default text-text-muted py-2.5 px-3 rounded-lg text-[13px] hover:bg-bg-panel-hover transition cursor-pointer"
+              className="flex items-center gap-1.5 border border-border-default text-text-muted py-2.5 px-3 rounded-lg text-[13px] hover:cc-panel-hover transition cursor-pointer"
             >
               <RotateCcw size={13} /> Try again
             </button>
@@ -197,7 +197,7 @@ const MainsPanel = ({ problem, attempt, onAttempt, testMode = false }) => {
         </div>
         <button
           onClick={() => onAttempt(null)}
-          className="flex items-center gap-1.5 border border-border-default text-text-muted py-2 px-3 rounded-lg text-[12px] hover:bg-bg-panel-hover transition cursor-pointer w-fit"
+          className="flex items-center gap-1.5 border border-border-default text-text-muted py-2 px-3 rounded-lg text-[12px] hover:cc-panel-hover transition cursor-pointer w-fit"
         >
           <RotateCcw size={13} /> Edit answer
         </button>
@@ -351,7 +351,7 @@ const BrowseView = () => {
     <div className="flex gap-4 items-start">
       {/* ── Left: Compact filter panel ── */}
       <div className="w-[210px] shrink-0 flex flex-col gap-3">
-        <div className="bg-bg-panel border border-border-default rounded-xl p-4 shadow-sm">
+        <div className="cc-panel p-4">
           <div className="text-[10px] font-bold uppercase tracking-wider text-text-muted mb-3">Filters</div>
 
           {/* Search */}
@@ -391,14 +391,14 @@ const BrowseView = () => {
           {/* Bookmarks toggle */}
           <button
             onClick={() => { setShowBookmarksOnly(v => !v); setCurrentIdx(0); }}
-            className={`w-full flex items-center gap-2 py-1.5 px-3 rounded-md text-[12px] border transition cursor-pointer mb-2 ${showBookmarksOnly ? 'bg-primary/10 border-primary text-primary' : 'bg-bg-surface border-border-default text-text-muted hover:bg-bg-panel-hover'}`}
+            className={`w-full flex items-center gap-2 py-1.5 px-3 rounded-md text-[12px] border transition cursor-pointer mb-2 ${showBookmarksOnly ? 'bg-primary/10 border-primary text-primary' : 'bg-bg-surface border-border-default text-text-muted hover:cc-panel-hover'}`}
           >
             <Bookmark size={12} /> Bookmarks {bookmarks.size > 0 && `(${bookmarks.size})`}
           </button>
 
           <button
             onClick={resetFilters}
-            className="w-full py-1.5 px-3 rounded-md text-[12px] border border-border-default text-text-muted bg-bg-surface hover:bg-bg-panel-hover transition cursor-pointer"
+            className="w-full py-1.5 px-3 rounded-md text-[12px] border border-border-default text-text-muted bg-bg-surface hover:cc-panel-hover transition cursor-pointer"
           >
             Clear all filters
           </button>
@@ -406,7 +406,7 @@ const BrowseView = () => {
 
         {/* Session stats */}
         {sessionDone > 0 && (
-          <div className="bg-bg-panel border border-border-default rounded-xl p-4 text-[12px]">
+          <div className="cc-panel p-4 text-[12px]">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Session</span>
               <button onClick={() => setAttempts({})} className="text-[10px] text-text-muted hover:text-primary cursor-pointer flex items-center gap-1">
@@ -427,12 +427,12 @@ const BrowseView = () => {
       {/* ── Centre: Question card ── */}
       <div className="flex-1 min-w-0">
         {isLoading ? (
-          <div className="flex items-center justify-center h-64 gap-3 text-text-muted bg-bg-panel border border-border-default rounded-xl">
+          <div className="flex items-center justify-center h-64 gap-3 text-text-muted cc-panel">
             <Loader2 size={20} className="animate-spin" />
             <span className="text-[14px]">Loading questions…</span>
           </div>
         ) : fetchError ? (
-          <div className="flex flex-col items-center justify-center h-64 gap-3 bg-bg-panel border border-border-default rounded-xl text-center px-8">
+          <div className="flex flex-col items-center justify-center h-64 gap-3 cc-panel text-center px-8">
             <AlertCircle size={28} className="text-red-400" />
             <p className="text-[14px] text-text-muted">{fetchError}</p>
             <button onClick={() => fetchQuestions()} className="text-primary text-[13px] underline cursor-pointer flex items-center gap-1.5">
@@ -440,7 +440,7 @@ const BrowseView = () => {
             </button>
           </div>
         ) : displayed.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 bg-bg-panel border border-border-default rounded-xl text-center px-8 gap-3">
+          <div className="flex flex-col items-center justify-center h-64 cc-panel text-center px-8 gap-3">
             <Target size={32} className="text-text-muted" />
             <p className="text-[14px] text-text-muted font-medium">
               {showBookmarksOnly ? 'No bookmarked questions.' : 'No questions found.'}
@@ -457,7 +457,7 @@ const BrowseView = () => {
             )}
           </div>
         ) : currentQ ? (
-          <div className="bg-bg-panel border border-border-default rounded-xl shadow-sm overflow-hidden">
+          <div className="cc-panel overflow-hidden">
             {/* Card header: meta + actions */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-default">
               <div className="flex items-center gap-2 flex-wrap">
@@ -535,7 +535,7 @@ const BrowseView = () => {
               <button
                 onClick={() => goTo(currentIdx - 1)}
                 disabled={currentIdx === 0}
-                className="flex items-center gap-1.5 border border-border-default text-text-muted py-2 px-4 rounded-lg text-[13px] hover:bg-bg-panel-hover transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex items-center gap-1.5 border border-border-default text-text-muted py-2 px-4 rounded-lg text-[13px] hover:cc-panel-hover transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <ChevronLeft size={15} /> Previous
               </button>
@@ -570,7 +570,7 @@ const BrowseView = () => {
               <button
                 onClick={() => goTo(currentIdx + 1)}
                 disabled={currentIdx >= displayed.length - 1}
-                className="flex items-center gap-1.5 border border-border-default text-text-muted py-2 px-4 rounded-lg text-[13px] hover:bg-bg-panel-hover transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex items-center gap-1.5 border border-border-default text-text-muted py-2 px-4 rounded-lg text-[13px] hover:cc-panel-hover transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Next <ChevronRight size={15} />
               </button>
@@ -582,7 +582,7 @@ const BrowseView = () => {
       {/* ── Right: Question navigator ── */}
       {displayed.length > 0 && (
         <div className="w-[180px] shrink-0">
-          <div className="bg-bg-panel border border-border-default rounded-xl p-4 sticky top-4">
+          <div className="cc-panel p-4 sticky top-4">
             <div className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-1">
               Questions
             </div>
@@ -609,7 +609,7 @@ const BrowseView = () => {
                         ? 'bg-red-500 text-white border-red-500'
                         : bk
                         ? 'bg-primary/10 text-primary border-primary/30'
-                        : 'bg-bg-surface border-border-default text-text-muted hover:bg-bg-panel-hover'
+                        : 'bg-bg-surface border-border-default text-text-muted hover:cc-panel-hover'
                     }`}
                   >
                     {i + 1}
@@ -678,7 +678,7 @@ const TestConfigView = ({ filterData, quizFilterData, config, setConfig, onStart
 
   return (
     <div className="max-w-xl mx-auto">
-      <div className="bg-bg-panel border border-border-default rounded-2xl overflow-hidden shadow-sm">
+      <div className="cc-panel overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-primary/10 to-primary/5 px-8 py-6 border-b border-border-default">
           <div className="flex items-center gap-3">
@@ -903,7 +903,7 @@ const TestRunningView = ({ questions, answers, onSetAnswer, currentIdx, setCurre
       {/* Main question area */}
       <div className="flex-1 min-w-0">
         {/* Top bar with timer */}
-        <div className="bg-bg-panel border border-border-default rounded-xl px-5 py-3 mb-3 flex items-center justify-between gap-4">
+        <div className="cc-panel rounded-xl px-5 py-3 mb-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <span className="text-[14px] font-semibold text-text-primary">
               Q{currentIdx + 1} <span className="text-text-muted font-normal">of {questions.length}</span>
@@ -944,7 +944,7 @@ const TestRunningView = ({ questions, answers, onSetAnswer, currentIdx, setCurre
         )}
 
         {/* Question card */}
-        <div className="bg-bg-panel border border-border-default rounded-xl p-6 mb-4">
+        <div className="cc-panel rounded-xl p-6 mb-4">
           <div className="flex gap-2 flex-wrap mb-4">
             {q.year && <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded bg-[#fbefe9] text-primary">PYQ {q.year}</span>}
             {q.paper && <span className="text-[10px] font-bold uppercase px-2 py-1 rounded bg-bg-surface border border-border-default text-text-muted">{q.paper}</span>}
@@ -975,7 +975,7 @@ const TestRunningView = ({ questions, answers, onSetAnswer, currentIdx, setCurre
           <button
             onClick={() => setCurrentIdx(i => Math.max(0, i - 1))}
             disabled={currentIdx === 0}
-            className="flex items-center gap-1.5 border border-border-default text-text-muted py-2 px-4 rounded-lg text-[13px] hover:bg-bg-panel-hover transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center gap-1.5 border border-border-default text-text-muted py-2 px-4 rounded-lg text-[13px] hover:cc-panel-hover transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <ChevronLeft size={15} /> Previous
           </button>
@@ -985,7 +985,7 @@ const TestRunningView = ({ questions, answers, onSetAnswer, currentIdx, setCurre
           <button
             onClick={() => setCurrentIdx(i => Math.min(questions.length - 1, i + 1))}
             disabled={currentIdx === questions.length - 1}
-            className="flex items-center gap-1.5 border border-border-default text-text-muted py-2 px-4 rounded-lg text-[13px] hover:bg-bg-panel-hover transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center gap-1.5 border border-border-default text-text-muted py-2 px-4 rounded-lg text-[13px] hover:cc-panel-hover transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Next <ChevronRight size={15} />
           </button>
@@ -994,7 +994,7 @@ const TestRunningView = ({ questions, answers, onSetAnswer, currentIdx, setCurre
 
       {/* Question palette */}
       <div className="w-[200px] shrink-0">
-        <div className="bg-bg-panel border border-border-default rounded-xl p-4 sticky top-4">
+        <div className="cc-panel rounded-xl p-4 sticky top-4">
           <div className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-3">Question Palette</div>
           <div className="grid grid-cols-5 gap-1.5 mb-4">
             {questions.map((ques, i) => {
@@ -1010,7 +1010,7 @@ const TestRunningView = ({ questions, answers, onSetAnswer, currentIdx, setCurre
                       ? 'bg-primary text-white border-primary ring-2 ring-primary ring-offset-1'
                       : isAnswered
                       ? 'bg-[#2B7A4B] text-white border-[#2B7A4B]'
-                      : 'bg-bg-surface border-border-default text-text-muted hover:bg-bg-panel-hover'
+                      : 'bg-bg-surface border-border-default text-text-muted hover:cc-panel-hover'
                   }`}
                 >
                   {i + 1}
@@ -1042,7 +1042,7 @@ const TestRunningView = ({ questions, answers, onSetAnswer, currentIdx, setCurre
       {/* Submit confirmation modal */}
       {showConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-bg-panel rounded-2xl p-6 max-w-sm w-full shadow-xl border border-border-default">
+          <div className="cc-panel rounded-2xl p-6 max-w-sm w-full shadow-xl border border-border-default">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center shrink-0">
                 <AlertTriangle size={20} className="text-amber-600" />
@@ -1146,7 +1146,7 @@ const TestResultsView = ({ questions, answers, elapsedSecs, totalSecs, config, o
   return (
     <div className="flex flex-col gap-5 max-w-4xl mx-auto">
       {/* Score card */}
-      <div className="bg-bg-panel border border-border-default rounded-2xl overflow-hidden shadow-sm">
+      <div className="cc-panel rounded-2xl overflow-hidden shadow-sm">
         <div className="bg-gradient-to-r from-primary/10 to-primary/5 px-6 py-4 border-b border-border-default flex items-center justify-between">
           <h3 className="font-serif text-[18px] font-semibold text-text-primary flex items-center gap-2">
             <Trophy size={20} className="text-primary" /> Test Results
@@ -1214,7 +1214,7 @@ const TestResultsView = ({ questions, answers, elapsedSecs, totalSecs, config, o
 
       {/* Achievements */}
       {achievements.length > 0 && (
-        <div className="bg-bg-panel border border-border-default rounded-2xl p-5">
+        <div className="cc-panel rounded-2xl p-5">
           <h4 className="font-serif font-semibold text-text-primary mb-4 flex items-center gap-2">
             <Award size={18} className="text-primary" /> Achievements Unlocked
           </h4>
@@ -1234,7 +1234,7 @@ const TestResultsView = ({ questions, answers, elapsedSecs, totalSecs, config, o
 
       {/* Subject performance */}
       {Object.keys(subjectStats).length > 0 && (
-        <div className="bg-bg-panel border border-border-default rounded-2xl p-5">
+        <div className="cc-panel rounded-2xl p-5">
           <h4 className="font-serif font-semibold text-text-primary mb-4 flex items-center gap-2">
             <TrendingUp size={18} className="text-primary" /> Subject-wise Performance
           </h4>
@@ -1265,7 +1265,7 @@ const TestResultsView = ({ questions, answers, elapsedSecs, totalSecs, config, o
       )}
 
       {/* Question review */}
-      <div className="bg-bg-panel border border-border-default rounded-2xl p-5">
+      <div className="cc-panel rounded-2xl p-5">
         <h4 className="font-serif font-semibold text-text-primary mb-4 flex items-center gap-2">
           <FileText size={18} className="text-primary" /> Question Review
         </h4>
@@ -1311,7 +1311,7 @@ const TestResultsView = ({ questions, answers, elapsedSecs, totalSecs, config, o
                         return (
                           <div
                             key={key}
-                            className={`flex items-center gap-2.5 p-2.5 rounded-lg text-[13px] border ${isCrt ? 'bg-[#EBF5F0] border-[#2B7A4B]/40 text-[#2B7A4B]' : isMyAns && !isCrt ? 'bg-red-50 border-red-200 text-red-600' : 'bg-bg-panel border-border-default text-text-muted'}`}
+                            className={`flex items-center gap-2.5 p-2.5 rounded-lg text-[13px] border ${isCrt ? 'bg-[#EBF5F0] border-[#2B7A4B]/40 text-[#2B7A4B]' : isMyAns && !isCrt ? 'bg-red-50 border-red-200 text-red-600' : 'cc-panel border-border-default text-text-muted'}`}
                           >
                             <span className="font-bold w-4 shrink-0">{char}.</span>
                             <span className="flex-1">{text}</span>
@@ -1610,13 +1610,13 @@ const PracticeLab = () => {
       <div className="flex gap-1 mb-6 bg-bg-surface border border-border-default rounded-xl p-1 w-fit">
         <button
           onClick={() => setActiveTab('browse')}
-          className={`flex items-center gap-2 py-2 px-4 rounded-lg text-[13px] font-medium transition cursor-pointer ${activeTab === 'browse' ? 'bg-bg-panel text-text-primary shadow-sm border border-border-default' : 'text-text-muted hover:text-text-primary'}`}
+          className={`flex items-center gap-2 py-2 px-4 rounded-lg text-[13px] font-medium transition cursor-pointer ${activeTab === 'browse' ? 'cc-panel text-text-primary shadow-sm border border-border-default' : 'text-text-muted hover:text-text-primary'}`}
         >
           <ScrollText size={15} /> Browse & Practice
         </button>
         <button
           onClick={() => setActiveTab('test')}
-          className={`flex items-center gap-2 py-2 px-4 rounded-lg text-[13px] font-medium transition cursor-pointer ${activeTab === 'test' ? 'bg-bg-panel text-text-primary shadow-sm border border-border-default' : 'text-text-muted hover:text-text-primary'}`}
+          className={`flex items-center gap-2 py-2 px-4 rounded-lg text-[13px] font-medium transition cursor-pointer ${activeTab === 'test' ? 'cc-panel text-text-primary shadow-sm border border-border-default' : 'text-text-muted hover:text-text-primary'}`}
         >
           <FlaskConical size={15} /> Mock Test
           {testPhase === 'running' && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse ml-0.5" />}

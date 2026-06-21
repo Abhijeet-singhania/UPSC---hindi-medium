@@ -687,7 +687,7 @@ const PYQSpecimen = ({ t }) => {
 
   return (
     <div className="border border-border-default rounded-2xl overflow-hidden bg-bg-surface-dark shadow-2xl">
-      <div className="bg-bg-panel text-text-primary px-5 py-3 flex justify-between font-mono text-[11px] tracking-widest border-b border-border-default">
+      <div className="cc-panel text-text-primary px-5 py-3 flex justify-between font-mono text-[11px] tracking-widest border-b border-border-default">
         <span>{t('welcome.qHeader')}</span>
         <span className="hidden md:inline">{t('welcome.qDifficulty')}</span>
       </div>
@@ -710,7 +710,7 @@ const PYQSpecimen = ({ t }) => {
               <button key={o.k} onClick={() => setChosen(o.k)} className={`text-left px-4 py-3 rounded-xl cursor-pointer flex items-center gap-3 text-sm transition-all border ${
                 isCorrect ? "bg-[#2B7A4B]/20 border-[#2B7A4B] text-text-primary" : 
                 isWrong ? "bg-red-500/20 border-red-500 text-text-primary" : 
-                "bg-bg-panel border-border-default text-text-secondary hover:border-[#A3A19E]"
+                "cc-panel border-border-default text-text-secondary hover:border-[#A3A19E]"
               }`}>
                 <span className="font-mono w-6 h-6 border border-current rounded flex items-center justify-center text-[11px] shrink-0">{o.k}</span>
                 <span className="flex-1">{o.t}</span>
@@ -722,7 +722,7 @@ const PYQSpecimen = ({ t }) => {
         </div>
 
         {chosen && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-5 p-4 bg-bg-panel rounded-xl border border-border-default text-sm text-text-secondary leading-relaxed">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-5 p-4 cc-panel rounded-xl border border-border-default text-sm text-text-secondary leading-relaxed">
             <div className={`text-xs tracking-widest uppercase mb-2 ${chosen === correct ? "text-[#2B7A4B]" : "text-red-500"}`}>
               {chosen === correct ? t('welcome.qCorrect') : t('welcome.qIncorrect')}
             </div>

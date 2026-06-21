@@ -81,7 +81,7 @@ const IngestionLogPanel = ({ token, pollKey = 0 }) => {
   const result = status?.result;
 
   return (
-    <div className="bg-bg-panel border border-border-default rounded-xl p-4 mt-4">
+    <div className="cc-panel rounded-xl p-4 mt-4">
       <div className="flex items-center justify-between mb-2">
         <div className="text-[12px] font-bold uppercase tracking-wider text-text-muted">
           Ingestion log
@@ -164,7 +164,7 @@ const Badge = ({ children, color = 'gray' }) => {
 };
 
 const StatCard = ({ icon, label, value, sub, color = 'primary' }) => (
-  <div className="bg-bg-panel border border-border-default rounded-xl p-5 flex items-start gap-4">
+  <div className="cc-panel rounded-xl p-5 flex items-start gap-4">
     <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
       color === 'primary' ? 'bg-[#fbefe9] text-primary' :
       color === 'amber' ? 'bg-amber-100 text-amber-600' :
@@ -194,7 +194,7 @@ const EmptyState = ({ msg }) => (
 const ActionBtn = ({ onClick, variant = 'default', disabled, children }) => {
   const base = 'flex items-center gap-1.5 text-[12px] font-medium px-3 py-1.5 rounded-lg cursor-pointer transition disabled:opacity-40 disabled:cursor-not-allowed';
   const variants = {
-    default: 'border border-border-default text-text-muted hover:bg-bg-panel-hover',
+    default: 'border border-border-default text-text-muted hover:cc-panel-hover',
     green: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200',
     red: 'bg-red-100 text-red-700 hover:bg-red-200',
     primary: 'bg-primary text-white hover:bg-primary-hover',
@@ -297,7 +297,7 @@ const OverviewTab = ({ token, onTabChange }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Quick Actions */}
-        <div className="bg-bg-panel border border-border-default rounded-xl p-5">
+        <div className="cc-panel rounded-xl p-5">
           <div className="text-[13px] font-bold uppercase tracking-wider text-text-muted mb-4">Quick Actions</div>
           <div className="space-y-3">
             <div className="flex items-center justify-between p-3 bg-bg-surface rounded-xl">
@@ -354,7 +354,7 @@ const OverviewTab = ({ token, onTabChange }) => {
         </div>
 
         {/* Job Scheduler */}
-        <div className="bg-bg-panel border border-border-default rounded-xl p-5">
+        <div className="cc-panel rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="text-[13px] font-bold uppercase tracking-wider text-text-muted">Scheduled Jobs</div>
             {jobs && (
@@ -442,7 +442,7 @@ const AffairsTab = ({ token }) => {
           {['drafts', 'published'].map(f => (
             <button key={f} onClick={() => setFilter(f)}
               className={`px-4 py-1.5 rounded-lg text-[13px] font-medium cursor-pointer transition ${
-                filter === f ? 'bg-primary text-white' : 'border border-border-default text-text-muted hover:bg-bg-panel-hover'
+                filter === f ? 'bg-primary text-white' : 'border border-border-default text-text-muted hover:cc-panel-hover'
               }`}>
               {f === 'drafts' ? 'Drafts (Pending)' : 'Published'}
             </button>
@@ -456,7 +456,7 @@ const AffairsTab = ({ token }) => {
       ) : (
         <div className="space-y-3">
           {items.map(item => (
-            <div key={item.id} className="bg-bg-panel border border-border-default rounded-xl p-4">
+            <div key={item.id} className="cc-panel rounded-xl p-4">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -563,7 +563,7 @@ const QuizTab = ({ token }) => {
           {['pending', 'approved'].map(f => (
             <button key={f} onClick={() => setFilter(f)}
               className={`px-4 py-1.5 rounded-lg text-[13px] font-medium cursor-pointer transition ${
-                filter === f ? 'bg-primary text-white' : 'border border-border-default text-text-muted hover:bg-bg-panel-hover'
+                filter === f ? 'bg-primary text-white' : 'border border-border-default text-text-muted hover:cc-panel-hover'
               }`}>
               {f === 'pending' ? 'Pending Approval' : 'Approved'}
             </button>
@@ -577,7 +577,7 @@ const QuizTab = ({ token }) => {
       ) : (
         <div className="space-y-3">
           {items.map(item => (
-            <div key={item.id} className="bg-bg-panel border border-border-default rounded-xl overflow-hidden">
+            <div key={item.id} className="cc-panel rounded-xl overflow-hidden">
               <div className="p-4 flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-1.5">
@@ -702,7 +702,7 @@ const DailyTab = ({ token }) => {
       </div>
 
       {showCreate && (
-        <form onSubmit={createQuestion} className="bg-bg-panel border border-primary/40 rounded-xl p-5 mb-5 space-y-3">
+        <form onSubmit={createQuestion} className="cc-panel border border-primary/40 rounded-xl p-5 mb-5 space-y-3">
           <div className="text-[14px] font-semibold text-text-primary mb-1">Create Daily Question</div>
           <div className="grid grid-cols-1 gap-3">
             <div>
@@ -762,7 +762,7 @@ const DailyTab = ({ token }) => {
       ) : (
         <div className="space-y-3">
           {questions.map(q => (
-            <div key={q.id} className="bg-bg-panel border border-border-default rounded-xl p-4 flex items-start justify-between gap-4">
+            <div key={q.id} className="cc-panel rounded-xl p-4 flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <Badge color={q.is_active ? 'green' : 'gray'}>{q.is_active ? 'Active' : 'Queued'}</Badge>
@@ -849,7 +849,7 @@ const JobsTab = ({ token }) => {
 
       <div className="grid grid-cols-1 gap-4">
         {/* Triggerable jobs */}
-        <div className="bg-bg-panel border border-border-default rounded-xl p-5">
+        <div className="cc-panel rounded-xl p-5">
           <div className="text-[12px] font-bold uppercase tracking-wider text-text-muted mb-3">Manual Triggers</div>
           <div className="space-y-3">
             {[
@@ -874,7 +874,7 @@ const JobsTab = ({ token }) => {
 
         {/* All jobs */}
         {loading ? <Spinner /> : jobs ? (
-          <div className="bg-bg-panel border border-border-default rounded-xl p-5">
+          <div className="cc-panel rounded-xl p-5">
             <div className="text-[12px] font-bold uppercase tracking-wider text-text-muted mb-3">All Scheduled Jobs</div>
             <div className="space-y-3">
               {jobs.jobs.map(job => {
@@ -969,7 +969,7 @@ const UsersTab = ({ token }) => {
             </thead>
             <tbody>
               {users.map(u => (
-                <tr key={u.id} className="border-b border-border-default last:border-0 hover:bg-bg-panel-hover/50">
+                <tr key={u.id} className="border-b border-border-default last:border-0 hover:cc-panel-hover/50">
                   <td className="py-2.5 pr-4">
                     <div className="font-semibold text-text-primary">{u.name || '(no name)'}</div>
                     <div className="text-text-muted">{u.email}</div>
@@ -1035,7 +1035,7 @@ const UploadStatusPanel = ({ token, pollKey }) => {
   const logs = status.logs ?? [];
 
   return (
-    <div className="bg-bg-panel border border-border-default rounded-xl p-4 mt-4">
+    <div className="cc-panel rounded-xl p-4 mt-4">
       <div className="flex items-center justify-between mb-2">
         <div className="text-[12px] font-bold uppercase tracking-wider text-text-muted">
           Ingestion log{status.file ? ` — ${status.file}` : ''}
@@ -1163,7 +1163,7 @@ const StudyMaterialsTab = ({ token }) => {
   return (
     <div className="space-y-6">
       {/* Upload form */}
-      <div className="bg-bg-panel border border-border-default rounded-xl p-5">
+      <div className="cc-panel rounded-xl p-5">
         <div className="text-[12px] font-bold uppercase tracking-wider text-text-muted mb-4">
           Upload Study Material
         </div>
@@ -1248,7 +1248,7 @@ const StudyMaterialsTab = ({ token }) => {
       </div>
 
       {/* Materials list */}
-      <div className="bg-bg-panel border border-border-default rounded-xl p-5">
+      <div className="cc-panel rounded-xl p-5">
         <div className="flex items-center justify-between mb-3">
           <div className="text-[12px] font-bold uppercase tracking-wider text-text-muted">
             Indexed Materials ({materials.length})
@@ -1275,7 +1275,7 @@ const StudyMaterialsTab = ({ token }) => {
               </thead>
               <tbody>
                 {materials.map((m) => (
-                  <tr key={m.source_id} className="border-b border-border-default last:border-0 hover:bg-bg-panel-hover/50">
+                  <tr key={m.source_id} className="border-b border-border-default last:border-0 hover:cc-panel-hover/50">
                     <td className="py-2.5 pr-4">
                       <div className="font-semibold text-text-primary">{m.book_name}</div>
                       {m.chapter && <div className="text-text-muted text-[11px]">{m.chapter}</div>}
@@ -1442,7 +1442,7 @@ const PyqImportTab = ({ token }) => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-bg-panel border border-border-default rounded-xl p-5">
+      <div className="cc-panel rounded-xl p-5">
         <div className="text-[12px] font-bold uppercase tracking-wider text-text-muted mb-4">
           Import Past Year Questions
         </div>
@@ -1540,7 +1540,7 @@ const PyqImportTab = ({ token }) => {
       </div>
 
       {preview.length > 0 && (
-        <div className="bg-bg-panel border border-border-default rounded-xl p-5">
+        <div className="cc-panel rounded-xl p-5">
           <div className="flex items-center justify-between mb-3">
             <div className="text-[12px] font-bold uppercase tracking-wider text-text-muted">
               Preview ({preview.length} questions)
@@ -1654,8 +1654,8 @@ const Admin = () => {
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-[13px] font-medium cursor-pointer transition whitespace-nowrap lg:w-full ${
                 activeTab === tab.id
-                  ? 'bg-bg-panel text-text-primary shadow-sm border border-border-default'
-                  : 'text-text-muted hover:text-text-primary hover:bg-bg-panel/50'
+                  ? 'cc-panel text-text-primary shadow-sm border border-border-default'
+                  : 'text-text-muted hover:text-text-primary hover:cc-panel/50'
               }`}
             >
               {tab.icon}

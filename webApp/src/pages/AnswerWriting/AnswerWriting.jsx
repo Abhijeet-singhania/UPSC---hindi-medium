@@ -135,7 +135,7 @@ const AnswerWriting = () => {
           )}
 
           {todayError && !loadingToday && (
-            <div className="bg-bg-panel border border-border-default rounded-xl p-4 text-text-muted text-sm">
+            <div className="cc-panel rounded-xl p-4 text-text-muted text-sm">
               No active question today.
             </div>
           )}
@@ -143,10 +143,10 @@ const AnswerWriting = () => {
           {todayQuestion && (
             <div
               onClick={() => { setSelectedQuestion(todayQuestion); setSubmitSuccess(false); setSubmitError(''); }}
-              className={`bg-bg-panel border rounded-xl p-4 cursor-pointer transition-all ${
+              className={`cc-panel border rounded-xl p-4 cursor-pointer transition-all ${
                 selectedQuestion?.id === todayQuestion.id
                   ? 'border-primary bg-primary/5'
-                  : 'border-border-default hover:bg-bg-panel-hover'
+                  : 'border-border-default hover:cc-panel-hover'
               }`}
             >
               <div className="flex items-center gap-2 mb-2">
@@ -176,10 +176,10 @@ const AnswerWriting = () => {
                   <div
                     key={q.id}
                     onClick={() => { setSelectedQuestion(q); setSubmitSuccess(false); setSubmitError(''); }}
-                    className={`bg-bg-panel border rounded-xl p-4 cursor-pointer transition-all ${
+                    className={`cc-panel border rounded-xl p-4 cursor-pointer transition-all ${
                       selectedQuestion?.id === q.id
                         ? 'border-primary bg-primary/5'
-                        : 'border-border-default hover:bg-bg-panel-hover'
+                        : 'border-border-default hover:cc-panel-hover'
                     }`}
                   >
                     <p className="text-[13px] text-text-primary leading-relaxed line-clamp-2">{q.title}</p>
@@ -196,7 +196,7 @@ const AnswerWriting = () => {
         {/* Right: Question Detail + Answer Composer + Answers */}
         <div className="flex flex-col gap-5">
           {!selectedQuestion && !loadingToday && (
-            <div className="bg-bg-panel border border-border-default rounded-2xl p-10 text-center text-text-muted">
+            <div className="cc-panel rounded-2xl p-10 text-center text-text-muted">
               Select a question from the left to begin writing.
             </div>
           )}
@@ -204,7 +204,7 @@ const AnswerWriting = () => {
           {selectedQuestion && (
             <>
               {/* Question Card */}
-              <div className="bg-bg-panel border border-border-default rounded-2xl p-6 shadow-sm">
+              <div className="cc-panel rounded-2xl p-6 shadow-sm">
                 <div className="flex items-start justify-between gap-4 mb-4">
                   <div className="flex flex-wrap gap-2">
                     {selectedQuestion.subject && (
@@ -247,7 +247,7 @@ const AnswerWriting = () => {
 
               {/* Answer Composer */}
               {!alreadySubmitted ? (
-                <div className="bg-bg-panel border border-border-default rounded-2xl p-6 shadow-sm">
+                <div className="cc-panel rounded-2xl p-6 shadow-sm">
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="font-serif text-[17px] font-medium text-text-primary flex items-center gap-2">
                       <PenLine size={18} className="text-primary" />
@@ -285,7 +285,7 @@ const AnswerWriting = () => {
                   </div>
                 </div>
               ) : (
-                <div className="bg-bg-panel border border-primary/30 rounded-2xl p-5 flex items-center gap-3 text-primary">
+                <div className="cc-panel border border-primary/30 rounded-2xl p-5 flex items-center gap-3 text-primary">
                   <CheckCircle2 size={20} />
                   <span className="text-[14px] font-medium">
                     {submitSuccess ? 'Answer submitted successfully!' : 'You have already submitted for this question.'}
@@ -311,13 +311,13 @@ const AnswerWriting = () => {
                 )}
 
                 {Array.isArray(answers) && answers.length === 0 && !loadingAnswers && (
-                  <div className="bg-bg-panel border border-border-default rounded-xl p-6 text-center text-text-muted text-[13px]">
+                  <div className="cc-panel rounded-xl p-6 text-center text-text-muted text-[13px]">
                     No answers yet. Be the first to answer!
                   </div>
                 )}
 
                 {Array.isArray(answers) && answers.map(ans => (
-                  <div key={ans.id} className="bg-bg-panel border border-border-default rounded-xl mb-3 overflow-hidden">
+                  <div key={ans.id} className="cc-panel rounded-xl mb-3 overflow-hidden">
                     <div className="p-5">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-3">

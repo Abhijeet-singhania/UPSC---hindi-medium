@@ -3,12 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
-  CheckCircle2, Loader2, Trophy, Flame, ArrowRight,
+  Loader2, Trophy, Flame, ArrowRight,
   PenLine, BookOpen, Users, Dumbbell, Heart, Sparkles,
-  Target,
+  Target, Zap,
 } from 'lucide-react';
 import { useApi } from '../../hooks/useApi';
-import { Card, Badge, Reveal } from '../../components/ui';
+import { Badge, Reveal } from '../../components/ui';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 
@@ -27,7 +27,7 @@ const _recIcon = (type) => {
   return map[type] || <ArrowRight size={15} />;
 };
 
-/* UPSC CSE Prelims 2026 — update this each cycle */
+/* UPSC CSE Prelims 2027 — update this each cycle */
 const EXAM_DATE = new Date('2027-05-25T00:00:00');
 const EXAM_LABEL = 'UPSC CSE Prelims 2027';
 
@@ -52,6 +52,32 @@ const heatStyle = {
   3: { background: 'rgba(196,144,42,0.45)', border: 'none' },
   4: { background: 'rgba(196,144,42,0.7)',  border: 'none' },
   5: { background: '#C4902A',               border: 'none' },
+};
+
+/* ── GS Mastery Ring ── */
+const MasteryRing = ({ label, percent, color, size = 72 }) => {
+  const r = (size - 10) / 2;
+  const C = 2 * Math.PI * r;
+  const offset = C * (1 - Math.min(percent, 100) / 100);
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <div className="relative" style={{ width: size, height: size }}>
+        <svg className="w-full h-full -rotate-90" viewBox={`0 0 ${size} ${size}`}>
+          <circle cx={size/2} cy={size/2} r={r} fill="none"
+            stroke="rgba(255,255,255,0.06)" strokeWidth="5" />
+          <circle cx={size/2} cy={size/2} r={r} fill="none"
+            stroke={color} strokeWidth="5" strokeLinecap="round"
+            strokeDasharray={C} strokeDashoffset={offset}
+            style={{ transition: 'stroke-dashoffset 1s ease-out' }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="cc-mono text-[14px] font-bold" style={{ color }}>{percent}%</span>
+        </div>
+      </div>
+      <span className="cc-section-label text-[8px]" style={{ color }}>{label}</span>
+    </div>
+  );
 };
 
 const Dashboard = () => {
@@ -149,476 +175,451 @@ const Dashboard = () => {
   const greetingHour = new Date().getHours();
   const greeting = greetingHour < 12 ? 'Good morning' : greetingHour < 17 ? 'Good afternoon' : 'Good evening';
 
+  // GS completion percentages (static for now, can be made dynamic)
+  const gsData = [
+    { label: 'GS 1', percent: 75, color: '#C4902A' },
+    { label: 'GS 2', percent: 82, color: '#3B6CC4' },
+    { label: 'GS 3', percent: 46, color: '#2D8A5E' },
+    { label: 'GS 4', percent: 60, color: '#9B4ECA' },
+  ];
+
   return (
-    <div className="flex flex-col gap-5">
+    <div className="relative w-full">
+      {/* ── Subtle Background glow highlights ── */}
+      <div className="absolute top-0 left-0 w-72 h-72 rounded-full bg-[#C4902A]/4 blur-[120px] pointer-events-none -translate-x-12 -translate-y-12" />
+      <div className="absolute top-1/3 right-0 w-96 h-96 rounded-full bg-[#3B6CC4]/5 blur-[150px] pointer-events-none translate-x-20" />
 
-      {/* ══════════════════════════════════════════
-          EXAM COUNTDOWN — the hero number
-      ══════════════════════════════════════════ */}
-      <Reveal>
-        <div
-          className="relative overflow-hidden rounded-xl"
-          style={{
-            background: 'var(--bg-surface)',
-            border: '1px solid rgba(196,144,42,0.18)',
-            boxShadow: 'var(--shadow-card)',
-          }}
-        >
-          {/* Subtle saffron glow at top */}
-          <div
-            className="absolute top-0 left-0 right-0 h-px"
-            style={{ background: 'linear-gradient(90deg, transparent, rgba(196,144,42,0.4), transparent)' }}
-          />
+      <div className="relative z-10 flex flex-col gap-5">
 
-          <div className="px-8 sm:px-10 py-7 flex flex-col sm:flex-row items-start sm:items-center gap-6 justify-between">
+        {/* ═══ MISSION CLOCK — Full Width Hero ═══ */}
+        <Reveal delay={0}>
+          <div className="cc-panel cc-panel-hover p-5 relative overflow-hidden" data-cursor-type="target">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 justify-between">
+              {/* Left: countdown */}
+              <div className="flex flex-col gap-1.5 w-full sm:w-auto">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="cc-pulse" />
+                  <span className="cc-section-label" style={{ color: '#C4902A' }}>
+                    <Target size={10} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
+                    {EXAM_LABEL}
+                  </span>
+                </div>
 
-            {/* Left: countdown numbers */}
-            <div className="flex flex-col gap-1">
-              <div
-                className="mb-1"
-                style={{
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: '10px',
-                  fontWeight: 600,
-                  letterSpacing: '0.22em',
-                  textTransform: 'uppercase',
-                  color: '#C4902A',
-                  opacity: 0.85,
-                }}
-              >
-                <Target size={10} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
-                {EXAM_LABEL}
-              </div>
-
-              <div className="flex items-end gap-3 sm:gap-5">
-                {[
-                  { value: countdown.days,    label: 'Days'    },
-                  { value: countdown.hours,   label: 'Hours'   },
-                  { value: countdown.minutes, label: 'Min'     },
-                  { value: countdown.seconds, label: 'Sec'     },
-                ].map(({ value, label }, i) => (
-                  <div key={label} className="flex flex-col items-center">
-                    <span
-                      style={{
-                        fontFamily: "'Cormorant Garamond', serif",
-                        fontSize: i === 0 ? 'clamp(56px, 8vw, 96px)' : 'clamp(36px, 5vw, 60px)',
-                        fontWeight: 700,
-                        letterSpacing: '-0.04em',
-                        lineHeight: 1,
-                        background: i === 0
-                          ? 'linear-gradient(135deg, #E8ECF4 0%, #C4902A 70%, #E8BC5A 100%)'
-                          : 'linear-gradient(135deg, #E8ECF4 0%, #8A95A8 100%)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        backgroundClip: 'text',
-                        filter: i === 0 ? 'drop-shadow(0 0 24px rgba(196,144,42,0.2))' : 'none',
-                      }}
-                    >
-                      {String(value).padStart(2, '0')}
-                    </span>
-                    <span
-                      style={{
-                        fontFamily: "'DM Sans', sans-serif",
-                        fontSize: '9px',
-                        fontWeight: 600,
-                        letterSpacing: '0.18em',
-                        textTransform: 'uppercase',
-                        color: 'var(--text-muted)',
-                        marginTop: '4px',
-                      }}
-                    >
-                      {label}
-                    </span>
-                    {i < 3 && (
+                {/* Clock Readout */}
+                <div className="cc-inset px-5 py-3 flex items-center justify-around sm:justify-start gap-4 sm:gap-6">
+                  {[
+                    { value: countdown.days,    label: 'Days',  hero: true },
+                    { value: countdown.hours,   label: 'Hours' },
+                    { value: countdown.minutes, label: 'Min' },
+                    { value: countdown.seconds, label: 'Sec' },
+                  ].map(({ value, label, hero }) => (
+                    <div key={label} className="flex flex-col items-center min-w-[44px]">
                       <span
-                        className="absolute"
-                        style={{ display: 'none' }}
-                      />
-                    )}
-                  </div>
-                ))}
+                        className="cc-clock-digit"
+                        style={{ fontSize: hero ? 'clamp(40px, 5vw, 56px)' : 'clamp(26px, 3vw, 38px)' }}
+                      >
+                        {String(value).padStart(2, '0')}
+                      </span>
+                      <span className="cc-section-label text-[8px] mt-1">{label}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <p className="mt-2 text-[13px]" style={{ fontFamily: "'DM Sans', sans-serif", color: 'var(--text-secondary)' }}>
+                  {greeting}, <span style={{ color: '#C4902A', fontWeight: 600 }}>{displayName}</span>. Every day counts.
+                </p>
               </div>
 
-              <p
-                className="mt-2"
-                style={{
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: '13px',
-                  color: 'var(--text-secondary)',
-                }}
-              >
-                {greeting}, {displayName}. Every day counts.
-              </p>
-            </div>
-
-            {/* Right: CTA actions */}
-            <div className="flex flex-col gap-2.5 shrink-0 min-w-[160px]">
-              <button
-                onClick={() => navigate('/roadmap')}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-5 rounded-lg text-[13px] font-semibold transition-all duration-200 cursor-pointer hover:opacity-90"
-                style={{
-                  background: 'linear-gradient(135deg, #C4902A 0%, #8B6010 100%)',
-                  color: '#fff',
-                  boxShadow: '0 4px 16px rgba(196,144,42,0.3)',
-                  border: 'none',
-                  fontFamily: "'DM Sans', sans-serif",
-                }}
-              >
-                {t('dashboard.todaysPlanBtn')} <ArrowRight size={14} />
-              </button>
-              <button
-                onClick={() => navigate('/affairs')}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-5 rounded-lg text-[13px] cursor-pointer transition-all duration-150"
-                style={{
-                  color: 'var(--text-secondary)',
-                  background: 'rgba(196,144,42,0.06)',
-                  border: '1px solid rgba(196,144,42,0.15)',
-                  fontFamily: "'DM Sans', sans-serif",
-                }}
-              >
-                {t('dashboard.todaysCABtn')}
-              </button>
-              {todayQuestion && (
+              {/* Right: Quick Action Buttons */}
+              <div className="flex flex-col gap-2.5 shrink-0 w-full sm:w-auto sm:min-w-[180px]">
                 <button
-                  onClick={() => navigate('/answers')}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 px-5 rounded-lg text-[13px] cursor-pointer transition-all duration-150"
+                  onClick={() => navigate('/roadmap')}
+                  data-cursor-type="link"
+                  className="cc-btn w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-[12px] font-semibold cursor-pointer active:scale-95 text-white"
                   style={{
-                    color: '#3B6CC4',
-                    background: 'rgba(59,108,196,0.08)',
-                    border: '1px solid rgba(59,108,196,0.2)',
+                    background: 'linear-gradient(135deg, #C4902A 0%, #8B6010 100%)',
+                    border: 'none',
                     fontFamily: "'DM Sans', sans-serif",
                   }}
                 >
-                  <PenLine size={13} /> Write today's answer
+                  {t('dashboard.todaysPlanBtn')} <ArrowRight size={13} />
                 </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </Reveal>
-
-      {/* ══════════════════════════════════════════
-          STATS ROW — 4 distinct colours
-      ══════════════════════════════════════════ */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-
-        {/* Reputation — saffron gold */}
-        <Reveal delay={0}>
-          <StatPill
-            label="Reputation"
-            value={loadingStats ? '—' : reputation}
-            sub="Total points earned"
-            pct={Math.min(100, (reputation / 1000) * 100)}
-            accentColor="#C4902A"
-            accentAlpha="rgba(196,144,42,"
-            gradientFrom="#E8BC5A"
-            gradientTo="#C4902A"
-          />
-        </Reveal>
-
-        {/* Answers — ink blue */}
-        <Reveal delay={0.05}>
-          <StatPill
-            label={t('dashboard.answersWritten')}
-            value={loadingStats ? '—' : answersGiven}
-            sub="Answers posted"
-            pct={Math.min(100, (answersGiven / 50) * 100)}
-            accentColor="#3B6CC4"
-            accentAlpha="rgba(59,108,196,"
-            gradientFrom="#7BAEF0"
-            gradientTo="#3B6CC4"
-          />
-        </Reveal>
-
-        {/* Study Hours — forest green */}
-        <Reveal delay={0.1}>
-          <StatPill
-            label="Study Hours"
-            value={loadingStats ? '—' : studyHours}
-            sub="Silent library total"
-            pct={Math.min(100, (studyHours / 100) * 100)}
-            accentColor="#2D8A5E"
-            accentAlpha="rgba(45,138,94,"
-            gradientFrom="#6ECBA0"
-            gradientTo="#2D8A5E"
-          />
-        </Reveal>
-
-        {/* Streak — deep purple */}
-        <Reveal delay={0.15}>
-          <StatPill
-            label="Streak"
-            value={loadingStats ? '—' : `${streak}d`}
-            sub="Consecutive days"
-            pct={Math.min(100, (streak / 30) * 100)}
-            accentColor="#9B4ECA"
-            accentAlpha="rgba(155,78,202,"
-            gradientFrom="#C991F0"
-            gradientTo="#9B4ECA"
-            icon={streak >= 7 ? <Flame size={11} style={{ color: '#9B4ECA', filter: 'drop-shadow(0 0 4px rgba(155,78,202,0.8))' }} /> : null}
-          />
-        </Reveal>
-      </div>
-
-      {/* ══════════════════════════════════════════
-          MAIN GRID — Plan + Heatmap | Leaderboard + CA
-      ══════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-
-        {/* Left column */}
-        <div className="flex flex-col gap-5">
-
-          {/* Today's Plan */}
-          <Reveal>
-            <Card className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3
-                    className="font-semibold flex items-center gap-2 text-text-primary"
-                    style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '15px' }}
-                  >
-                    {t('dashboard.todaysPlan')}
-                    {token && <Badge variant="ai" icon={<Sparkles size={9} />}>AI</Badge>}
-                  </h3>
-                  <span className="text-text-muted text-[12px]">
-                    {token ? 'Personalised for your stage & weak areas' : 'Suggested daily tasks'}
-                  </span>
-                </div>
-                {loadingRecs && <Loader2 size={14} className="animate-spin text-text-muted mt-1 shrink-0" />}
-              </div>
-              <div className="flex flex-col">
-                {planItems.map(({ icon, label, sub, route }) => (
-                  <button
-                    key={route}
-                    onClick={() => navigate(route)}
-                    className="group flex gap-3 items-start py-2.5 px-3 rounded-lg text-left w-full cursor-pointer bg-transparent border-none transition-all duration-150"
-                    style={{ borderBottom: '1px solid var(--border-muted)' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(196,144,42,0.05)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
-                  >
-                    <span className="mt-0.5 shrink-0" style={{ color: '#C4902A' }}>{icon}</span>
-                    <div className="min-w-0">
-                      <div
-                        className="text-[13.5px] font-medium flex items-center gap-1 group-hover:translate-x-0.5 transition-transform duration-150"
-                        style={{ color: 'var(--text-primary)', fontFamily: "'DM Sans', sans-serif" }}
-                      >
-                        {label}
-                        <ArrowRight size={11} className="opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--text-muted)' }} />
-                      </div>
-                      <div className="text-[12px] truncate" style={{ color: 'var(--text-muted)' }}>{sub}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </Card>
-          </Reveal>
-
-          {/* Activity Heatmap */}
-          <Reveal delay={0.1}>
-            <Card className="p-6">
-              <div className="w-full flex justify-between items-center mb-4">
-                <h3
-                  className="font-semibold text-text-primary"
-                  style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '15px' }}
-                >
-                  {t('dashboard.studyActivity')}
-                </h3>
-                <span className="text-[12px]" style={{ color: 'var(--text-muted)' }}>{t('dashboard.last8Weeks')}</span>
-              </div>
-              <div className="flex flex-col gap-1 w-full overflow-x-auto">
-                {heatmapData.map((row, rIdx) => (
-                  <div className="flex gap-1 items-center" key={rIdx}>
-                    <span
-                      className="w-6 shrink-0 text-[10px]"
-                      style={{ color: 'var(--text-muted)', fontFamily: "'DM Sans', sans-serif" }}
-                    >
-                      {rIdx === 0 ? 'Mon' : rIdx === 2 ? 'Wed' : rIdx === 4 ? 'Fri' : rIdx === 6 ? 'Sun' : ''}
-                    </span>
-                    {row.map((level, cIdx) => (
-                      <div
-                        key={cIdx}
-                        className="w-4 h-4 rounded-[3px] transition-transform hover:scale-125"
-                        style={heatStyle[level]}
-                        title={`Level ${level}`}
-                      />
-                    ))}
-                  </div>
-                ))}
-              </div>
-              <div className="flex items-center gap-1.5 mt-4 text-[11px]" style={{ color: 'var(--text-muted)' }}>
-                <span>{t('dashboard.less')}</span>
-                {[1, 2, 3, 4, 5].map(l => (
-                  <div key={l} className="w-3.5 h-3.5 rounded-[3px]" style={heatStyle[l]} />
-                ))}
-                <span>{t('dashboard.more')}</span>
-              </div>
-            </Card>
-          </Reveal>
-        </div>
-
-        {/* Right column */}
-        <div className="flex flex-col gap-5">
-
-          {/* Leaderboard */}
-          <Reveal delay={0.05}>
-            <Card className="p-6 flex-1">
-              <div className="flex justify-between items-center mb-4">
-                <h3
-                  className="font-semibold flex items-center gap-2 text-text-primary"
-                  style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '15px' }}
-                >
-                  <Trophy size={15} style={{ color: '#C4902A' }} /> Reputation Leaders
-                </h3>
-                {loadingLeaderboard && <Loader2 size={14} className="animate-spin" style={{ color: 'var(--text-muted)' }} />}
-              </div>
-              {leaderboard.length === 0 && !loadingLeaderboard ? (
-                <p className="text-[13px] text-center py-4" style={{ color: 'var(--text-muted)' }}>
-                  No leaderboard data yet. Start answering to earn points!
-                </p>
-              ) : (
-                <div className="flex flex-col">
-                  {leaderboard.map((entry, i) => (
-                    <div
-                      key={entry.user_id}
-                      className="flex items-center gap-3 py-2.5"
-                      style={{ borderTop: i > 0 ? '1px solid var(--border-muted)' : 'none' }}
-                    >
-                      <span className="text-[11px] w-5 shrink-0 font-medium text-center" style={{ color: 'var(--text-muted)' }}>
-                        #{entry.rank}
-                      </span>
-                      <div
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
-                        style={{ background: 'rgba(196,144,42,0.12)', color: '#C4902A', border: '1px solid rgba(196,144,42,0.2)' }}
-                      >
-                        {(entry.name || 'U').substring(0, 2).toUpperCase()}
-                      </div>
-                      <span className="font-medium flex-1 text-[13px] truncate" style={{ color: 'var(--text-primary)', fontFamily: "'DM Sans', sans-serif" }}>{entry.name}</span>
-                      <span className="text-[12px] font-bold" style={{ color: '#C4902A' }}>{entry.score} pts</span>
-                    </div>
-                  ))}
-                  {userId && leaderboard.length > 0 && !leaderboard.find(e => e.user_id === userId) && (
-                    <div className="flex items-center gap-3 py-2.5" style={{ borderTop: '1px solid var(--border-default)', marginTop: '4px' }}>
-                      <span className="text-[11px] w-5 shrink-0 font-medium text-center" style={{ color: 'var(--text-muted)' }}>You</span>
-                      <div
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
-                        style={{ background: '#C4902A', color: '#fff' }}
-                      >
-                        {displayName.substring(0, 2).toUpperCase()}
-                      </div>
-                      <span className="font-medium flex-1 text-[13px]" style={{ color: 'var(--text-primary)', fontFamily: "'DM Sans', sans-serif" }}>{displayName}</span>
-                      <span className="text-[12px] font-bold" style={{ color: '#C4902A' }}>{reputation} pts</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </Card>
-          </Reveal>
-
-          {/* Today's CA Digest */}
-          <Reveal delay={0.1}>
-            <Card className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3
-                  className="font-semibold text-text-primary"
-                  style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '15px' }}
-                >
-                  {t('dashboard.todaysCADigest')}
-                </h3>
                 <button
                   onClick={() => navigate('/affairs')}
-                  className="text-[12px] flex items-center gap-1 cursor-pointer bg-transparent border-none p-0 transition-colors"
-                  style={{ color: '#C4902A', fontFamily: "'DM Sans', sans-serif" }}
+                  data-cursor-type="read"
+                  className="cc-btn w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-[12px] font-semibold cursor-pointer active:scale-97 text-text-secondary"
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
                 >
-                  View all <ArrowRight size={12} />
+                  {t('dashboard.todaysCABtn')}
                 </button>
+                {todayQuestion && (
+                  <button
+                    onClick={() => navigate('/answers')}
+                    data-cursor-type="write"
+                    className="cc-btn w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-[12px] font-semibold cursor-pointer active:scale-97 text-[#3B6CC4]"
+                    style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  >
+                    <PenLine size={12} /> Write today's answer
+                  </button>
+                )}
               </div>
-              {caItems.length === 0 ? (
-                <div className="flex flex-col items-center gap-2 py-6 text-center">
-                  <BookOpen size={26} className="opacity-20" style={{ color: 'var(--text-muted)' }} />
-                  <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>No current affairs published today.</p>
+            </div>
+          </div>
+        </Reveal>
+
+        {/* ═══ SPLIT VIEW: Operations (Left) + Status (Right) ═══ */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-5">
+
+          {/* ── LEFT: OPERATIONS PANEL ── */}
+          <div className="flex flex-col gap-5">
+
+            {/* Today's Mission Brief */}
+            <Reveal delay={0.1}>
+              <div className="cc-panel cc-panel-hover p-5 relative overflow-hidden" data-cursor-type="write">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <h3 className="font-semibold flex items-center gap-2 text-text-primary text-[15px]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                      {t('dashboard.todaysPlan')}
+                      {token && (
+                        <span className="cc-status-pill text-[9px]" style={{ color: '#C4902A', borderColor: 'rgba(196,144,42,0.25)' }}>
+                          <Sparkles size={9} /> AI Generated
+                        </span>
+                      )}
+                    </h3>
+                    <span className="text-text-muted text-[12px] block mt-0.5">
+                      {token ? 'Optimized study agenda based on your optional and weak areas' : 'Suggested daily prep agenda'}
+                    </span>
+                  </div>
+                  {loadingRecs && <Loader2 size={14} className="animate-spin text-text-muted mt-1 shrink-0" />}
                 </div>
-              ) : (
+
+                {/* Answers Progress Inset */}
+                <div className="cc-inset p-3.5 my-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg" style={{ background: 'rgba(59,108,196,0.1)', border: '1px solid rgba(59,108,196,0.2)' }}>
+                      <PenLine size={16} className="text-[#3B6CC4]" />
+                    </div>
+                    <div>
+                      <span className="cc-section-label text-[#3B6CC4]">Mains Answer Writing</span>
+                      <p className="text-text-secondary text-[11px] mt-0.5">Milestone target: 50 answers</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start shrink-0">
+                    <span className="cc-mono text-[15px] font-bold text-[#3B6CC4]">
+                      {answersGiven} <span className="text-[10px] text-text-muted font-normal">posted</span>
+                    </span>
+                    <div className="w-20 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(59,108,196,0.1)' }}>
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-blue-400 to-[#3B6CC4]"
+                        style={{ width: `${Math.min(100, (answersGiven / 50) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Plan Items */}
                 <div className="flex flex-col gap-2">
-                  {caItems.map(item => (
+                  {planItems.map(({ icon, label, sub, route }) => (
                     <button
-                      key={item.id}
-                      onClick={() => navigate(`/affairs/${item.id}`)}
-                      className="group border-l-[3px] p-3 px-4 rounded-lg text-left w-full cursor-pointer transition-all duration-150"
-                      style={{
-                        background: 'rgba(196,144,42,0.04)',
-                        border: '1px solid var(--border-default)',
-                        borderLeftColor: `var(--c-${GS_ACCENT[item.gs_paper] ?? 'primary'})`,
-                        borderLeftWidth: '3px',
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(196,144,42,0.08)'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(196,144,42,0.04)'; }}
+                      key={route}
+                      onClick={() => navigate(route)}
+                      className="cc-btn group flex gap-3 items-start py-3 px-3.5 rounded-xl text-left w-full cursor-pointer active:scale-[0.99]"
                     >
-                      {item.gs_paper && (
-                        <Badge variant={GS_ACCENT[item.gs_paper] ?? 'primary'} className="mb-1.5">
-                          {item.gs_paper}
-                        </Badge>
-                      )}
-                      <div className="text-[13.5px] font-medium line-clamp-1" style={{ color: 'var(--text-primary)', fontFamily: "'DM Sans', sans-serif" }}>
-                        {item.title}
-                      </div>
-                      {item.syllabus_links && (
-                        <div className="text-[11px] line-clamp-1 mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                          {item.syllabus_links}
+                      <span className="mt-0.5 shrink-0 p-2 rounded-lg text-[#C4902A] group-hover:scale-105 transition-transform"
+                        style={{ background: 'rgba(196,144,42,0.08)' }}>
+                        {icon}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[13px] font-bold flex items-center gap-1.5 transition-all duration-150 text-text-primary" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                          {label}
+                          <ArrowRight size={11} className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-[#C4902A]" />
                         </div>
-                      )}
+                        <div className="text-[11px] mt-0.5 text-text-secondary" style={{ fontFamily: "'DM Sans', sans-serif" }}>{sub}</div>
+                      </div>
                     </button>
                   ))}
                 </div>
-              )}
-            </Card>
-          </Reveal>
+              </div>
+            </Reveal>
+
+            {/* Current Affairs Intel Feed */}
+            <Reveal delay={0.2}>
+              <div className="cc-panel cc-panel-hover p-5 relative overflow-hidden" data-cursor-type="read">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="font-semibold text-text-primary text-[15px]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                    {t('dashboard.todaysCADigest')}
+                  </h3>
+                  <button
+                    onClick={() => navigate('/affairs')}
+                    className="text-[11px] flex items-center gap-1 cursor-pointer bg-transparent border-none p-0 transition-colors text-[#C4902A] hover:underline"
+                    style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  >
+                    View all <ArrowRight size={11} />
+                  </button>
+                </div>
+
+                {caItems.length === 0 ? (
+                  <div className="flex flex-col items-center gap-2.5 py-8 text-center justify-center">
+                    <BookOpen size={24} className="opacity-15 text-text-muted" />
+                    <p className="text-[12px]" style={{ color: 'var(--text-muted)' }}>No current affairs published today.</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2.5">
+                    {caItems.map(item => (
+                      <button
+                        key={item.id}
+                        onClick={() => navigate(`/affairs/${item.id}`)}
+                        className="cc-btn group border-l-[3px] p-3 px-3.5 rounded-xl text-left w-full cursor-pointer"
+                        style={{
+                          borderLeftColor: `var(--c-${GS_ACCENT[item.gs_paper] ?? 'primary'})`,
+                          borderLeftStyle: 'solid',
+                        }}
+                      >
+                        {item.gs_paper && (
+                          <Badge variant={GS_ACCENT[item.gs_paper] ?? 'primary'} className="mb-1.5">
+                            {item.gs_paper}
+                          </Badge>
+                        )}
+                        <div className="text-[12px] font-bold line-clamp-2 leading-snug group-hover:text-[#C4902A] transition-colors" style={{ color: 'var(--text-primary)', fontFamily: "'DM Sans', sans-serif" }}>
+                          {item.title}
+                        </div>
+                        {item.syllabus_links && (
+                          <div className="text-[10px] line-clamp-1 mt-1 text-text-secondary">
+                            {item.syllabus_links}
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </Reveal>
+
+            {/* Study Activity Heatmap */}
+            <Reveal delay={0.3}>
+              <div className="cc-panel cc-panel-hover p-5 relative overflow-hidden" data-cursor-type="library">
+                <div className="w-full flex justify-between items-center mb-3">
+                  <h3 className="font-semibold text-text-primary text-[14px]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                    {t('dashboard.studyActivity')}
+                  </h3>
+                  <span className="cc-section-label">{t('dashboard.last8Weeks')}</span>
+                </div>
+
+                <div className="flex flex-col md:flex-row gap-5 items-stretch justify-between">
+                  {/* Heatmap Grid */}
+                  <div className="flex-1 w-full flex flex-col gap-1.5 overflow-x-auto pb-2">
+                    {heatmapData.map((row, rIdx) => (
+                      <div className="flex gap-1.5 items-center" key={rIdx}>
+                        <span className="w-7 shrink-0 cc-section-label text-[9px]">
+                          {rIdx === 0 ? 'Mon' : rIdx === 2 ? 'Wed' : rIdx === 4 ? 'Fri' : rIdx === 6 ? 'Sun' : ''}
+                        </span>
+                        {row.map((level, cIdx) => (
+                          <div
+                            key={cIdx}
+                            className="w-3.5 h-3.5 rounded-[3px] transition-all hover:scale-125 cursor-help"
+                            style={heatStyle[level]}
+                            title={`Level ${level}`}
+                          />
+                        ))}
+                      </div>
+                    ))}
+                    <div className="flex items-center gap-1.5 mt-3 text-[9px]" style={{ color: 'var(--text-muted)' }}>
+                      <span className="cc-section-label text-[8px]">{t('dashboard.less')}</span>
+                      {[1, 2, 3, 4, 5].map(l => (
+                        <div key={l} className="w-3 h-3 rounded-[2px]" style={heatStyle[l]} />
+                      ))}
+                      <span className="cc-section-label text-[8px]">{t('dashboard.more')}</span>
+                    </div>
+                  </div>
+
+                  {/* Study Hours Console Readout */}
+                  <div className="cc-inset p-4 flex flex-col items-center justify-center min-w-[150px] w-full md:w-auto relative overflow-hidden">
+                    <span className="cc-section-label text-[#2D8A5E]">Study Hours</span>
+                    <span
+                      className="cc-mono text-3xl font-bold mt-2"
+                      style={{
+                        background: 'linear-gradient(135deg, #6ECBA0 0%, #2D8A5E 100%)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        backgroundClip: 'text',
+                      }}
+                    >
+                      {studyHours}h
+                    </span>
+                    <span className="text-[10px] text-text-secondary text-center mt-1">Total Library</span>
+                    <div className="w-full h-1.5 rounded-full mt-3 overflow-hidden" style={{ background: 'rgba(45,138,94,0.1)' }}>
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-[#2D8A5E]"
+                        style={{ width: `${Math.min(100, (studyHours / 100) * 100)}%` }}
+                      />
+                    </div>
+                    <span className="cc-section-label text-[8px] mt-1.5">Target: 100h</span>
+                  </div>
+                </div>
+              </div>
+            </Reveal>
+          </div>
+
+          {/* ── RIGHT: STATUS PANEL ── */}
+          <div className="flex flex-col gap-5">
+
+            {/* Streak Health Bar */}
+            <Reveal delay={0.15}>
+              <div className="cc-panel cc-panel-hover p-5 relative overflow-hidden" data-cursor-type="energy">
+                <div className="flex justify-between items-start">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="cc-section-label" style={{ color: '#C4902A' }}>Momentum</span>
+                    <h3 className="font-serif text-xl font-bold mt-1 text-text-primary">Daily Streak</h3>
+                  </div>
+                  <div className="p-2.5 rounded-xl cc-btn" style={{ border: 'none' }}>
+                    <Flame
+                      size={22}
+                      className="text-[#C4902A] fill-[#C4902A]"
+                      style={{ filter: streak >= 7 ? 'drop-shadow(0 0 10px rgba(196,144,42,0.9))' : 'none' }}
+                    />
+                  </div>
+                </div>
+
+                <div className="my-4 flex items-baseline gap-2">
+                  <span className="font-serif text-5xl font-black tracking-tight text-gradient-brand">
+                    {streak}
+                  </span>
+                  <div className="flex flex-col">
+                    <span className="cc-section-label text-text-primary">Days</span>
+                    <span className="cc-section-label text-[8px]">Active</span>
+                  </div>
+                </div>
+
+                <div className="cc-inset p-3 flex flex-col gap-2">
+                  <div className="flex justify-between cc-section-label text-[9px]">
+                    <span>Next Milestone</span>
+                    <span style={{ color: '#C4902A' }}>{streak}/7 Days</span>
+                  </div>
+                  <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(196,144,42,0.08)' }}>
+                    <div
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{
+                        width: `${Math.min(100, (streak / 7) * 100)}%`,
+                        background: 'linear-gradient(90deg, #E8BC5A, #C4902A)',
+                      }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-text-secondary leading-relaxed mt-0.5">
+                    {streak >= 7 ? '🔥 Saffron status activated.' : 'Study daily to grow your streak.'}
+                  </p>
+                </div>
+              </div>
+            </Reveal>
+
+            {/* GS Mastery Rings */}
+            <Reveal delay={0.25}>
+              <div className="cc-panel cc-panel-hover p-5 relative overflow-hidden" data-cursor-type="target">
+                <span className="cc-section-label" style={{ color: 'var(--text-muted)' }}>Syllabus Mastery</span>
+                <h3 className="font-serif text-lg font-bold mt-1 mb-4 text-text-primary">GS Coverage</h3>
+                <div className="flex items-center justify-around">
+                  {gsData.map(gs => (
+                    <MasteryRing key={gs.label} label={gs.label} percent={gs.percent} color={gs.color} size={68} />
+                  ))}
+                </div>
+                <button
+                  onClick={() => navigate('/roadmap')}
+                  className="cc-btn w-full mt-4 py-2 px-3 rounded-lg text-[11px] font-semibold cursor-pointer flex items-center justify-center gap-1.5 text-text-secondary"
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  View Full Syllabus Map <ArrowRight size={11} />
+                </button>
+              </div>
+            </Reveal>
+
+            {/* Reputation & Leaderboard */}
+            <Reveal delay={0.35}>
+              <div className="cc-panel cc-panel-hover p-5 relative overflow-hidden" data-cursor-type="rank">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="font-semibold flex items-center gap-2 text-text-primary text-[14px]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                    <Trophy size={14} style={{ color: '#C4902A' }} /> Leaders
+                  </h3>
+                  {loadingLeaderboard && <Loader2 size={13} className="animate-spin text-text-muted shrink-0" />}
+                </div>
+
+                {/* Personal Score */}
+                <div className="cc-inset p-3 flex items-center justify-between mb-3">
+                  <span className="text-[11px] text-text-secondary font-medium" style={{ fontFamily: "'DM Sans', sans-serif" }}>Your XP:</span>
+                  <span className="cc-mono text-[14px] font-bold" style={{ color: '#C4902A' }}>{reputation}</span>
+                </div>
+
+                {/* Mini Podium */}
+                {leaderboard.length >= 3 && (
+                  <div className="flex items-end justify-center gap-2 mb-3 pt-3 border-b pb-3" style={{ borderColor: 'var(--cc-panel-border)' }}>
+                    {/* Rank 2 */}
+                    {leaderboard[1] && (
+                      <div className="flex flex-col items-center flex-1">
+                        <div className="relative">
+                          <div className="w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-bold cc-inset text-[#8A95A8]">
+                            {(leaderboard[1].name || 'U').substring(0, 2).toUpperCase()}
+                          </div>
+                          <span className="absolute -top-2.5 -right-1 text-[10px]">🥈</span>
+                        </div>
+                        <span className="text-[10px] font-semibold truncate max-w-[55px] text-text-secondary mt-1">{leaderboard[1].name}</span>
+                        <span className="cc-mono text-[9px] font-bold text-text-muted">{leaderboard[1].score}</span>
+                        <div className="w-full h-7 rounded-t-md mt-1.5 flex items-center justify-center cc-section-label text-[8px] text-[#8A95A8]" style={{ background: 'rgba(138,149,168,0.06)', border: '1px solid rgba(138,149,168,0.12)' }}>#2</div>
+                      </div>
+                    )}
+                    {/* Rank 1 */}
+                    {leaderboard[0] && (
+                      <div className="flex flex-col items-center flex-1 -translate-y-1.5">
+                        <div className="relative">
+                          <div className="w-11 h-11 rounded-full flex items-center justify-center text-[11px] font-bold border-2 border-[#C4902A] text-[#C4902A]" style={{ background: 'rgba(196,144,42,0.08)', boxShadow: '0 0 12px rgba(196,144,42,0.2)' }}>
+                            {(leaderboard[0].name || 'U').substring(0, 2).toUpperCase()}
+                          </div>
+                          <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-[12px]">👑</span>
+                        </div>
+                        <span className="text-[11px] font-bold truncate max-w-[60px] text-gradient-brand mt-1">{leaderboard[0].name}</span>
+                        <span className="cc-mono text-[10px] font-bold text-[#C4902A]">{leaderboard[0].score}</span>
+                        <div className="w-full h-10 rounded-t-md mt-1.5 flex items-center justify-center cc-section-label text-[9px] font-extrabold text-[#C4902A]" style={{ background: 'rgba(196,144,42,0.08)', border: '1px solid rgba(196,144,42,0.15)' }}>#1</div>
+                      </div>
+                    )}
+                    {/* Rank 3 */}
+                    {leaderboard[2] && (
+                      <div className="flex flex-col items-center flex-1">
+                        <div className="relative">
+                          <div className="w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-bold cc-inset text-[#B87333]">
+                            {(leaderboard[2].name || 'U').substring(0, 2).toUpperCase()}
+                          </div>
+                          <span className="absolute -top-2.5 -left-1 text-[10px]">🥉</span>
+                        </div>
+                        <span className="text-[10px] font-semibold truncate max-w-[55px] text-text-secondary mt-1">{leaderboard[2].name}</span>
+                        <span className="cc-mono text-[9px] font-bold text-text-muted">{leaderboard[2].score}</span>
+                        <div className="w-full h-5 rounded-t-md mt-1.5 flex items-center justify-center cc-section-label text-[8px] text-[#B87333]" style={{ background: 'rgba(184,115,51,0.06)', border: '1px solid rgba(184,115,51,0.12)' }}>#3</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* List remaining */}
+                {leaderboard.length > 0 && (
+                  <div className="flex flex-col gap-1">
+                    {leaderboard.slice(3, 5).map((entry) => (
+                      <div key={entry.user_id} className="flex items-center gap-2 py-1.5" style={{ borderTop: '1px solid var(--cc-panel-border)' }}>
+                        <span className="cc-section-label text-[9px] w-4 shrink-0 text-center">#{entry.rank}</span>
+                        <div className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0 cc-inset text-text-secondary">
+                          {(entry.name || 'U').substring(0, 2).toUpperCase()}
+                        </div>
+                        <span className="font-medium flex-1 text-[11px] truncate text-text-secondary" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                          {entry.name}
+                        </span>
+                        <span className="cc-mono text-[11px] font-bold text-[#C4902A] shrink-0">{entry.score}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </Reveal>
+          </div>
         </div>
+
       </div>
     </div>
   );
 };
-
-/* ── Stat pill — used inline, no extra import needed ── */
-function StatPill({ label, value, sub, pct, accentColor, accentAlpha, gradientFrom, gradientTo, icon }) {
-  return (
-    <div
-      className="rounded-xl p-5 flex flex-col gap-2"
-      style={{
-        background: `${accentAlpha}0.08)`,
-        border: `1px solid ${accentAlpha}0.18)`,
-        boxShadow: 'var(--shadow-card)',
-      }}
-    >
-      <div
-        className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] font-semibold"
-        style={{ color: accentColor, opacity: 0.9 }}
-      >
-        {icon}
-        {label}
-      </div>
-      <div
-        className="leading-none font-bold"
-        style={{
-          fontFamily: "'Cormorant Garamond', serif",
-          fontSize: 'clamp(36px, 4vw, 52px)',
-          letterSpacing: '-0.03em',
-          background: `linear-gradient(135deg, ${gradientFrom} 0%, ${gradientTo} 100%)`,
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text',
-        }}
-      >
-        {value}
-      </div>
-      <div className="text-[11px]" style={{ color: 'var(--text-muted)', fontFamily: "'DM Sans', sans-serif" }}>{sub}</div>
-      <div className="w-full h-[3px] rounded-full mt-1 overflow-hidden" style={{ background: `${accentAlpha}0.12)` }}>
-        <div
-          className="h-full rounded-full transition-all duration-700"
-          style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${gradientFrom}, ${gradientTo})` }}
-        />
-      </div>
-    </div>
-  );
-}
 
 export default Dashboard;

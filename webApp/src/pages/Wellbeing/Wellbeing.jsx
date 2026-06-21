@@ -540,22 +540,22 @@ const FocusRoom = () => {
 const StudyStatsCard = ({ stats }) => {
   if (!stats) return null;
   return (
-    <div className="bg-bg-panel border border-border-default rounded-2xl p-6 shadow-sm">
+    <div className="cc-panel rounded-2xl p-6 shadow-sm">
       <div className="text-[10px] text-text-muted tracking-[2px] uppercase mb-4">Your Study Stats</div>
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-bg-panel-hover p-4 rounded-xl">
+        <div className="cc-panel-hover p-4 rounded-xl">
           <div className="text-[22px] font-serif font-semibold text-text-primary">{stats.total_hours}h</div>
           <div className="text-[11px] text-text-muted mt-0.5">Total focus time</div>
         </div>
-        <div className="bg-bg-panel-hover p-4 rounded-xl">
+        <div className="cc-panel-hover p-4 rounded-xl">
           <div className="text-[22px] font-serif font-semibold text-text-primary">{stats.weekly_hours}h</div>
           <div className="text-[11px] text-text-muted mt-0.5">This week</div>
         </div>
-        <div className="bg-bg-panel-hover p-4 rounded-xl">
+        <div className="cc-panel-hover p-4 rounded-xl">
           <div className="text-[22px] font-serif font-semibold text-text-primary">{stats.streak_days}</div>
           <div className="text-[11px] text-text-muted mt-0.5">Day streak</div>
         </div>
-        <div className="bg-bg-panel-hover p-4 rounded-xl">
+        <div className="cc-panel-hover p-4 rounded-xl">
           <div className="text-[22px] font-serif font-semibold text-text-primary">{stats.total_sessions}</div>
           <div className="text-[11px] text-text-muted mt-0.5">Total sessions</div>
         </div>
@@ -653,7 +653,7 @@ const MusicPlayer = ({ compact = false }) => {
   };
 
   return (
-    <div className={compact ? '' : 'bg-bg-panel border border-border-default rounded-2xl p-6 shadow-sm'}>
+    <div className={compact ? '' : 'cc-panel rounded-2xl p-6 shadow-sm'}>
       <div className="flex items-center justify-between mb-3">
         <button 
           onClick={() => setShowPlaylist(!showPlaylist)}
@@ -803,7 +803,7 @@ const Wellbeing = () => {
       {/* Row 2: Mood (wider) + Stats (narrower) */}
       <div className="grid grid-cols-[3fr_2fr] gap-6 items-start">
         {/* Mood Tracker */}
-        <div className="bg-bg-panel border border-border-default rounded-2xl p-6 shadow-sm">
+        <div className="cc-panel rounded-2xl p-6 shadow-sm">
           <h4 className="font-serif font-semibold text-text-primary mb-1">{t('wellbeing.moodQ')}</h4>
           <p className="text-[11px] text-text-muted mb-5">{t('wellbeing.moodSub')}</p>
           <div className="grid grid-cols-4 gap-3 mb-5">
@@ -814,8 +814,8 @@ const Wellbeing = () => {
               { key: 'focused', emoji: '🔥', label: t('wellbeing.mood4'), border: 'border-[#3C8157]', activeBg: 'bg-[#EBF5F0]' },
             ].map(m => (
               <div key={m.key} onClick={() => setMood(m.key)}
-                className={`border py-5 px-3 rounded-xl flex flex-col items-center gap-2 cursor-pointer transition hover:bg-bg-panel-hover ${
-                  mood === m.key ? `${m.border} ${m.activeBg}` : 'border-border-default bg-bg-panel'
+                className={`border py-5 px-3 rounded-xl flex flex-col items-center gap-2 cursor-pointer transition hover:cc-panel-hover ${
+                  mood === m.key ? `${m.border} ${m.activeBg}` : 'border-border-default cc-panel'
                 }`}>
                 <span className="text-[28px]">{m.emoji}</span>
                 <span className={`text-[12px] text-center leading-snug ${mood === m.key ? 'text-text-primary font-medium' : 'text-text-muted'}`}>{m.label}</span>
@@ -832,7 +832,7 @@ const Wellbeing = () => {
       {/* Row 3: Reality Check + Recovery tips side by side */}
       <div className="grid grid-cols-2 gap-6">
         {/* Reality Check */}
-        <div className="bg-bg-panel border border-border-default rounded-2xl p-6 shadow-sm">
+        <div className="cc-panel rounded-2xl p-6 shadow-sm">
           <h4 className="font-serif font-semibold text-text-primary mb-4">{t('wellbeing.realityTitle')}</h4>
           <div className="bg-[#fbefe9] p-5 rounded-xl border border-[#EED4C3] text-[#9C4528]">
             <div className="text-[10px] font-semibold uppercase tracking-[1px] flex items-center gap-1.5 mb-2">
@@ -843,7 +843,7 @@ const Wellbeing = () => {
         </div>
 
         {/* Recovery tips */}
-        <div className="bg-bg-panel border border-border-default rounded-2xl p-6 shadow-sm">
+        <div className="cc-panel rounded-2xl p-6 shadow-sm">
           <h4 className="font-serif font-semibold text-text-primary mb-1">{t('wellbeing.slowTitle')}</h4>
           <p className="text-[11px] text-text-muted leading-[1.6] mb-5">{t('wellbeing.slowDesc')}</p>
           <div className="flex flex-col gap-3">
@@ -852,7 +852,7 @@ const Wellbeing = () => {
               { icon: <CheckCircle2 size={14} />, text: 'Review yesterday\'s notes (20 min)' },
               { icon: <BookOpen size={14} />, text: 'Light reading — newspaper editorial' },
             ].map((item, i) => (
-              <div key={i} className="flex items-center gap-3 bg-bg-panel-hover rounded-lg px-4 py-3 text-[13px] text-text-secondary">
+              <div key={i} className="flex items-center gap-3 cc-panel-hover rounded-lg px-4 py-3 text-[13px] text-text-secondary">
                 <span className="text-primary shrink-0">{item.icon}</span>
                 {item.text}
               </div>
@@ -862,7 +862,7 @@ const Wellbeing = () => {
       </div>
 
       {/* Row 4: Stories full-width */}
-      <div className="bg-bg-panel border border-border-default rounded-2xl p-6 shadow-sm">
+      <div className="cc-panel rounded-2xl p-6 shadow-sm">
         <div className="flex justify-between items-end mb-6">
           <h3 className="font-serif font-semibold text-text-primary text-[18px]">{t('wellbeing.storiesTitle')}</h3>
           <span className="text-[11px] text-text-muted">{t('wellbeing.storiesSub')}</span>

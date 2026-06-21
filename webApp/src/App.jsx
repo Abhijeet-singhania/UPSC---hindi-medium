@@ -21,7 +21,9 @@ import Admin from './pages/Admin/Admin';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import { ThemeProvider } from './context/ThemeContext';
 import { UIProvider } from './context/UIContext';
+import { AvatarProvider } from './context/AvatarContext';
 import { fetchProfile } from './store/slices/authSlice';
+import CustomCursor from './components/common/CustomCursor';
 
 function App() {
   const dispatch = useDispatch();
@@ -39,7 +41,10 @@ function App() {
   return (
     <ThemeProvider>
       <UIProvider>
-      <Router>
+        <AvatarProvider>
+          <CustomCursor />
+        <Router>
+
         <Routes>
           <Route path="/" element={<Welcome />} />
           <Route path="/auth" element={<Auth />} />
@@ -65,7 +70,8 @@ function App() {
             </Route>
           </Route>
         </Routes>
-      </Router>
+        </Router>
+        </AvatarProvider>
       </UIProvider>
     </ThemeProvider>
   );

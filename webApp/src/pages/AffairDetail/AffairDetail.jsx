@@ -20,7 +20,7 @@ const AnalysisSection = ({ notes, isArticle }) => {
   const { bullets, paragraphs } = parseAffairNotes(notes);
 
   return (
-    <div className="bg-bg-panel border border-border-default rounded-xl p-6">
+    <div className="cc-panel rounded-xl p-6">
       <h2 className="font-serif text-[18px] font-semibold text-text-primary mb-1">
         {isArticle ? 'Article' : 'Analysis'}
       </h2>
@@ -71,7 +71,7 @@ const RelatedSection = ({ affairId }) => {
   if (!hasPYQs && !hasQuizzes) return null;
 
   return (
-    <div className="bg-bg-panel border border-border-default rounded-xl p-6">
+    <div className="cc-panel rounded-xl p-6">
       <div className="flex items-center gap-2 mb-4">
         <Sparkles size={15} className="text-primary" />
         <h2 className="font-serif text-[16px] font-semibold text-text-primary">AI-Connected Study Material</h2>
@@ -225,7 +225,7 @@ const AffairDetail = () => {
 
       {/* Summary — hide when it duplicates the headline */}
       {!summarySameAsTitle && (
-        <div className="bg-bg-panel border border-border-default rounded-xl p-6">
+        <div className="cc-panel rounded-xl p-6">
           <h2 className="font-serif text-[16px] font-semibold text-text-primary mb-3">Summary</h2>
           <p className="text-[15px] leading-[1.7] text-text-primary">{item.summary}</p>
         </div>
@@ -240,7 +240,7 @@ const AffairDetail = () => {
 
       {/* Fallback when only headline was stored (legacy ingests) */}
       {summarySameAsTitle && !hasAnalysis && (
-        <div className="bg-bg-panel border border-border-default rounded-xl p-6 text-center">
+        <div className="cc-panel rounded-xl p-6 text-center">
           <p className="text-[14px] text-text-muted mb-4">
             Full article text was not captured during import. Open the original source below.
           </p>

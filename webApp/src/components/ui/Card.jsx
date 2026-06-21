@@ -39,7 +39,7 @@ export default function Card({
 
   return (
     <div
-      className={`rounded-xl card-premium ${accentBorder} ${className}`}
+      className={`cc-panel ${hover ? 'cc-panel-hover' : ''} ${accentBorder} ${className}`}
       style={{ ...accentStyle, ...glowStyle }}
       {...props}
     >
